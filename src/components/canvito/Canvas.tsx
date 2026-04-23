@@ -269,21 +269,17 @@ function PageEmptyCTA({
   pageId: string;
   openImagePicker: () => void;
 }) {
-  const { setActivePageId } = useEditor();
+  const { setActivePageId, getPageCanvas } = useEditor();
   const [hasObjects, setHasObjects] = useState(false);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
 
-  // Find this page's canvas. We poll briefly because the registration happens
-  // in an effect that may not have fired yet on the first render.
+  // The page's Fabric canvas is created in an effect on PageBoard mount, so on
+  // the very first render it might not exist yet. Poll on rAF until ready.
   useEffect(() => {
     let cancelled = false;
     const tryFind = () => {
-      // Reach into the DOM: each PageBoard renders exactly one <canvas>
-      // managed by Fabric. We use a small retry instead of plumbing another
-      // ref through context.
-      const win = window as unknown as { __canvitoFindCanvas?: (id: string) => fabric.Canvas | null };
-      const found = win.__canvitoFindCanvas?.(pageId) ?? null;
       if (cancelled) return;
+      const found = getPageCanvas(pageId);
       if (found) setCanvas(found);
       else requestAnimationFrame(tryFind);
     };
@@ -291,7 +287,7 @@ function PageEmptyCTA({
     return () => {
       cancelled = true;
     };
-  }, [pageId]);
+  }, [pageId, getPageCanvas]);
 
   useEffect(() => {
     if (!canvas) return;
