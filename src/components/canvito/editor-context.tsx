@@ -322,13 +322,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         addImageFromSource,
         addImageFromFile,
         openImagePicker,
-        pages,
-        activePageId,
         addPage,
-        selectPage,
-        removePage,
-        showThumbnails,
-        toggleThumbnails,
       }}
     >
       {children}

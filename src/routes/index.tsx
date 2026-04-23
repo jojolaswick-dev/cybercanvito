@@ -5,7 +5,6 @@ import { Sidebar, type ToolId } from "@/components/canvito/Sidebar";
 import { SidePanel } from "@/components/canvito/SidePanel";
 import { Canvas } from "@/components/canvito/Canvas";
 import { BottomBar } from "@/components/canvito/BottomBar";
-import { ThumbnailBar } from "@/components/canvito/ThumbnailBar";
 import { EditorProvider } from "@/components/canvito/editor-context";
 
 export const Route = createFileRoute("/")({
@@ -34,10 +33,7 @@ function CanvitoApp() {
             onSelect={(id) => setActiveTool((cur) => (cur === id ? null : id))}
           />
           <SidePanel active={activeTool} onClose={() => setActiveTool(null)} />
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <Canvas />
-            <ThumbnailBar />
-          </div>
+          <Canvas />
         </div>
         <BottomBar />
       </div>
