@@ -324,6 +324,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setPages((prev) => [...prev, { id: makePageId() }]);
   }, []);
 
+  const getPageCanvas = useCallback(
+    (pageId: string) => canvasesRef.current.get(pageId) ?? null,
+    [],
+  );
+
   // ---------- Delete active object ----------
   const deleteActiveObject = useCallback(() => {
     const c = canvasesRef.current.get(activePageIdRef.current ?? "");
