@@ -184,6 +184,92 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     fitToScreen();
   }, [clearUserObjects, fitToScreen]);
 
+  // ---------- Delete active object ----------
+  const deleteActiveObject = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const active = canvas.getActiveObject();
+    if (!active) return;
+    if ((active as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
+
+    // Handle multi-selection
+    if (active.type === "activeselection" && "forEachObject" in active) {
+      (active as fabric.ActiveSelection).forEachObject((obj) => {
+        if (!(obj as fabric.Object & { isArtboard?: boolean }).isArtboard) {
+          canvas.remove(obj);
+        }
+      });
+    } else {
+      canvas.remove(active);
+    }
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+  }, []);
+
+  // Build the trash icon image used by the custom Fabric Control
+  const trashIconRef = useRef<HTMLImageElement | null>(null);
+  if (typeof window !== "undefined" && !trashIconRef.current) {
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="11" fill="oklch(0.55 0.28 295)" stroke="white" stroke-width="1.5"/>
+  <path d="M8 8 L16 16 M16 8 L8 16" stroke="white" stroke-width="2"/>
+</svg>`;
+    const img = new Image();
+    img.src = `data:image/svg+xml;base64,${btoa(svg)}`;
+    trashIconRef.current = img;
+  }
+
+  // Build a trash Control once (Fabric v6 uses fabric.Control)
+  const trashControlRef = useRef<fabric.Control | null>(null);
+  if (!trashControlRef.current) {
+    const renderIcon: fabric.Control["render"] = (ctx, left, top, _styleOverride, fabricObject) => {
+      const size = 26;
+      const icon = trashIconRef.current;
+      ctx.save();
+      ctx.translate(left, top);
+      ctx.rotate((fabricObject.angle * Math.PI) / 180);
+      if (icon && icon.complete && icon.naturalWidth > 0) {
+        ctx.drawImage(icon, -size / 2, -size / 2, size, size);
+      } else {
+        // Fallback circle
+        ctx.beginPath();
+        ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+        ctx.fillStyle = "oklch(0.55 0.28 295)";
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-5, -5);
+        ctx.lineTo(5, 5);
+        ctx.moveTo(5, -5);
+        ctx.lineTo(-5, 5);
+        ctx.stroke();
+      }
+      ctx.restore();
+    };
+
+    trashControlRef.current = new fabric.Control({
+      x: 0.5,
+      y: -0.5,
+      offsetX: 20,
+      offsetY: -20,
+      cursorStyle: "pointer",
+      mouseUpHandler: (_eventData, transform) => {
+        const canvas = canvasRef.current;
+        const target = transform.target;
+        if (!canvas || !target) return false;
+        canvas.remove(target);
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+        return true;
+      },
+      render: renderIcon,
+      sizeX: 26,
+      sizeY: 26,
+    });
+  }
+
+
   // ---------- Image insertion ----------
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
