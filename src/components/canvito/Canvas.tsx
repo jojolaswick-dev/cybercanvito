@@ -136,7 +136,6 @@ export function Canvas() {
               key={page.id}
               pageId={page.id}
               index={idx}
-              isLast={idx === pages.length - 1}
             />
           ))}
 
