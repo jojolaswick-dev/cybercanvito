@@ -164,57 +164,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     return () => ro.disconnect();
   }, [fitToScreen]);
 
-  // ---------- Page <-> canvas serialization ----------
+  // ---------- Page actions ----------
 
-  /** Read current canvas content (excluding the artboard rect) and return JSON + thumbnail */
-  const snapshotCanvas = useCallback((): { data: object; thumbnail: string } | null => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-
-    // Serialize but strip the artboard rect from the output
-    const json = canvas.toJSON() as { objects?: Array<Record<string, unknown> & { isArtboard?: boolean }> };
-    if (json.objects) {
-      json.objects = json.objects.filter((o) => !o.isArtboard);
-    }
-
-    // Generate thumbnail from the artboard area only.
-    // Temporarily reset viewport so multiplier-based export is consistent.
-    const prevVt = canvas.viewportTransform ? [...canvas.viewportTransform] : null;
-    const prevZoom = canvas.getZoom();
-    canvas.setZoom(1);
-    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-
-    const thumbnail = canvas.toDataURL({
-      format: "png",
-      left: 0,
-      top: 0,
-      width: artboard.width,
-      height: artboard.height,
-      multiplier: 0.15, // small preview
-    });
-
-    // Restore viewport
-    if (prevVt) {
-      canvas.setViewportTransform(prevVt as [number, number, number, number, number, number]);
-    }
-    canvas.setZoom(prevZoom);
-    canvas.requestRenderAll();
-
-    return { data: json, thumbnail };
-  }, [artboard.width, artboard.height]);
-
-  /** Persist current canvas state to the active page in `pages` */
-  const saveActivePage = useCallback(() => {
-    const snap = snapshotCanvas();
-    if (!snap) return;
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageIdRef.current ? { ...p, data: snap.data, thumbnail: snap.thumbnail } : p
-      )
-    );
-  }, [snapshotCanvas]);
-
-  /** Clear all non-artboard objects from the canvas */
+  /** Clear all non-artboard objects from the canvas (start a fresh page) */
   const clearUserObjects = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -226,115 +178,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     canvas.requestRenderAll();
   }, []);
 
-  /** Load a page's JSON into the canvas, preserving the artboard rect */
-  const loadPage = useCallback(
-    async (page: Page) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      clearUserObjects();
-      if (page.data) {
-        // Build a JSON payload that fabric can enliven
-        const payload = page.data as { objects?: Array<Record<string, unknown>> };
-        const objects = payload.objects ?? [];
-        if (objects.length > 0) {
-          const enlivened = await fabric.util.enlivenObjects(objects);
-          enlivened.forEach((o) => {
-            canvas.add(o as fabric.Object);
-          });
-        }
-      }
-      // Make sure artboard remains at the back
-      if (artboardRectRef.current) {
-        canvas.sendObjectToBack(artboardRectRef.current);
-      }
-      canvas.requestRenderAll();
-    },
-    [clearUserObjects]
-  );
-
-  // ---------- Page actions ----------
-
   const addPage = useCallback(() => {
-    // Save the current page first so we don't lose work
-    saveActivePage();
-    const id = newId();
-    setPages((prev) => [...prev, { id, data: null, thumbnail: null }]);
-    setActivePageId(id);
-    // Clear canvas for the brand-new empty page
-    requestAnimationFrame(() => clearUserObjects());
-  }, [saveActivePage, clearUserObjects]);
-
-  const selectPage = useCallback(
-    (id: string) => {
-      if (id === activePageIdRef.current) return;
-      // Snapshot current page before swapping
-      const snap = snapshotCanvas();
-      setPages((prev) => {
-        const next = prev.map((p) =>
-          p.id === activePageIdRef.current && snap
-            ? { ...p, data: snap.data, thumbnail: snap.thumbnail }
-            : p
-        );
-        const target = next.find((p) => p.id === id);
-        if (target) {
-          // Defer the load so React state and refs are in sync
-          requestAnimationFrame(() => loadPage(target));
-        }
-        return next;
-      });
-      setActivePageId(id);
-    },
-    [snapshotCanvas, loadPage]
-  );
-
-  const removePage = useCallback(
-    (id: string) => {
-      setPages((prev) => {
-        if (prev.length <= 1) return prev; // keep at least one page
-        const idx = prev.findIndex((p) => p.id === id);
-        const next = prev.filter((p) => p.id !== id);
-        if (id === activePageIdRef.current) {
-          const fallback = next[Math.max(0, idx - 1)] ?? next[0];
-          setActivePageId(fallback.id);
-          requestAnimationFrame(() => loadPage(fallback));
-        }
-        return next;
-      });
-    },
-    [loadPage]
-  );
-
-  // ---------- Auto-thumbnail on canvas edits ----------
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const schedule = () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        const snap = snapshotCanvas();
-        if (!snap) return;
-        setPages((prev) =>
-          prev.map((p) =>
-            p.id === activePageIdRef.current
-              ? { ...p, data: snap.data, thumbnail: snap.thumbnail }
-              : p
-          )
-        );
-      }, 250);
-    };
-
-    canvas.on("object:added", schedule);
-    canvas.on("object:removed", schedule);
-    canvas.on("object:modified", schedule);
-    return () => {
-      if (timer) clearTimeout(timer);
-      canvas.off("object:added", schedule);
-      canvas.off("object:removed", schedule);
-      canvas.off("object:modified", schedule);
-    };
-  }, [canvasState, snapshotCanvas]);
+    clearUserObjects();
+    fitToScreen();
+  }, [clearUserObjects, fitToScreen]);
 
   // ---------- Image insertion ----------
   const fileInputRef = useRef<HTMLInputElement | null>(null);
