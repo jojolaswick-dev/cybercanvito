@@ -18,6 +18,9 @@ type EditorCtx = {
   setZoom: (z: number) => void;
   fitToScreen: () => void;
   preset: ArtboardPresetId;
+  addImageFromSource: (src: string) => Promise<void>;
+  addImageFromFile: (file: File) => Promise<void>;
+  openImagePicker: () => void;
 };
 
 const EditorContext = createContext<EditorCtx | null>(null);
