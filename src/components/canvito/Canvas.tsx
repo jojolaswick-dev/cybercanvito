@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, ChevronDown, ImagePlus } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
 
@@ -129,18 +129,6 @@ export function Canvas() {
         )}
       </div>
 
-      {/* Add page button overlays the bottom of the workspace */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
-        <div className="pointer-events-auto flex items-stretch gap-1">
-          <button className="group flex items-center justify-center gap-2 rounded-lg border border-[oklch(0.7_0.02_250)] bg-white/85 px-4 py-2.5 text-sm font-medium text-[var(--background)] backdrop-blur transition-all hover:border-[var(--neon-violet)] hover:bg-white hover:text-[var(--neon-violet)] hover:shadow-[0_0_16px_oklch(0.55_0.28_295/0.25)]">
-            <Plus className="h-4 w-4" />
-            Adicionar página
-          </button>
-          <button className="flex items-center justify-center rounded-lg border border-[oklch(0.7_0.02_250)] bg-white/85 px-2 text-[var(--background)] backdrop-blur transition-all hover:border-[var(--neon-violet)] hover:text-[var(--neon-violet)]">
-            <ChevronDown className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
