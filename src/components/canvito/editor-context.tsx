@@ -170,6 +170,100 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     return () => ro.disconnect();
   }, [fitToScreen]);
 
+  // ---------- Image insertion ----------
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const addImageFromSource = useCallback(async (src: string) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    try {
+      const img = await fabric.FabricImage.fromURL(src, { crossOrigin: "anonymous" });
+
+      // Fit image inside artboard at ~80% of the smaller dimension
+      const aw = artboard.width;
+      const ah = artboard.height;
+      const iw = img.width ?? 1;
+      const ih = img.height ?? 1;
+      const maxScale = Math.min((aw * 0.8) / iw, (ah * 0.8) / ih);
+      const scale = Math.min(maxScale, 1);
+      img.scale(scale);
+
+      img.set({
+        left: aw / 2,
+        top: ah / 2,
+        originX: "center",
+        originY: "center",
+        cornerColor: "#ffffff",
+        cornerStrokeColor: "oklch(0.55 0.28 295)",
+        borderColor: "oklch(0.55 0.28 295)",
+        cornerSize: 12,
+        transparentCorners: false,
+        cornerStyle: "circle",
+        rotatingPointOffset: 28,
+        lockUniScaling: true, // proportional resize from corners
+      });
+      // Hide middle (side) controls so only corner handles + rotation are visible
+      img.setControlsVisibility({
+        mt: false,
+        mb: false,
+        ml: false,
+        mr: false,
+        mtr: true,
+        tl: true,
+        tr: true,
+        bl: true,
+        br: true,
+      });
+
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.requestRenderAll();
+    } catch (err) {
+      console.error("Falha ao adicionar imagem:", err);
+    }
+  }, [artboard.width, artboard.height]);
+
+  const addImageFromFile = useCallback(
+    async (file: File) => {
+      if (!file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+      await addImageFromSource(dataUrl);
+    },
+    [addImageFromSource]
+  );
+
+  const openImagePicker = useCallback(() => {
+    if (!fileInputRef.current) {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.style.display = "none";
+      input.addEventListener("change", () => {
+        const f = input.files?.[0];
+        if (f) addImageFromFile(f);
+        input.value = "";
+      });
+      document.body.appendChild(input);
+      fileInputRef.current = input;
+    }
+    fileInputRef.current.click();
+  }, [addImageFromFile]);
+
+  useEffect(() => {
+    return () => {
+      if (fileInputRef.current) {
+        fileInputRef.current.remove();
+        fileInputRef.current = null;
+      }
+    };
+  }, []);
+
+
   const registerCanvas = useCallback(
     (el: HTMLCanvasElement | null, wrapper: HTMLDivElement | null) => {
       wrapperRef.current = wrapper;
