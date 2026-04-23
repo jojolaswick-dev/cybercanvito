@@ -5,6 +5,7 @@ import { Sidebar, type ToolId } from "@/components/canvito/Sidebar";
 import { SidePanel } from "@/components/canvito/SidePanel";
 import { Canvas } from "@/components/canvito/Canvas";
 import { BottomBar } from "@/components/canvito/BottomBar";
+import { EditorProvider } from "@/components/canvito/editor-context";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,20 +22,21 @@ export const Route = createFileRoute("/")({
 
 function CanvitoApp() {
   const [activeTool, setActiveTool] = useState<ToolId | null>("elementos");
-  const [zoom, setZoom] = useState(40);
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
-      <TopBar />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          active={activeTool}
-          onSelect={(id) => setActiveTool((cur) => (cur === id ? null : id))}
-        />
-        <SidePanel active={activeTool} onClose={() => setActiveTool(null)} />
-        <Canvas zoom={zoom} />
+    <EditorProvider>
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
+        <TopBar />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar
+            active={activeTool}
+            onSelect={(id) => setActiveTool((cur) => (cur === id ? null : id))}
+          />
+          <SidePanel active={activeTool} onClose={() => setActiveTool(null)} />
+          <Canvas />
+        </div>
+        <BottomBar />
       </div>
-      <BottomBar zoom={zoom} setZoom={setZoom} />
-    </div>
+    </EditorProvider>
   );
 }

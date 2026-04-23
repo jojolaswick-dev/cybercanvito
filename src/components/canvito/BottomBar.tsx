@@ -1,12 +1,9 @@
-import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Files } from "lucide-react";
+import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Files, Maximize } from "lucide-react";
+import { useEditor } from "./editor-context";
 
-export function BottomBar({
-  zoom,
-  setZoom,
-}: {
-  zoom: number;
-  setZoom: (n: number) => void;
-}) {
+export function BottomBar() {
+  const { zoom, setZoom, fitToScreen } = useEditor();
+
   return (
     <footer className="relative z-30 flex h-11 items-center justify-between border-t border-white/10 bg-cyber-bar px-3 text-white">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--electric-blue)] to-transparent opacity-60" />
@@ -31,7 +28,7 @@ export function BottomBar({
           <input
             type="range"
             min={10}
-            max={200}
+            max={400}
             value={zoom}
             onChange={(e) => setZoom(Number(e.target.value))}
             className="cyber-slider w-full"
@@ -39,15 +36,24 @@ export function BottomBar({
         </div>
 
         <button
-          onClick={() => setZoom(Math.min(200, zoom + 10))}
+          onClick={() => setZoom(Math.min(400, zoom + 10))}
           className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
 
-        <span className="w-10 text-center text-xs font-medium tabular-nums text-white/80">
+        <span className="w-12 text-center text-xs font-medium tabular-nums text-white/80">
           {zoom}%
         </span>
+
+        <button
+          onClick={fitToScreen}
+          title="Ajustar à tela"
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <Maximize className="h-3.5 w-3.5" />
+          Ajustar
+        </button>
 
         <div className="mx-1 h-5 w-px bg-white/15" />
 
@@ -66,8 +72,8 @@ export function BottomBar({
           background: linear-gradient(
             to right,
             var(--neon-violet) 0%,
-            var(--electric-blue) ${((zoom - 10) / 190) * 100}%,
-            oklch(1 0 0 / 0.15) ${((zoom - 10) / 190) * 100}%,
+            var(--electric-blue) ${((zoom - 10) / 390) * 100}%,
+            oklch(1 0 0 / 0.15) ${((zoom - 10) / 390) * 100}%,
             oklch(1 0 0 / 0.15) 100%
           );
           outline: none;
