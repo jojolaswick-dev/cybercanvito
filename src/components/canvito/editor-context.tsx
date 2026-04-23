@@ -9,6 +9,13 @@ export const ARTBOARD_PRESETS: Record<ArtboardPresetId, { label: string; width: 
   story: { label: "Story", width: 1080, height: 1920 },
 };
 
+/** A single page of the editor. `data` is the serialized Fabric JSON of user objects. */
+type PageState = {
+  id: string;
+  /** Fabric serialized JSON for user objects only (artboard excluded). null = empty page. */
+  data: object | null;
+};
+
 type EditorCtx = {
   canvas: fabric.Canvas | null;
   registerCanvas: (el: HTMLCanvasElement | null, wrapper: HTMLDivElement | null) => void;
@@ -23,6 +30,11 @@ type EditorCtx = {
   openImagePicker: () => void;
   addPage: () => void;
   deleteActiveObject: () => void;
+
+  // Multi-page
+  pages: PageState[];
+  activePageIndex: number;
+  goToPage: (index: number) => void;
 };
 
 const EditorContext = createContext<EditorCtx | null>(null);
@@ -33,7 +45,15 @@ export function useEditor() {
   return ctx;
 }
 
-const PADDING = 64; // breathing room around the artboard inside the wrapper
+const PADDING = 64;
+
+/** Properties we want to keep when serializing user objects. */
+const SERIALIZE_PROPS = ["selectable", "evented", "lockUniScaling"];
+
+/** Generate a stable-ish unique id for pages. */
+function makePageId() {
+  return `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+}
 
 export function EditorProvider({ children }: { children: ReactNode }) {
   const canvasRef = useRef<fabric.Canvas | null>(null);
@@ -45,12 +65,20 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [artboard, setArtboard] = useState({ width: 1080, height: 1080 });
   const [zoom, setZoomState] = useState(40);
 
+  // Multi-page state
+  const [pages, setPages] = useState<PageState[]>([{ id: makePageId(), data: null }]);
+  const [activePageIndex, setActivePageIndex] = useState(0);
+  // Refs mirror state so we can read the latest values inside callbacks without stale closures
+  const pagesRef = useRef<PageState[]>(pages);
+  const activePageIndexRef = useRef(activePageIndex);
+  useEffect(() => { pagesRef.current = pages; }, [pages]);
+  useEffect(() => { activePageIndexRef.current = activePageIndex; }, [activePageIndex]);
+
   // Build (or rebuild) the artboard rect + clipPath inside the canvas
   const buildArtboard = useCallback((width: number, height: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Remove old artboard
     if (artboardRectRef.current) {
       canvas.remove(artboardRectRef.current);
       artboardRectRef.current = null;
@@ -72,14 +100,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         offsetY: 10,
       }),
     });
-    // Tag it so we can identify
     (rect as fabric.Rect & { isArtboard?: boolean }).isArtboard = true;
 
     canvas.add(rect);
     canvas.sendObjectToBack(rect);
     artboardRectRef.current = rect;
 
-    // ClipPath ensures nothing is drawn outside the artboard bounds.
     const clip = new fabric.Rect({
       left: 0,
       top: 0,
@@ -91,7 +117,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     canvas.requestRenderAll();
   }, []);
 
-  // Compute fit-to-screen zoom and re-center artboard inside the wrapper
   const fitToScreen = useCallback(() => {
     const canvas = canvasRef.current;
     const wrapper = wrapperRef.current;
@@ -149,14 +174,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setArtboard({ width: p.width, height: p.height });
   }, []);
 
-  // When artboard size changes, rebuild rect+clip and fit
   useEffect(() => {
     if (!canvasRef.current) return;
     buildArtboard(artboard.width, artboard.height);
     requestAnimationFrame(() => fitToScreen());
   }, [artboard.width, artboard.height, buildArtboard, fitToScreen]);
 
-  // Resize observer keeps the canvas sized to its wrapper
   useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
@@ -165,48 +188,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     return () => ro.disconnect();
   }, [fitToScreen]);
 
-  // ---------- Page actions ----------
-
-  /** Clear all non-artboard objects from the canvas (start a fresh page) */
-  const clearUserObjects = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const userObjs = canvas
-      .getObjects()
-      .filter((o) => !(o as fabric.Object & { isArtboard?: boolean }).isArtboard);
-    userObjs.forEach((o) => canvas.remove(o));
-    canvas.discardActiveObject();
-    canvas.requestRenderAll();
-  }, []);
-
-  const addPage = useCallback(() => {
-    clearUserObjects();
-    fitToScreen();
-  }, [clearUserObjects, fitToScreen]);
-
-  // ---------- Delete active object ----------
-  const deleteActiveObject = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const active = canvas.getActiveObject();
-    if (!active) return;
-    if ((active as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
-
-    // Handle multi-selection
-    if (active.type === "activeselection" && "forEachObject" in active) {
-      (active as fabric.ActiveSelection).forEachObject((obj) => {
-        if (!(obj as fabric.Object & { isArtboard?: boolean }).isArtboard) {
-          canvas.remove(obj);
-        }
-      });
-    } else {
-      canvas.remove(active);
-    }
-    canvas.discardActiveObject();
-    canvas.requestRenderAll();
-  }, []);
-
-  // Build the trash icon image used by the custom Fabric Control
+  // ---------- Trash icon + custom Fabric Control (must be defined before image insertion) ----------
   const trashIconRef = useRef<HTMLImageElement | null>(null);
   if (typeof window !== "undefined" && !trashIconRef.current) {
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
@@ -219,7 +201,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     trashIconRef.current = img;
   }
 
-  // Build a trash Control once (Fabric v6 uses fabric.Control)
   const trashControlRef = useRef<fabric.Control | null>(null);
   if (!trashControlRef.current) {
     const renderIcon: fabric.Control["render"] = (ctx, left, top, _styleOverride, fabricObject) => {
@@ -231,7 +212,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       if (icon && icon.complete && icon.naturalWidth > 0) {
         ctx.drawImage(icon, -size / 2, -size / 2, size, size);
       } else {
-        // Fallback circle
         ctx.beginPath();
         ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
         ctx.fillStyle = "oklch(0.55 0.28 295)";
@@ -269,6 +249,162 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  /** Re-attach the custom delete control to every user object on the canvas. */
+  const attachControlsToUserObjects = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !trashControlRef.current) return;
+    canvas.getObjects().forEach((o) => {
+      if ((o as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
+      o.controls = { ...o.controls, deleteControl: trashControlRef.current! };
+      o.setControlsVisibility({
+        mt: false,
+        mb: false,
+        ml: false,
+        mr: false,
+        mtr: true,
+        tl: true,
+        tr: true,
+        bl: true,
+        br: true,
+      });
+    });
+  }, []);
+
+  // ---------- Page persistence helpers ----------
+
+  /** Serialize current canvas user objects (artboard excluded) into a plain JSON object. */
+  const serializeCurrentPage = useCallback((): object | null => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const userObjs = canvas
+      .getObjects()
+      .filter((o) => !(o as fabric.Object & { isArtboard?: boolean }).isArtboard);
+    if (userObjs.length === 0) return null;
+
+    // Build a JSON payload like fabric's toObject for these specific objects.
+    // Using each object's toObject to preserve transforms (left, top, scaleX, scaleY, angle, etc.)
+    const objects = userObjs.map((o) => o.toObject(SERIALIZE_PROPS));
+    return { version: fabric.version, objects };
+  }, []);
+
+  /** Clear all non-artboard objects from the canvas. */
+  const clearUserObjects = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const userObjs = canvas
+      .getObjects()
+      .filter((o) => !(o as fabric.Object & { isArtboard?: boolean }).isArtboard);
+    userObjs.forEach((o) => canvas.remove(o));
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+  }, []);
+
+  /** Load a serialized page payload into the canvas (replacing user objects). */
+  const loadPageData = useCallback(
+    async (data: object | null) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      clearUserObjects();
+      if (!data) {
+        canvas.requestRenderAll();
+        return;
+      }
+      const objects = (data as { objects?: unknown[] }).objects ?? [];
+      if (objects.length === 0) {
+        canvas.requestRenderAll();
+        return;
+      }
+      try {
+        // Fabric v6: util.enlivenObjects returns a Promise<FabricObject[]>
+        const enlivened = (await fabric.util.enlivenObjects(objects)) as fabric.Object[];
+        enlivened.forEach((obj) => {
+          canvas.add(obj);
+        });
+        attachControlsToUserObjects();
+        canvas.requestRenderAll();
+      } catch (err) {
+        console.error("Falha ao carregar página:", err);
+      }
+    },
+    [clearUserObjects, attachControlsToUserObjects]
+  );
+
+  // ---------- Page actions ----------
+
+  /** Add a new blank page after the current one and switch to it. */
+  const addPage = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Save current page snapshot
+    const snapshot = serializeCurrentPage();
+    const currentIdx = activePageIndexRef.current;
+    const currentPages = pagesRef.current;
+
+    const updatedPages = currentPages.map((p, i) =>
+      i === currentIdx ? { ...p, data: snapshot } : p
+    );
+    const newPage: PageState = { id: makePageId(), data: null };
+    const inserted = [...updatedPages, newPage];
+    const newIndex = inserted.length - 1;
+
+    setPages(inserted);
+    setActivePageIndex(newIndex);
+    pagesRef.current = inserted;
+    activePageIndexRef.current = newIndex;
+
+    // Clear visually for the new blank page
+    clearUserObjects();
+    fitToScreen();
+  }, [serializeCurrentPage, clearUserObjects, fitToScreen]);
+
+  /** Switch to another page. Saves current page first, then loads target. */
+  const goToPage = useCallback(
+    (index: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const currentIdx = activePageIndexRef.current;
+      const currentPages = pagesRef.current;
+      if (index === currentIdx) return;
+      if (index < 0 || index >= currentPages.length) return;
+
+      // Save current
+      const snapshot = serializeCurrentPage();
+      const updatedPages = currentPages.map((p, i) =>
+        i === currentIdx ? { ...p, data: snapshot } : p
+      );
+      setPages(updatedPages);
+      pagesRef.current = updatedPages;
+
+      // Switch index + load target
+      setActivePageIndex(index);
+      activePageIndexRef.current = index;
+      void loadPageData(updatedPages[index].data);
+      fitToScreen();
+    },
+    [serializeCurrentPage, loadPageData, fitToScreen]
+  );
+
+  // ---------- Delete active object ----------
+  const deleteActiveObject = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const active = canvas.getActiveObject();
+    if (!active) return;
+    if ((active as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
+
+    if (active.type === "activeselection" && "forEachObject" in active) {
+      (active as fabric.ActiveSelection).forEachObject((obj) => {
+        if (!(obj as fabric.Object & { isArtboard?: boolean }).isArtboard) {
+          canvas.remove(obj);
+        }
+      });
+    } else {
+      canvas.remove(active);
+    }
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+  }, []);
 
   // ---------- Image insertion ----------
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -315,7 +451,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         });
 
         canvas.add(img);
-        // Attach the custom trash control to this object
         if (trashControlRef.current) {
           img.controls = { ...img.controls, deleteControl: trashControlRef.current };
         }
@@ -393,6 +528,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       setCanvasState(canvas);
 
       buildArtboard(artboard.width, artboard.height);
+      // Restore the active page (e.g., on remount due to dimension change)
+      const current = pagesRef.current[activePageIndexRef.current];
+      if (current?.data) {
+        void loadPageData(current.data);
+      }
       requestAnimationFrame(() => fitToScreen());
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -415,6 +555,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         openImagePicker,
         addPage,
         deleteActiveObject,
+        pages,
+        activePageIndex,
+        goToPage,
       }}
     >
       {children}
