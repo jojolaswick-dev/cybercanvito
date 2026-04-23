@@ -45,6 +45,9 @@ type EditorCtx = {
   addPage: () => void;
   deleteActiveObject: () => void;
 
+  /** Read the live Fabric.Canvas for a given page (null if not registered yet). */
+  getPageCanvas: (pageId: string) => fabric.Canvas | null;
+
   pages: PageState[];
   activePageId: string | null;
 };
@@ -321,6 +324,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setPages((prev) => [...prev, { id: makePageId() }]);
   }, []);
 
+  const getPageCanvas = useCallback(
+    (pageId: string) => canvasesRef.current.get(pageId) ?? null,
+    [],
+  );
+
   // ---------- Delete active object ----------
   const deleteActiveObject = useCallback(() => {
     const c = canvasesRef.current.get(activePageIdRef.current ?? "");
@@ -449,6 +457,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         openImagePicker,
         addPage,
         deleteActiveObject,
+        getPageCanvas,
         pages,
         activePageId,
       }}
