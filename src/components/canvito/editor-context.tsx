@@ -34,8 +34,6 @@ export function useEditor() {
 
 const PADDING = 64; // breathing room around the artboard inside the wrapper
 
-const newId = () => `page_${Math.random().toString(36).slice(2, 9)}_${Date.now().toString(36)}`;
-
 export function EditorProvider({ children }: { children: ReactNode }) {
   const canvasRef = useRef<fabric.Canvas | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -45,20 +43,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [preset, setPreset] = useState<ArtboardPresetId>("square");
   const [artboard, setArtboard] = useState({ width: 1080, height: 1080 });
   const [zoom, setZoomState] = useState(40);
-
-  // Multi-page state
-  const initialPageId = useRef<string>(newId());
-  const [pages, setPages] = useState<Page[]>([
-    { id: initialPageId.current, data: null, thumbnail: null },
-  ]);
-  const [activePageId, setActivePageId] = useState<string>(initialPageId.current);
-  const activePageIdRef = useRef<string>(initialPageId.current);
-  useEffect(() => {
-    activePageIdRef.current = activePageId;
-  }, [activePageId]);
-
-  const [showThumbnails, setShowThumbnails] = useState(true);
-  const toggleThumbnails = useCallback(() => setShowThumbnails((v) => !v), []);
 
   // Build (or rebuild) the artboard rect + clipPath inside the canvas
   const buildArtboard = useCallback((width: number, height: number) => {
