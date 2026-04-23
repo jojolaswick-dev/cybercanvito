@@ -315,6 +315,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         });
 
         canvas.add(img);
+        // Attach the custom trash control to this object
+        if (trashControlRef.current) {
+          img.controls = { ...img.controls, deleteControl: trashControlRef.current };
+        }
         canvas.setActiveObject(img);
         canvas.requestRenderAll();
       } catch (err) {
