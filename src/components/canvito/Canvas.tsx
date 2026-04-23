@@ -89,6 +89,54 @@ export function Canvas() {
     };
   }, []);
 
+  // Keyboard: Delete / Backspace removes the active object
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      // Don't hijack typing inside inputs / textareas / contenteditable
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
+      }
+      if (!canvas?.getActiveObject()) return;
+      e.preventDefault();
+      deleteActiveObject();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [canvas, deleteActiveObject]);
+
+  // Custom right-click menu on the workspace
+  const onContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!canvas?.getActiveObject()) {
+      setContextMenu(null);
+      return;
+    }
+    const rect = wrapperRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  // Dismiss context menu on any outside click / scroll / escape
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setContextMenu(null);
+    };
+    window.addEventListener("mousedown", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [contextMenu]);
+
+
   return (
     <div className="relative flex flex-1 flex-col bg-[var(--canvas-bg)]">
       {/* Subtle dot grid */}
