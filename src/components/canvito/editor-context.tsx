@@ -22,6 +22,7 @@ type EditorCtx = {
   addImageFromFile: (file: File) => Promise<void>;
   openImagePicker: () => void;
   addPage: () => void;
+  deleteActiveObject: () => void;
 };
 
 const EditorContext = createContext<EditorCtx | null>(null);
