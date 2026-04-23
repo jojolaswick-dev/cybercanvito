@@ -1,8 +1,11 @@
-import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize } from "lucide-react";
+import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEditor } from "./editor-context";
 
 export function BottomBar() {
-  const { zoom, setZoom, fitToScreen } = useEditor();
+  const { zoom, setZoom, fitToScreen, pages, activePageIndex, goToPage } = useEditor();
+  const totalPages = pages.length;
+  const canPrev = activePageIndex > 0;
+  const canNext = activePageIndex < totalPages - 1;
 
   return (
     <footer className="relative z-30 flex h-11 items-center justify-between border-t border-white/10 bg-cyber-bar px-3 text-white">
