@@ -307,6 +307,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         setZoom,
         fitToScreen,
         preset,
+        addImageFromSource,
+        addImageFromFile,
+        openImagePicker,
       }}
     >
       {children}
