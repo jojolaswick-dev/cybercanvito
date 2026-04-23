@@ -414,6 +414,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         addImageFromFile,
         openImagePicker,
         addPage,
+        deleteActiveObject,
       }}
     >
       {children}
