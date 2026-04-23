@@ -1,14 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, Plus } from "lucide-react";
+import { ImagePlus, Plus, Trash2 } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
 
 export function Canvas() {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
-  const { registerCanvas, addImageFromFile, openImagePicker, canvas, addPage } = useEditor();
+  const {
+    registerCanvas,
+    addImageFromFile,
+    openImagePicker,
+    canvas,
+    addPage,
+    deleteActiveObject,
+  } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
   const [hasObjects, setHasObjects] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     registerCanvas(canvasElRef.current, wrapperRef.current);
