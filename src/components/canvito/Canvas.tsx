@@ -1,14 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, Plus } from "lucide-react";
+import { ImagePlus, Plus, Trash2 } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
 
 export function Canvas() {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
-  const { registerCanvas, addImageFromFile, openImagePicker, canvas, addPage } = useEditor();
+  const {
+    registerCanvas,
+    addImageFromFile,
+    openImagePicker,
+    canvas,
+    addPage,
+    deleteActiveObject,
+  } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
   const [hasObjects, setHasObjects] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     registerCanvas(canvasElRef.current, wrapperRef.current);
@@ -81,6 +89,54 @@ export function Canvas() {
     };
   }, []);
 
+  // Keyboard: Delete / Backspace removes the active object
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      // Don't hijack typing inside inputs / textareas / contenteditable
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
+      }
+      if (!canvas?.getActiveObject()) return;
+      e.preventDefault();
+      deleteActiveObject();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [canvas, deleteActiveObject]);
+
+  // Custom right-click menu on the workspace
+  const onContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!canvas?.getActiveObject()) {
+      setContextMenu(null);
+      return;
+    }
+    const rect = wrapperRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  // Dismiss context menu on any outside click / scroll / escape
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setContextMenu(null);
+    };
+    window.addEventListener("mousedown", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [contextMenu]);
+
+
   return (
     <div className="relative flex flex-1 flex-col bg-[var(--canvas-bg)]">
       {/* Subtle dot grid */}
@@ -98,9 +154,32 @@ export function Canvas() {
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
+        onContextMenu={onContextMenu}
         className="relative flex-1 overflow-hidden"
       >
         <canvas ref={canvasElRef} />
+
+        {/* Custom context menu */}
+        {contextMenu && (
+          <div
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="absolute z-50 min-w-[160px] overflow-hidden rounded-lg border border-[oklch(0.85_0.01_270)] bg-white shadow-[0_8px_24px_oklch(0.2_0.05_270/0.18)]"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                deleteActiveObject();
+                setContextMenu(null);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[oklch(0.45_0.18_25)] transition-colors hover:bg-[oklch(0.97_0.02_25)]"
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir
+            </button>
+          </div>
+        )}
+
 
         {/* Central "+ Adicionar Imagem" CTA — visible while artboard is empty */}
         {!hasObjects && (
