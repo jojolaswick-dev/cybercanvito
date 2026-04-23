@@ -457,6 +457,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         openImagePicker,
         addPage,
         deleteActiveObject,
+        getPageCanvas,
         pages,
         activePageId,
       }}
