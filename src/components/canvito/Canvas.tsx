@@ -14,9 +14,9 @@ export function Canvas() {
     pages,
     addPage,
     addImageFromFile,
-    openImagePicker,
     activeCanvas,
     deleteActiveObject,
+    fitToScreen,
   } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -51,6 +51,19 @@ export function Canvas() {
       window.removeEventListener("drop", prevent);
     };
   }, []);
+
+  // ---------- Auto-fit on first mount (once the first canvas is ready) ----------
+  const didAutoFitRef = useRef(false);
+  useEffect(() => {
+    if (didAutoFitRef.current) return;
+    if (!activeCanvas) return;
+    // Defer one frame so the workspace has its final measured size
+    const id = requestAnimationFrame(() => {
+      fitToScreen();
+      didAutoFitRef.current = true;
+    });
+    return () => cancelAnimationFrame(id);
+  }, [activeCanvas, fitToScreen]);
 
   // ---------- Keyboard delete (Delete / Backspace) ----------
   useEffect(() => {
@@ -119,7 +132,12 @@ export function Canvas() {
       >
         <div className="flex flex-col items-center px-4 py-10">
           {pages.map((page, idx) => (
-            <PageBoard key={page.id} pageId={page.id} index={idx} />
+            <PageBoard
+              key={page.id}
+              pageId={page.id}
+              index={idx}
+              isLast={idx === pages.length - 1}
+            />
           ))}
 
           {/* "+ Adicionar página" — directly below the last sheet */}
@@ -165,17 +183,29 @@ export function Canvas() {
           </div>
         )}
       </div>
-
-      {/* Floating central CTA when artboard empty */}
-      <CenterCTA openImagePicker={openImagePicker} />
     </div>
   );
 }
 
-/** A single stacked page = one Fabric canvas instance, 20px gap below. */
-function PageBoard({ pageId, index }: { pageId: string; index: number }) {
+/** A single stacked page = one Fabric canvas instance, with a 30px gap below. */
+function PageBoard({
+  pageId,
+  index,
+  isLast,
+}: {
+  pageId: string;
+  index: number;
+  isLast: boolean;
+}) {
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
-  const { artboard, zoom, registerPageCanvas, setActivePageId, activePageId } = useEditor();
+  const {
+    artboard,
+    zoom,
+    registerPageCanvas,
+    setActivePageId,
+    activePageId,
+    openImagePicker,
+  } = useEditor();
 
   const scale = zoom / 100;
   const w = Math.round(artboard.width * scale);
@@ -185,8 +215,6 @@ function PageBoard({ pageId, index }: { pageId: string; index: number }) {
   useEffect(() => {
     registerPageCanvas(pageId, canvasElRef.current, artboard.width, artboard.height);
     return () => registerPageCanvas(pageId, null, artboard.width, artboard.height);
-    // We deliberately only run on mount/unmount; size changes are handled by
-    // the provider's resize effect (it updates dimensions on every canvas).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId]);
 
@@ -194,7 +222,8 @@ function PageBoard({ pageId, index }: { pageId: string; index: number }) {
 
   return (
     <div
-      className="mb-5 flex flex-col items-center"
+      className="flex flex-col items-center"
+      style={{ marginBottom: isLast ? 0 : 30 }}
       onMouseDown={() => setActivePageId(pageId)}
     >
       {/* Page label */}
@@ -222,46 +251,82 @@ function PageBoard({ pageId, index }: { pageId: string; index: number }) {
         style={{ width: w, height: h }}
       >
         <canvas ref={canvasElRef} />
+        <PageEmptyCTA pageId={pageId} openImagePicker={openImagePicker} />
       </div>
     </div>
   );
 }
 
-/** Visible CTA over the FIRST page when nothing has been added yet. */
-function CenterCTA({ openImagePicker }: { openImagePicker: () => void }) {
-  const { activeCanvas } = useEditor();
+/**
+ * The "+ Adicionar Imagem" CTA — lives INSIDE its own page, absolutely
+ * positioned only relative to that page's paper. Disappears as soon as the
+ * page has at least one non-artboard object.
+ */
+function PageEmptyCTA({
+  pageId,
+  openImagePicker,
+}: {
+  pageId: string;
+  openImagePicker: () => void;
+}) {
+  const { setActivePageId } = useEditor();
   const [hasObjects, setHasObjects] = useState(false);
+  const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
+
+  // Find this page's canvas. We poll briefly because the registration happens
+  // in an effect that may not have fired yet on the first render.
+  useEffect(() => {
+    let cancelled = false;
+    const tryFind = () => {
+      // Reach into the DOM: each PageBoard renders exactly one <canvas>
+      // managed by Fabric. We use a small retry instead of plumbing another
+      // ref through context.
+      const win = window as unknown as { __canvitoFindCanvas?: (id: string) => fabric.Canvas | null };
+      const found = win.__canvitoFindCanvas?.(pageId) ?? null;
+      if (cancelled) return;
+      if (found) setCanvas(found);
+      else requestAnimationFrame(tryFind);
+    };
+    tryFind();
+    return () => {
+      cancelled = true;
+    };
+  }, [pageId]);
 
   useEffect(() => {
-    if (!activeCanvas) return;
+    if (!canvas) return;
     const update = () => {
-      const count = activeCanvas
+      const count = canvas
         .getObjects()
         .filter((o) => !(o as fabric.Object & { isArtboard?: boolean }).isArtboard).length;
       setHasObjects(count > 0);
     };
     update();
-    activeCanvas.on("object:added", update);
-    activeCanvas.on("object:removed", update);
+    canvas.on("object:added", update);
+    canvas.on("object:removed", update);
     return () => {
-      activeCanvas.off("object:added", update);
-      activeCanvas.off("object:removed", update);
+      canvas.off("object:added", update);
+      canvas.off("object:removed", update);
     };
-  }, [activeCanvas]);
+  }, [canvas]);
 
   if (hasObjects) return null;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex items-start justify-center pt-32">
+    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
       <button
         type="button"
-        onClick={openImagePicker}
-        className="pointer-events-auto group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[oklch(0.7_0.05_280)] bg-white/60 px-8 py-6 text-[var(--background)] backdrop-blur-sm transition-all hover:border-[var(--neon-violet)] hover:bg-white/80 hover:shadow-[0_0_24px_oklch(0.55_0.28_295/0.35)]"
+        onClick={(e) => {
+          e.stopPropagation();
+          setActivePageId(pageId);
+          openImagePicker();
+        }}
+        className="pointer-events-auto group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[oklch(0.7_0.05_280)] bg-white/70 px-8 py-6 text-[var(--background)] backdrop-blur-sm transition-all hover:border-[var(--neon-violet)] hover:bg-white/90 hover:shadow-[0_0_24px_oklch(0.55_0.28_295/0.35)]"
       >
         <ImagePlus className="h-7 w-7 text-[var(--neon-violet)]" />
         <span className="text-sm font-semibold">+ Adicionar Imagem</span>
         <span className="text-xs text-[oklch(0.45_0.02_270)]">
-          Clique ou arraste uma imagem para o papel ativo
+          Clique ou arraste uma imagem para este papel
         </span>
       </button>
     </div>
