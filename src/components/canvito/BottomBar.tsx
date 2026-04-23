@@ -1,8 +1,11 @@
-import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize } from "lucide-react";
+import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEditor } from "./editor-context";
 
 export function BottomBar() {
-  const { zoom, setZoom, fitToScreen } = useEditor();
+  const { zoom, setZoom, fitToScreen, pages, activePageIndex, goToPage } = useEditor();
+  const totalPages = pages.length;
+  const canPrev = activePageIndex > 0;
+  const canNext = activePageIndex < totalPages - 1;
 
   return (
     <footer className="relative z-30 flex h-11 items-center justify-between border-t border-white/10 bg-cyber-bar px-3 text-white">
@@ -13,6 +16,32 @@ export function BottomBar() {
         <FootBtn icon={StickyNote} label="Notas" />
         <FootBtn icon={Timer} label="Temporizador" />
         <FootBtn icon={Subtitles} label="Legendas" />
+
+        {totalPages > 1 && (
+          <div className="ml-2 flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5">
+            <button
+              type="button"
+              onClick={() => canPrev && goToPage(activePageIndex - 1)}
+              disabled={!canPrev}
+              title="Página anterior"
+              className="flex h-6 w-6 items-center justify-center rounded text-white/80 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <span className="min-w-[44px] text-center text-xs font-medium tabular-nums text-white/90">
+              {activePageIndex + 1} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => canNext && goToPage(activePageIndex + 1)}
+              disabled={!canNext}
+              title="Próxima página"
+              className="flex h-6 w-6 items-center justify-center rounded text-white/80 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Right - zoom + view */}
