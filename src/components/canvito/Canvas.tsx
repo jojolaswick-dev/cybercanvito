@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, ChevronDown, ImagePlus } from "lucide-react";
+import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
 
 export function Canvas() {
