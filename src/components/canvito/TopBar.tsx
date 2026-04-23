@@ -1,8 +1,24 @@
 import { useState } from "react";
-import { ChevronDown, MessageSquare, Share2, Undo2, Redo2 } from "lucide-react";
+import { ChevronDown, MessageSquare, Share2, Undo2, Redo2, Square, RectangleVertical, Smartphone, Check } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useEditor, ARTBOARD_PRESETS, type ArtboardPresetId } from "./editor-context";
+
+const PRESET_ICONS: Record<ArtboardPresetId, React.ComponentType<{ className?: string }>> = {
+  square: Square,
+  portrait: RectangleVertical,
+  story: Smartphone,
+};
 
 export function TopBar() {
   const [name, setName] = useState("Design sem nome");
+  const { artboard, setArtboardPreset, preset } = useEditor();
 
   return (
     <header className="relative z-30 flex h-14 items-center justify-between border-b border-white/10 bg-cyber-bar px-3 text-white">
@@ -18,8 +34,65 @@ export function TopBar() {
         </div>
 
         <NavButton label="Arquivo" hasChevron />
-        <NavButton label="Redimensionar" />
+
+        {/* Redimensionar dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white">
+              Redimensionar
+              <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56 border-white/10 bg-[var(--panel)] text-white">
+            <DropdownMenuLabel className="text-white/60">Formato do papel</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-white/10" />
+            {(Object.keys(ARTBOARD_PRESETS) as ArtboardPresetId[]).map((id) => {
+              const p = ARTBOARD_PRESETS[id];
+              const Icon = PRESET_ICONS[id];
+              const active = preset === id;
+              return (
+                <DropdownMenuItem
+                  key={id}
+                  onSelect={() => setArtboardPreset(id)}
+                  className="flex cursor-pointer items-center gap-2 focus:bg-white/10 focus:text-white"
+                >
+                  <Icon className="h-4 w-4 text-[var(--neon-cyan)]" />
+                  <div className="flex flex-1 flex-col">
+                    <span className="text-sm">{p.label}</span>
+                    <span className="text-xs text-white/50">{p.width} × {p.height}</span>
+                  </div>
+                  {active && <Check className="h-3.5 w-3.5 text-[var(--electric-blue)]" />}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <NavButton label="Editar" hasChevron />
+
+        <div className="mx-2 h-6 w-px bg-white/15" />
+
+        {/* Quick preset shortcuts */}
+        <div className="flex items-center gap-0.5">
+          {(Object.keys(ARTBOARD_PRESETS) as ArtboardPresetId[]).map((id) => {
+            const Icon = PRESET_ICONS[id];
+            const active = preset === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setArtboardPreset(id)}
+                title={ARTBOARD_PRESETS[id].label}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition-all ${
+                  active
+                    ? "bg-white/15 text-white shadow-[inset_0_0_0_1px_var(--electric-blue)]"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            );
+          })}
+        </div>
 
         <div className="mx-2 h-6 w-px bg-white/15" />
         <IconBtn><Undo2 className="h-4 w-4" /></IconBtn>
@@ -33,7 +106,7 @@ export function TopBar() {
           onChange={(e) => setName(e.target.value)}
           className="rounded-md bg-white/5 px-3 py-1 text-sm font-medium text-white outline-none ring-1 ring-transparent transition-all hover:bg-white/10 focus:bg-white/10 focus:ring-[var(--electric-blue)]"
         />
-        <span className="text-xs text-white/60">1080 × 1080 px</span>
+        <span className="text-xs tabular-nums text-white/60">{artboard.width} × {artboard.height} px</span>
       </div>
 
       {/* Right */}
