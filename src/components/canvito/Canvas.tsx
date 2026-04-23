@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Plus } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
 
 export function Canvas() {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
-  const { registerCanvas, addImageFromFile, openImagePicker, canvas } = useEditor();
+  const { registerCanvas, addImageFromFile, openImagePicker, canvas, addPage } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
   const [hasObjects, setHasObjects] = useState(false);
 
@@ -127,6 +127,18 @@ export function Canvas() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* "+ Adicionar página" — centered below the canvas */}
+      <div className="relative z-10 flex shrink-0 items-center justify-center bg-[var(--canvas-bg)] py-3">
+        <button
+          type="button"
+          onClick={addPage}
+          className="inline-flex items-center gap-2 rounded-full border border-[oklch(0.85_0.01_270)] bg-white px-4 py-2 text-sm font-medium text-[var(--background)] shadow-sm transition-all hover:border-[var(--neon-violet)] hover:text-[var(--neon-violet)] hover:shadow-[0_0_16px_oklch(0.55_0.28_295/0.25)]"
+        >
+          <Plus className="h-4 w-4" />
+          Adicionar página
+        </button>
       </div>
 
     </div>
