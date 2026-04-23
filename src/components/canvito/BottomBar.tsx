@@ -2,7 +2,9 @@ import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Files
 import { useEditor } from "./editor-context";
 
 export function BottomBar() {
-  const { zoom, setZoom, fitToScreen } = useEditor();
+  const { zoom, setZoom, fitToScreen, pages, activePageId, showThumbnails, toggleThumbnails } =
+    useEditor();
+  const activeIndex = Math.max(0, pages.findIndex((p) => p.id === activePageId));
 
   return (
     <footer className="relative z-30 flex h-11 items-center justify-between border-t border-white/10 bg-cyber-bar px-3 text-white">
@@ -57,8 +59,22 @@ export function BottomBar() {
 
         <div className="mx-1 h-5 w-px bg-white/15" />
 
-        <FootBtn icon={Files} label="Páginas" />
-        <span className="text-xs text-white/60">1/1</span>
+        <button
+          onClick={toggleThumbnails}
+          aria-pressed={showThumbnails}
+          title={showThumbnails ? "Ocultar páginas" : "Mostrar páginas"}
+          className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors ${
+            showThumbnails
+              ? "bg-white/15 text-white"
+              : "text-white/80 hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          <Files className="h-3.5 w-3.5" />
+          <span>Páginas</span>
+        </button>
+        <span className="text-xs text-white/60 tabular-nums">
+          {activeIndex + 1}/{pages.length}
+        </span>
         <FootBtn icon={LayoutGrid} />
         <FootBtn icon={Maximize2} />
       </div>
