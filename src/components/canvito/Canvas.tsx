@@ -3,6 +3,17 @@ import { ImagePlus, Plus, Trash2 } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
 
+/** What was hit on right-click — used to choose menu options. */
+type CtxMenuState = {
+  /** Position relative to the scroll container. */
+  x: number;
+  y: number;
+  /** When true, the click landed on a selected (deletable) object. */
+  hasObject: boolean;
+  /** When set, the click landed on a page's paper at this artboard point. */
+  page?: { id: string; x: number; y: number };
+};
+
 /**
  * The Workspace = a single scrollable gray container. Pages stack vertically,
  * each one is its own Fabric canvas. The "+ Adicionar página" button sits at
@@ -15,13 +26,15 @@ export function Canvas() {
     addPage,
     deletePage,
     addImageFromFile,
+    openImagePicker,
+    getPageCanvas,
     activeCanvas,
     activePageId,
     deleteActiveObject,
     fitToScreen,
   } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<CtxMenuState | null>(null);
 
   // ---------- Drag & drop on the entire workspace ----------
   const onDragOver = (e: React.DragEvent) => {
@@ -95,13 +108,51 @@ export function Canvas() {
   // ---------- Right-click context menu ----------
   const onContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!activeCanvas?.getActiveObject()) {
-      setContextMenu(null);
-      return;
-    }
     const rect = scrollRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+
+    const localX = e.clientX - rect.left;
+    const localY = e.clientY - rect.top;
+
+    // 1) Object selected? -> show "Excluir" (existing behavior).
+    if (activeCanvas?.getActiveObject()) {
+      setContextMenu({ x: localX, y: localY, hasObject: true });
+      return;
+    }
+
+    // 2) Did the click land on a page's paper? Walk up from the event target
+    //    to find an element with data-page-id; if found, compute artboard-space
+    //    coords from its bounding box and the current zoom.
+    let node = e.target as HTMLElement | null;
+    let pageId: string | null = null;
+    let pageEl: HTMLElement | null = null;
+    while (node && node !== scrollRef.current) {
+      const id = node.dataset?.pageId;
+      if (id) {
+        pageId = id;
+        pageEl = node;
+        break;
+      }
+      node = node.parentElement;
+    }
+
+    if (pageId && pageEl) {
+      const fab = getPageCanvas(pageId);
+      const z = fab?.getZoom() ?? 1;
+      const pRect = pageEl.getBoundingClientRect();
+      const ax = (e.clientX - pRect.left) / z;
+      const ay = (e.clientY - pRect.top) / z;
+      setContextMenu({
+        x: localX,
+        y: localY,
+        hasObject: false,
+        page: { id: pageId, x: ax, y: ay },
+      });
+      return;
+    }
+
+    // 3) Empty workspace area outside any page — no menu.
+    setContextMenu(null);
   };
 
   useEffect(() => {
@@ -167,19 +218,37 @@ export function Canvas() {
           <div
             style={{ left: contextMenu.x, top: contextMenu.y, position: "absolute" }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="z-50 min-w-[160px] overflow-hidden rounded-lg border border-[oklch(0.85_0.01_270)] bg-white shadow-[0_8px_24px_oklch(0.2_0.05_270/0.18)]"
+            className="z-50 min-w-[180px] overflow-hidden rounded-lg border border-[oklch(0.85_0.01_270)] bg-white shadow-[0_8px_24px_oklch(0.2_0.05_270/0.18)]"
           >
-            <button
-              type="button"
-              onClick={() => {
-                deleteActiveObject();
-                setContextMenu(null);
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[oklch(0.45_0.18_25)] transition-colors hover:bg-[oklch(0.97_0.02_25)]"
-            >
-              <Trash2 className="h-4 w-4" />
-              Excluir
-            </button>
+            {contextMenu.hasObject && (
+              <button
+                type="button"
+                onClick={() => {
+                  deleteActiveObject();
+                  setContextMenu(null);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[oklch(0.45_0.18_25)] transition-colors hover:bg-[oklch(0.97_0.02_25)]"
+              >
+                <Trash2 className="h-4 w-4" />
+                Excluir
+              </button>
+            )}
+            {contextMenu.page && !contextMenu.hasObject && (
+              <button
+                type="button"
+                onClick={() => {
+                  const target = contextMenu.page;
+                  setContextMenu(null);
+                  if (target) {
+                    openImagePicker({ pageId: target.id, x: target.x, y: target.y });
+                  }
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--background)] transition-colors hover:bg-[oklch(0.97_0.02_295)] hover:text-[var(--neon-violet)]"
+              >
+                <ImagePlus className="h-4 w-4 text-[var(--neon-violet)]" />
+                + Adicionar Imagem
+              </button>
+            )}
           </div>
         )}
 
@@ -275,6 +344,7 @@ function PageBoard({
       {/* The actual paper — fixed dimensions, hidden overflow so nothing leaks
           out of the artboard rectangle. */}
       <div
+        data-page-id={pageId}
         className={
           "relative bg-white transition-shadow " +
           (isActive

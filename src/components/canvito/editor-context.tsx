@@ -14,6 +14,15 @@ export type PageState = {
   id: string;
 };
 
+/** A point inside a specific page's artboard (in artboard coordinates). */
+export type ImageInsertPoint = {
+  pageId: string;
+  /** X in artboard pixels (0..artboard.width). Centered if omitted. */
+  x?: number;
+  /** Y in artboard pixels (0..artboard.height). Centered if omitted. */
+  y?: number;
+};
+
 type EditorCtx = {
   /** The currently focused canvas (last interacted). Used by tool/sidebar actions. */
   activeCanvas: fabric.Canvas | null;
@@ -38,9 +47,9 @@ type EditorCtx = {
   setZoom: (z: number) => void;
   fitToScreen: () => void;
 
-  addImageFromSource: (src: string) => Promise<void>;
-  addImageFromFile: (file: File) => Promise<void>;
-  openImagePicker: () => void;
+  addImageFromSource: (src: string, at?: ImageInsertPoint) => Promise<void>;
+  addImageFromFile: (file: File, at?: ImageInsertPoint) => Promise<void>;
+  openImagePicker: (at?: ImageInsertPoint) => void;
 
   addPage: () => void;
   deletePage: (pageId: string) => void;
@@ -387,8 +396,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const addImageFromSource = useCallback(
-    async (src: string) => {
-      const c = canvasesRef.current.get(activePageIdRef.current ?? "");
+    async (src: string, at?: ImageInsertPoint) => {
+      const targetPageId = at?.pageId ?? activePageIdRef.current ?? "";
+      const c = canvasesRef.current.get(targetPageId);
       if (!c) return;
       try {
         const img = await fabric.FabricImage.fromURL(src, { crossOrigin: "anonymous" });
@@ -401,9 +411,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         const scale = Math.min(maxScale, 1);
         img.scale(scale);
 
+        const cx = at?.x ?? aw / 2;
+        const cy = at?.y ?? ah / 2;
+
         img.set({
-          left: aw / 2,
-          top: ah / 2,
+          left: cx,
+          top: cy,
           originX: "center",
           originY: "center",
           cornerColor: "#ffffff",
@@ -434,7 +447,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   );
 
   const addImageFromFile = useCallback(
-    async (file: File) => {
+    async (file: File, at?: ImageInsertPoint) => {
       if (!file.type.startsWith("image/")) return;
       const reader = new FileReader();
       const dataUrl: string = await new Promise((resolve, reject) => {
@@ -442,27 +455,37 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(file);
       });
-      await addImageFromSource(dataUrl);
+      await addImageFromSource(dataUrl, at);
     },
     [addImageFromSource],
   );
 
-  const openImagePicker = useCallback(() => {
-    if (!fileInputRef.current) {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*";
-      input.style.display = "none";
-      input.addEventListener("change", () => {
-        const f = input.files?.[0];
-        if (f) addImageFromFile(f);
-        input.value = "";
-      });
-      document.body.appendChild(input);
-      fileInputRef.current = input;
-    }
-    fileInputRef.current.click();
-  }, [addImageFromFile]);
+  // Pending insertion point used by openImagePicker(at) — applied to the next
+  // file selected via the shared <input type=file>.
+  const pendingInsertAtRef = useRef<ImageInsertPoint | null>(null);
+
+  const openImagePicker = useCallback(
+    (at?: ImageInsertPoint) => {
+      pendingInsertAtRef.current = at ?? null;
+      if (!fileInputRef.current) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.style.display = "none";
+        input.addEventListener("change", () => {
+          const f = input.files?.[0];
+          const target = pendingInsertAtRef.current;
+          pendingInsertAtRef.current = null;
+          if (f) addImageFromFile(f, target ?? undefined);
+          input.value = "";
+        });
+        document.body.appendChild(input);
+        fileInputRef.current = input;
+      }
+      fileInputRef.current.click();
+    },
+    [addImageFromFile],
+  );
 
   useEffect(() => {
     return () => {
