@@ -401,7 +401,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       const c = canvasesRef.current.get(targetPageId);
       if (!c) return;
       try {
-        const img = await fabric.FabricImage.fromURL(src, { crossOrigin: "anonymous" });
+        // DataURLs must NOT pass crossOrigin (causes a silent CORS failure on some browsers).
+        const isDataUrl = src.startsWith("data:");
+        const img = await fabric.FabricImage.fromURL(
+          src,
+          isDataUrl ? {} : { crossOrigin: "anonymous" },
+        );
 
         const aw = artboard.width;
         const ah = artboard.height;
