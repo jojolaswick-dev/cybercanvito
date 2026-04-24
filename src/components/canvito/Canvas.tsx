@@ -212,7 +212,10 @@ function PageBoard({
     setActivePageId,
     activePageId,
     openImagePicker,
+    deletePage,
+    pages,
   } = useEditor();
+  const canDelete = pages.length > 1;
 
   const scale = zoom / 100;
   const w = Math.round(artboard.width * scale);
