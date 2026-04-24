@@ -213,42 +213,61 @@ export function Canvas() {
           </div>
         </div>
 
-        {/* Custom right-click menu */}
+      {/* Custom right-click menu — Cyberpunk dark style */}
         {contextMenu && (
           <div
             style={{ left: contextMenu.x, top: contextMenu.y, position: "absolute" }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="z-50 min-w-[180px] overflow-hidden rounded-lg border border-[oklch(0.85_0.01_270)] bg-white shadow-[0_8px_24px_oklch(0.2_0.05_270/0.18)]"
+            onContextMenu={(e) => e.preventDefault()}
+            className="z-50 min-w-[200px] overflow-hidden rounded-lg border border-[var(--neon-violet)]/40 bg-[oklch(0.18_0.03_280)]/95 shadow-[0_10px_30px_oklch(0.55_0.28_295/0.35),0_0_0_1px_oklch(0.55_0.28_295/0.15)] backdrop-blur-md"
           >
-            {contextMenu.hasObject && (
+            {contextMenu.hasObject ? (
               <button
                 type="button"
                 onClick={() => {
                   deleteActiveObject();
                   setContextMenu(null);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[oklch(0.45_0.18_25)] transition-colors hover:bg-[oklch(0.97_0.02_25)]"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.85_0.18_25)] transition-colors hover:bg-[oklch(0.5_0.22_25)]/20 hover:text-[oklch(0.92_0.2_25)]"
               >
                 <Trash2 className="h-4 w-4" />
-                Excluir
+                Deletar Imagem
               </button>
-            )}
-            {contextMenu.page && !contextMenu.hasObject && (
-              <button
-                type="button"
-                onClick={() => {
-                  const target = contextMenu.page;
-                  setContextMenu(null);
-                  if (target) {
-                    openImagePicker({ pageId: target.id, x: target.x, y: target.y });
-                  }
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--background)] transition-colors hover:bg-[oklch(0.97_0.02_295)] hover:text-[var(--neon-violet)]"
-              >
-                <ImagePlus className="h-4 w-4 text-[var(--neon-violet)]" />
-                + Adicionar Imagem
-              </button>
-            )}
+            ) : contextMenu.page ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = contextMenu.page;
+                    setContextMenu(null);
+                    if (target) {
+                      openImagePicker({ pageId: target.id, x: target.x, y: target.y });
+                    }
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.95_0.01_280)] transition-colors hover:bg-[var(--neon-violet)]/20 hover:text-[var(--neon-violet)]"
+                >
+                  <ImagePlus className="h-4 w-4 text-[var(--neon-violet)]" />
+                  Adicionar Imagem
+                </button>
+                <div className="h-px bg-[var(--neon-violet)]/20" />
+                <button
+                  type="button"
+                  disabled={pages.length <= 1}
+                  onClick={() => {
+                    const target = contextMenu.page;
+                    setContextMenu(null);
+                    if (target && pages.length > 1) {
+                      deletePage(target.id);
+                    }
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.85_0.18_25)] transition-colors hover:bg-[oklch(0.5_0.22_25)]/20 hover:text-[oklch(0.92_0.2_25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                  title={pages.length <= 1 ? "Não é possível excluir a única página" : "Deletar esta página"}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Deletar Página
+                </button>
+              </>
+            ) : null}
           </div>
         )}
 
