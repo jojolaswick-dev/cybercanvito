@@ -29,14 +29,18 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Cyber Canvito" },
+      { name: "description", content: "O mini Canva do Paraguai" },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Cyber Canvito" },
+      { property: "og:description", content: "O mini Canva do Paraguai" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Cyber Canvito" },
+      { name: "twitter:description", content: "O mini Canva do Paraguai" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/UE4xQEBrpRQga7N8e873ArXGlni1/social-images/social-1777069736509-ChatGPT_Image_24_de_abr._de_2026,_19_27_50.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/UE4xQEBrpRQga7N8e873ArXGlni1/social-images/social-1777069736509-ChatGPT_Image_24_de_abr._de_2026,_19_27_50.webp" },
     ],
     links: [
       {
