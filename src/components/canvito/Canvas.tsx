@@ -108,13 +108,51 @@ export function Canvas() {
   // ---------- Right-click context menu ----------
   const onContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!activeCanvas?.getActiveObject()) {
-      setContextMenu(null);
-      return;
-    }
     const rect = scrollRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+
+    const localX = e.clientX - rect.left;
+    const localY = e.clientY - rect.top;
+
+    // 1) Object selected? -> show "Excluir" (existing behavior).
+    if (activeCanvas?.getActiveObject()) {
+      setContextMenu({ x: localX, y: localY, hasObject: true });
+      return;
+    }
+
+    // 2) Did the click land on a page's paper? Walk up from the event target
+    //    to find an element with data-page-id; if found, compute artboard-space
+    //    coords from its bounding box and the current zoom.
+    let node = e.target as HTMLElement | null;
+    let pageId: string | null = null;
+    let pageEl: HTMLElement | null = null;
+    while (node && node !== scrollRef.current) {
+      const id = node.dataset?.pageId;
+      if (id) {
+        pageId = id;
+        pageEl = node;
+        break;
+      }
+      node = node.parentElement;
+    }
+
+    if (pageId && pageEl) {
+      const fab = getPageCanvas(pageId);
+      const z = fab?.getZoom() ?? 1;
+      const pRect = pageEl.getBoundingClientRect();
+      const ax = (e.clientX - pRect.left) / z;
+      const ay = (e.clientY - pRect.top) / z;
+      setContextMenu({
+        x: localX,
+        y: localY,
+        hasObject: false,
+        page: { id: pageId, x: ax, y: ay },
+      });
+      return;
+    }
+
+    // 3) Empty workspace area outside any page — no menu.
+    setContextMenu(null);
   };
 
   useEffect(() => {
