@@ -136,7 +136,6 @@ export function Canvas() {
               key={page.id}
               pageId={page.id}
               index={idx}
-              isLast={idx === pages.length - 1}
             />
           ))}
 
@@ -187,15 +186,13 @@ export function Canvas() {
   );
 }
 
-/** A single stacked page = one Fabric canvas instance, with a 30px gap below. */
+/** A single stacked page = one Fabric canvas instance, with a 20px gap below. */
 function PageBoard({
   pageId,
   index,
-  isLast,
 }: {
   pageId: string;
   index: number;
-  isLast: boolean;
 }) {
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const {
@@ -221,9 +218,11 @@ function PageBoard({
   const isActive = activePageId === pageId;
 
   return (
+    // Outer wrapper: fixed-shrink so it never collapses, centered on the
+    // workspace's central axis, 20px gap below.
     <div
       className="flex flex-col items-center"
-      style={{ marginBottom: isLast ? 0 : 30 }}
+      style={{ flexShrink: 0, marginBottom: 20 }}
       onMouseDown={() => setActivePageId(pageId)}
     >
       {/* Page label */}
@@ -240,7 +239,8 @@ function PageBoard({
         </span>
       </div>
 
-      {/* The actual paper */}
+      {/* The actual paper — fixed dimensions, hidden overflow so nothing leaks
+          out of the artboard rectangle. */}
       <div
         className={
           "relative bg-white transition-shadow " +
@@ -248,7 +248,12 @@ function PageBoard({
             ? "shadow-[0_18px_50px_-12px_oklch(0.55_0.28_295/0.45)] ring-2 ring-[var(--neon-violet)]/50"
             : "shadow-[0_12px_40px_-12px_oklch(0.2_0.05_270/0.35)]")
         }
-        style={{ width: w, height: h }}
+        style={{
+          width: w,
+          height: h,
+          flexShrink: 0,
+          overflow: "hidden",
+        }}
       >
         <canvas ref={canvasElRef} />
         <PageEmptyCTA pageId={pageId} openImagePicker={openImagePicker} />
