@@ -76,13 +76,21 @@ export function Canvas() {
         const tag = target.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
       }
-      if (!activeCanvas?.getActiveObject()) return;
-      e.preventDefault();
-      deleteActiveObject();
+      // Object selected? -> delete the object (existing behavior).
+      if (activeCanvas?.getActiveObject()) {
+        e.preventDefault();
+        deleteActiveObject();
+        return;
+      }
+      // No selection? -> delete the active page (only if more than one exists).
+      if (activePageId && pages.length > 1) {
+        e.preventDefault();
+        deletePage(activePageId);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeCanvas, deleteActiveObject]);
+  }, [activeCanvas, deleteActiveObject, activePageId, pages.length, deletePage]);
 
   // ---------- Right-click context menu ----------
   const onContextMenu = (e: React.MouseEvent) => {
