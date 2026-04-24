@@ -43,6 +43,7 @@ type EditorCtx = {
   openImagePicker: () => void;
 
   addPage: () => void;
+  deletePage: (pageId: string) => void;
   deleteActiveObject: () => void;
 
   /** Read the live Fabric.Canvas for a given page (null if not registered yet). */
