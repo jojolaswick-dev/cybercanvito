@@ -38,9 +38,9 @@ type EditorCtx = {
   setZoom: (z: number) => void;
   fitToScreen: () => void;
 
-  addImageFromSource: (src: string) => Promise<void>;
-  addImageFromFile: (file: File) => Promise<void>;
-  openImagePicker: () => void;
+  addImageFromSource: (src: string, at?: ImageInsertPoint) => Promise<void>;
+  addImageFromFile: (file: File, at?: ImageInsertPoint) => Promise<void>;
+  openImagePicker: (at?: ImageInsertPoint) => void;
 
   addPage: () => void;
   deletePage: (pageId: string) => void;
