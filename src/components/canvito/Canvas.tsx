@@ -344,6 +344,7 @@ function PageBoard({
       {/* The actual paper — fixed dimensions, hidden overflow so nothing leaks
           out of the artboard rectangle. */}
       <div
+        data-page-id={pageId}
         className={
           "relative bg-white transition-shadow " +
           (isActive
