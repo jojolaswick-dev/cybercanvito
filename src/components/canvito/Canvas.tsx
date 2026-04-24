@@ -114,15 +114,9 @@ export function Canvas() {
     const localX = e.clientX - rect.left;
     const localY = e.clientY - rect.top;
 
-    // 1) Object selected? -> show "Excluir" (existing behavior).
-    if (activeCanvas?.getActiveObject()) {
-      setContextMenu({ x: localX, y: localY, hasObject: true });
-      return;
-    }
-
-    // 2) Did the click land on a page's paper? Walk up from the event target
-    //    to find an element with data-page-id; if found, compute artboard-space
-    //    coords from its bounding box and the current zoom.
+    // 1) Walk up from the event target to find which page (if any) was hit.
+    //    This works for ALL pages — including page 1 — and regardless of
+    //    selection state on any other canvas.
     let node = e.target as HTMLElement | null;
     let pageId: string | null = null;
     let pageEl: HTMLElement | null = null;
@@ -142,6 +136,36 @@ export function Canvas() {
       const pRect = pageEl.getBoundingClientRect();
       const ax = (e.clientX - pRect.left) / z;
       const ay = (e.clientY - pRect.top) / z;
+
+      // 2) Only treat as "object click" if the right-click actually landed on a
+      //    real (non-artboard) Fabric object on THIS page. We hit-test in
+      //    artboard coordinates so the result is independent of zoom.
+      let hitObject = false;
+      if (fab) {
+        const objs = fab.getObjects();
+        for (let i = objs.length - 1; i >= 0; i--) {
+          const o = objs[i] as fabric.Object & { isArtboard?: boolean };
+          if (o.isArtboard) continue;
+          // Fabric's containsPoint expects a Point in canvas (artboard) coords.
+          if (typeof o.containsPoint === "function") {
+            try {
+              if (o.containsPoint({ x: ax, y: ay } as fabric.Point)) {
+                hitObject = true;
+                break;
+              }
+            } catch {
+              // ignore – fall through to background menu
+            }
+          }
+        }
+      }
+
+      if (hitObject) {
+        // Make sure the page whose object we're acting on is the active one.
+        setContextMenu({ x: localX, y: localY, hasObject: true });
+        return;
+      }
+
       setContextMenu({
         x: localX,
         y: localY,
