@@ -218,19 +218,37 @@ export function Canvas() {
           <div
             style={{ left: contextMenu.x, top: contextMenu.y, position: "absolute" }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="z-50 min-w-[160px] overflow-hidden rounded-lg border border-[oklch(0.85_0.01_270)] bg-white shadow-[0_8px_24px_oklch(0.2_0.05_270/0.18)]"
+            className="z-50 min-w-[180px] overflow-hidden rounded-lg border border-[oklch(0.85_0.01_270)] bg-white shadow-[0_8px_24px_oklch(0.2_0.05_270/0.18)]"
           >
-            <button
-              type="button"
-              onClick={() => {
-                deleteActiveObject();
-                setContextMenu(null);
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[oklch(0.45_0.18_25)] transition-colors hover:bg-[oklch(0.97_0.02_25)]"
-            >
-              <Trash2 className="h-4 w-4" />
-              Excluir
-            </button>
+            {contextMenu.hasObject && (
+              <button
+                type="button"
+                onClick={() => {
+                  deleteActiveObject();
+                  setContextMenu(null);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[oklch(0.45_0.18_25)] transition-colors hover:bg-[oklch(0.97_0.02_25)]"
+              >
+                <Trash2 className="h-4 w-4" />
+                Excluir
+              </button>
+            )}
+            {contextMenu.page && !contextMenu.hasObject && (
+              <button
+                type="button"
+                onClick={() => {
+                  const target = contextMenu.page;
+                  setContextMenu(null);
+                  if (target) {
+                    openImagePicker({ pageId: target.id, x: target.x, y: target.y });
+                  }
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--background)] transition-colors hover:bg-[oklch(0.97_0.02_295)] hover:text-[var(--neon-violet)]"
+              >
+                <ImagePlus className="h-4 w-4 text-[var(--neon-violet)]" />
+                + Adicionar Imagem
+              </button>
+            )}
           </div>
         )}
 
