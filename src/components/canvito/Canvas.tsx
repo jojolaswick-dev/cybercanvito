@@ -13,8 +13,10 @@ export function Canvas() {
   const {
     pages,
     addPage,
+    deletePage,
     addImageFromFile,
     activeCanvas,
+    activePageId,
     deleteActiveObject,
     fitToScreen,
   } = useEditor();
