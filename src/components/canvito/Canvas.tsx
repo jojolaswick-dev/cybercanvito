@@ -26,13 +26,15 @@ export function Canvas() {
     addPage,
     deletePage,
     addImageFromFile,
+    openImagePicker,
+    getPageCanvas,
     activeCanvas,
     activePageId,
     deleteActiveObject,
     fitToScreen,
   } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<CtxMenuState | null>(null);
 
   // ---------- Drag & drop on the entire workspace ----------
   const onDragOver = (e: React.DragEvent) => {
