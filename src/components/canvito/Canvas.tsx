@@ -238,7 +238,7 @@ function PageBoard({
       style={{ flexShrink: 0, marginBottom: 20 }}
       onMouseDown={() => setActivePageId(pageId)}
     >
-      {/* Page label */}
+      {/* Page label + delete button */}
       <div className="mb-2 flex items-center gap-2 text-xs font-medium text-[oklch(0.45_0.02_270)]">
         <span
           className={
@@ -250,6 +250,26 @@ function PageBoard({
         >
           Página {index + 1}
         </span>
+        <button
+          type="button"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!canDelete) return;
+            deletePage(pageId);
+          }}
+          disabled={!canDelete}
+          title={canDelete ? "Excluir esta página" : "Não é possível excluir a única página"}
+          aria-label="Excluir página"
+          className={
+            "inline-flex h-6 w-6 items-center justify-center rounded-full border transition-all " +
+            (canDelete
+              ? "cursor-pointer border-[oklch(0.85_0.01_270)] bg-white/80 text-[oklch(0.45_0.18_25)] hover:border-[oklch(0.55_0.22_25)] hover:bg-[oklch(0.97_0.02_25)] hover:text-[oklch(0.45_0.22_25)]"
+              : "cursor-not-allowed border-[oklch(0.9_0.005_270)] bg-white/40 text-[oklch(0.75_0.01_270)] opacity-60")
+          }
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
 
       {/* The actual paper — fixed dimensions, hidden overflow so nothing leaks
