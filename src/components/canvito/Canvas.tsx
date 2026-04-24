@@ -3,6 +3,17 @@ import { ImagePlus, Plus, Trash2 } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
 
+/** What was hit on right-click — used to choose menu options. */
+type CtxMenuState = {
+  /** Position relative to the scroll container. */
+  x: number;
+  y: number;
+  /** When true, the click landed on a selected (deletable) object. */
+  hasObject: boolean;
+  /** When set, the click landed on a page's paper at this artboard point. */
+  page?: { id: string; x: number; y: number };
+};
+
 /**
  * The Workspace = a single scrollable gray container. Pages stack vertically,
  * each one is its own Fabric canvas. The "+ Adicionar página" button sits at
