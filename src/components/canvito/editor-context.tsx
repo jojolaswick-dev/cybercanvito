@@ -492,6 +492,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         addImageFromFile,
         openImagePicker,
         addPage,
+        deletePage,
         deleteActiveObject,
         getPageCanvas,
         pages,
