@@ -43,6 +43,7 @@ type EditorCtx = {
   openImagePicker: () => void;
 
   addPage: () => void;
+  deletePage: (pageId: string) => void;
   deleteActiveObject: () => void;
 
   /** Read the live Fabric.Canvas for a given page (null if not registered yet). */
@@ -324,6 +325,41 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setPages((prev) => [...prev, { id: makePageId() }]);
   }, []);
 
+  const deletePage = useCallback((pageId: string) => {
+    setPages((prev) => {
+      // Security rule: never delete the last remaining page.
+      if (prev.length <= 1) return prev;
+      const idx = prev.findIndex((p) => p.id === pageId);
+      if (idx === -1) return prev;
+      const next = prev.filter((p) => p.id !== pageId);
+
+      // Dispose the Fabric instance for the removed page.
+      const map = canvasesRef.current;
+      const fab = map.get(pageId);
+      if (fab) {
+        fab.dispose();
+        map.delete(pageId);
+      }
+
+      // If the deleted page was the active one, fall back to a neighbor.
+      if (activePageIdRef.current === pageId) {
+        const fallback = next[idx] ?? next[idx - 1] ?? next[0];
+        if (fallback) {
+          const fc = map.get(fallback.id) ?? null;
+          activePageIdRef.current = fallback.id;
+          setActivePageIdState(fallback.id);
+          setActiveCanvas(fc);
+        } else {
+          activePageIdRef.current = null;
+          setActivePageIdState(null);
+          setActiveCanvas(null);
+        }
+      }
+
+      return next;
+    });
+  }, []);
+
   const getPageCanvas = useCallback(
     (pageId: string) => canvasesRef.current.get(pageId) ?? null,
     [],
@@ -456,6 +492,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         addImageFromFile,
         openImagePicker,
         addPage,
+        deletePage,
         deleteActiveObject,
         getPageCanvas,
         pages,
