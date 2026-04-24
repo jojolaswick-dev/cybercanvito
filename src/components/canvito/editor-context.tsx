@@ -14,6 +14,15 @@ export type PageState = {
   id: string;
 };
 
+/** A point inside a specific page's artboard (in artboard coordinates). */
+export type ImageInsertPoint = {
+  pageId: string;
+  /** X in artboard pixels (0..artboard.width). Centered if omitted. */
+  x?: number;
+  /** Y in artboard pixels (0..artboard.height). Centered if omitted. */
+  y?: number;
+};
+
 type EditorCtx = {
   /** The currently focused canvas (last interacted). Used by tool/sidebar actions. */
   activeCanvas: fabric.Canvas | null;
