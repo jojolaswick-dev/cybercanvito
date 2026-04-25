@@ -5,13 +5,14 @@ import { useEditor } from "./editor-context";
 
 /** What was hit on right-click — used to choose menu options. */
 type CtxMenuState = {
-  /** Position relative to the scroll container. */
+  /** Position relative to the page paper. */
   x: number;
   y: number;
   /** When true, the click landed on a selected (deletable) object. */
   hasObject: boolean;
-  /** When set, the click landed on a page's paper at this artboard point. */
-  page?: { id: string; x: number; y: number };
+  /** Artboard coordinates where an uploaded image should be inserted. */
+  insertX: number;
+  insertY: number;
 };
 
 /**
@@ -172,9 +173,12 @@ function PageBoard({
     activePageId,
     openImagePicker,
     deletePage,
+    deleteActiveObject,
+    getPageCanvas,
     pages,
   } = useEditor();
   const canDelete = pages.length > 1;
+  const [contextMenu, setContextMenu] = useState<CtxMenuState | null>(null);
 
   const scale = zoom / 100;
   const w = Math.round(artboard.width * scale);
@@ -188,6 +192,62 @@ function PageBoard({
   }, [pageId]);
 
   const isActive = activePageId === pageId;
+
+  const onAddImage = (x?: number, y?: number) => {
+    setActivePageId(pageId);
+    openImagePicker(x === undefined || y === undefined ? { pageId } : { pageId, x, y });
+  };
+
+  const onContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActivePageId(pageId);
+
+    const pageEl = e.currentTarget;
+    const rect = pageEl.getBoundingClientRect();
+    const fab = getPageCanvas(pageId);
+    const z = fab?.getZoom() ?? 1;
+    const localX = e.clientX - rect.left;
+    const localY = e.clientY - rect.top;
+    const ax = localX / z;
+    const ay = localY / z;
+
+    let hitObject: fabric.Object | null = null;
+    if (fab) {
+      const objs = fab.getObjects();
+      for (let i = objs.length - 1; i >= 0; i--) {
+        const obj = objs[i] as fabric.Object & { isArtboard?: boolean };
+        if (obj.isArtboard) continue;
+        try {
+          if (obj.containsPoint({ x: ax, y: ay } as fabric.Point)) {
+            hitObject = obj;
+            break;
+          }
+        } catch {
+          // fall through to the page background menu
+        }
+      }
+      if (hitObject) fab.setActiveObject(hitObject);
+    }
+
+    setContextMenu({ x: localX, y: localY, hasObject: Boolean(hitObject), insertX: ax, insertY: ay });
+  };
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setContextMenu(null);
+    };
+    window.addEventListener("mousedown", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [contextMenu]);
 
   return (
     // Outer wrapper: fixed-shrink so it never collapses, centered on the
@@ -235,6 +295,7 @@ function PageBoard({
           out of the artboard rectangle. */}
       <div
         data-page-id={pageId}
+        onContextMenu={onContextMenu}
         className={
           "relative bg-white transition-shadow " +
           (isActive
@@ -249,7 +310,59 @@ function PageBoard({
         }}
       >
         <canvas ref={canvasElRef} />
-        <PageEmptyCTA pageId={pageId} openImagePicker={openImagePicker} />
+        <PageEmptyCTA pageId={pageId} onAddImage={onAddImage} />
+
+        {contextMenu && (
+          <div
+            style={{ left: contextMenu.x, top: contextMenu.y, position: "absolute" }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onContextMenu={(e) => e.preventDefault()}
+            className="z-50 min-w-[200px] overflow-hidden rounded-lg border border-[var(--neon-violet)]/40 bg-[oklch(0.18_0.03_280)]/95 shadow-[0_10px_30px_oklch(0.55_0.28_295/0.35),0_0_0_1px_oklch(0.55_0.28_295/0.15)] backdrop-blur-md"
+          >
+            {contextMenu.hasObject ? (
+              <button
+                type="button"
+                onClick={() => {
+                  deleteActiveObject();
+                  setContextMenu(null);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.85_0.18_25)] transition-colors hover:bg-[oklch(0.5_0.22_25)]/20 hover:text-[oklch(0.92_0.2_25)]"
+              >
+                <Trash2 className="h-4 w-4" />
+                Deletar Imagem
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={false}
+                  onClick={() => {
+                    onAddImage(contextMenu.insertX, contextMenu.insertY);
+                    setContextMenu(null);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.95_0.01_280)] transition-colors hover:bg-[var(--neon-violet)]/20 hover:text-[var(--neon-violet)]"
+                >
+                  <ImagePlus className="h-4 w-4 text-[var(--neon-violet)]" />
+                  Adicionar Imagem
+                </button>
+                <div className="h-px bg-[var(--neon-violet)]/20" />
+                <button
+                  type="button"
+                  disabled={!canDelete}
+                  onClick={() => {
+                    setContextMenu(null);
+                    if (canDelete) deletePage(pageId);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.85_0.18_25)] transition-colors hover:bg-[oklch(0.5_0.22_25)]/20 hover:text-[oklch(0.92_0.2_25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                  title={canDelete ? "Deletar esta página" : "Não é possível excluir a única página"}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Deletar Página
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
