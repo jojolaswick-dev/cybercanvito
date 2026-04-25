@@ -471,6 +471,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
   const openImagePicker = useCallback(
     (at?: ImageInsertPoint) => {
+      if (at?.pageId) {
+        activePageIdRef.current = at.pageId;
+        setActivePageIdState(at.pageId);
+        setActiveCanvas(canvasesRef.current.get(at.pageId) ?? null);
+      }
       pendingInsertAtRef.current = at ?? null;
       if (!fileInputRef.current) {
         const input = document.createElement("input");
