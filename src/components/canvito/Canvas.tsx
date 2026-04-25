@@ -30,6 +30,7 @@ export function Canvas() {
     getPageCanvas,
     activeCanvas,
     activePageId,
+    setActivePageId,
     deleteActiveObject,
     fitToScreen,
   } = useEditor();
@@ -261,10 +262,12 @@ export function Canvas() {
               <>
                 <button
                   type="button"
+                  disabled={false}
                   onClick={() => {
                     const target = contextMenu.page;
                     setContextMenu(null);
                     if (target) {
+                      setActivePageId(target.id);
                       openImagePicker({ pageId: target.id, x: target.x, y: target.y });
                     }
                   }}
