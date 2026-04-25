@@ -1,4 +1,5 @@
 import { useState, type ComponentType, type ReactNode } from "react";
+import * as fabric from "fabric";
 import {
   ArrowLeftRight,
   ArrowUpDown,
@@ -42,6 +43,16 @@ const PRESET_ICONS: Record<ArtboardPresetId, ComponentType<{ className?: string 
   square: Square,
   portrait: RectangleVertical,
   story: Smartphone,
+};
+
+type EditFilter = "sepia" | "bandicoot" | "grayscale" | "bw" | "negative";
+
+const CSS_FILTERS: Record<EditFilter, string> = {
+  sepia: "sepia(100%)",
+  bandicoot: "sepia(50%) saturate(150%) hue-rotate(-30deg)",
+  grayscale: "grayscale(100%)",
+  bw: "contrast(150%) grayscale(100%)",
+  negative: "invert(100%)",
 };
 
 export function TopBar() {
