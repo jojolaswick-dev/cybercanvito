@@ -63,6 +63,10 @@ export function TopBar() {
     window.alert(`${label}: Em breve`);
   };
 
+  const showDevelopmentToast = () => {
+    toast.info("Funcionalidade em desenvolvimento");
+  };
+
   const moveToTrash = () => {
     if (activeCanvas?.getActiveObject()) {
       deleteActiveObject();
@@ -249,6 +253,32 @@ function FileMenuItem({
       <Icon className={`h-4 w-4 ${danger ? "text-[var(--destructive)]" : "text-[var(--neon-cyan)]"}`} />
       <span className="flex-1">{label}</span>
       <DropdownMenuShortcut className="ml-4 tracking-normal text-white/45">{shortcut}</DropdownMenuShortcut>
+    </DropdownMenuItem>
+  );
+}
+
+function EditMenuItem({
+  icon: Icon,
+  label,
+  shortcut,
+  disabled,
+  onSelect,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  shortcut?: string;
+  disabled?: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <DropdownMenuItem
+      disabled={disabled}
+      onSelect={onSelect}
+      className="flex cursor-pointer items-center gap-3 rounded-md px-2.5 py-2 text-sm text-white/90 focus:bg-white/10 focus:text-white disabled:cursor-not-allowed disabled:text-white/35 disabled:opacity-100"
+    >
+      <Icon className={`h-4 w-4 ${disabled ? "text-white/35" : "text-[var(--neon-cyan)]"}`} />
+      <span className="flex-1">{label}</span>
+      {shortcut && <DropdownMenuShortcut className="ml-4 tracking-normal text-white/45">{shortcut}</DropdownMenuShortcut>}
     </DropdownMenuItem>
   );
 }
