@@ -375,12 +375,12 @@ function PageBoard({
  */
 function PageEmptyCTA({
   pageId,
-  openImagePicker,
+  onAddImage,
 }: {
   pageId: string;
-  openImagePicker: () => void;
+  onAddImage: () => void;
 }) {
-  const { setActivePageId, getPageCanvas } = useEditor();
+  const { getPageCanvas } = useEditor();
   const [hasObjects, setHasObjects] = useState(false);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
 
@@ -425,8 +425,7 @@ function PageEmptyCTA({
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          setActivePageId(pageId);
-          openImagePicker();
+          onAddImage();
         }}
         className="pointer-events-auto group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[oklch(0.7_0.05_280)] bg-white/70 px-8 py-6 text-[var(--background)] backdrop-blur-sm transition-all hover:border-[var(--neon-violet)] hover:bg-white/90 hover:shadow-[0_0_24px_oklch(0.55_0.28_295/0.35)]"
       >
