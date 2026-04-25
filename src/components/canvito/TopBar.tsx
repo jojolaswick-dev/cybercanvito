@@ -1,21 +1,32 @@
 import { useState, type ComponentType, type ReactNode } from "react";
 import {
+  ArrowLeftRight,
+  ArrowUpDown,
+  CircleDot,
   Check,
   ChevronDown,
+  Cloud,
   CloudUpload,
   Download,
   FileText,
   MessageSquare,
   Printer,
   Redo2,
+  RefreshCw,
   Settings,
   Share2,
+  Scaling,
   Smartphone,
   Square,
   RectangleVertical,
+  RotateCcw,
+  RotateCw,
+  Sun,
   Trash2,
   Undo2,
+  Zap,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -129,7 +140,31 @@ export function TopBar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <NavButton label="Editar" hasChevron />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white data-[state=open]:bg-white/10 data-[state=open]:text-white">
+              Editar
+              <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-72 border-white/10 bg-[var(--panel)] p-1.5 text-white shadow-[0_18px_60px_oklch(0_0_0/0.45)]">
+            <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Filtros</DropdownMenuLabel>
+            <EditMenuItem icon={Sun} label="Sépia" onSelect={showDevelopmentToast} />
+            <EditMenuItem icon={Zap} label="Bandicoot" onSelect={showDevelopmentToast} />
+            <EditMenuItem icon={Cloud} label="Escala de Cinza" onSelect={showDevelopmentToast} />
+            <EditMenuItem icon={CircleDot} label="B&W" onSelect={showDevelopmentToast} />
+            <EditMenuItem icon={RefreshCw} label="Negativo" onSelect={showDevelopmentToast} />
+            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Orientação</DropdownMenuLabel>
+            <EditMenuItem icon={RotateCw} label="Girar Horário" shortcut="Ctrl+R" onSelect={showDevelopmentToast} />
+            <EditMenuItem icon={RotateCcw} label="Girar Anti-horário" shortcut="Ctrl+L" onSelect={showDevelopmentToast} />
+            <EditMenuItem icon={ArrowUpDown} label="Espelhar Vertical" onSelect={showDevelopmentToast} />
+            <EditMenuItem icon={ArrowLeftRight} label="Espelhar Horizontal" onSelect={showDevelopmentToast} />
+            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Dimensionamento</DropdownMenuLabel>
+            <EditMenuItem icon={Scaling} label="Redimensionar" disabled onSelect={showDevelopmentToast} />
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <div className="mx-2 h-6 w-px bg-white/15" />
 
