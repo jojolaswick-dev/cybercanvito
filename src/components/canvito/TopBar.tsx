@@ -1,4 +1,5 @@
 import { useState, type ComponentType, type ReactNode } from "react";
+import * as fabric from "fabric";
 import {
   ArrowLeftRight,
   ArrowUpDown,
@@ -44,6 +45,16 @@ const PRESET_ICONS: Record<ArtboardPresetId, ComponentType<{ className?: string 
   story: Smartphone,
 };
 
+type EditFilter = "sepia" | "bandicoot" | "grayscale" | "bw" | "negative";
+
+const CSS_FILTERS: Record<EditFilter, string> = {
+  sepia: "sepia(100%)",
+  bandicoot: "sepia(50%) saturate(150%) hue-rotate(-30deg)",
+  grayscale: "grayscale(100%)",
+  bw: "contrast(150%) grayscale(100%)",
+  negative: "invert(100%)",
+};
+
 export function TopBar() {
   const [name, setName] = useState("Design sem nome");
   const {
@@ -65,6 +76,49 @@ export function TopBar() {
 
   const showDevelopmentToast = () => {
     toast.info("Funcionalidade em desenvolvimento");
+  };
+
+  const getEditableObject = () => {
+    const target = activeCanvas?.getActiveObject();
+    if (!target || (target as fabric.Object & { isArtboard?: boolean }).isArtboard) {
+      toast.info("Selecione uma imagem no canvas");
+      return null;
+    }
+    return target;
+  };
+
+  const applyFilter = (filter: EditFilter) => {
+    const target = getEditableObject();
+    if (!target) return;
+    (target as fabric.Object & { cssFilter?: string }).cssFilter = CSS_FILTERS[filter];
+    if (target instanceof fabric.FabricImage) {
+      const filters = fabric.filters;
+      target.filters =
+        filter === "sepia" ? [new filters.Sepia()] :
+        filter === "bandicoot" ? [new filters.Sepia(), new filters.Saturation({ saturation: 0.5 }), new filters.HueRotation({ rotation: -30 / 180 })] :
+        filter === "grayscale" ? [new filters.Grayscale()] :
+        filter === "bw" ? [new filters.Contrast({ contrast: 0.5 }), new filters.Grayscale()] :
+        [new filters.Invert()];
+      target.applyFilters();
+    }
+    activeCanvas?.requestRenderAll();
+  };
+
+  const rotateActiveObject = (delta: number) => {
+    const target = getEditableObject();
+    if (!target) return;
+    target.rotate(((target.angle ?? 0) + delta) % 360);
+    target.setCoords();
+    activeCanvas?.requestRenderAll();
+  };
+
+  const mirrorActiveObject = (axis: "x" | "y") => {
+    const target = getEditableObject();
+    if (!target) return;
+    if (axis === "x") target.set("scaleX", -(target.scaleX || 1));
+    else target.set("scaleY", -(target.scaleY || 1));
+    target.setCoords();
+    activeCanvas?.requestRenderAll();
   };
 
   const moveToTrash = () => {
@@ -153,17 +207,17 @@ export function TopBar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-72 border-white/10 bg-[var(--panel)] p-1.5 text-white shadow-[0_18px_60px_oklch(0_0_0/0.45)]">
             <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Filtros</DropdownMenuLabel>
-            <EditMenuItem icon={Sun} label="Sépia" onSelect={showDevelopmentToast} />
-            <EditMenuItem icon={Zap} label="Bandicoot" onSelect={showDevelopmentToast} />
-            <EditMenuItem icon={Cloud} label="Escala de Cinza" onSelect={showDevelopmentToast} />
-            <EditMenuItem icon={CircleDot} label="B&W" onSelect={showDevelopmentToast} />
-            <EditMenuItem icon={RefreshCw} label="Negativo" onSelect={showDevelopmentToast} />
+            <EditMenuItem icon={Sun} label="Sépia" onSelect={() => applyFilter("sepia")} />
+            <EditMenuItem icon={Zap} label="Bandicoot" onSelect={() => applyFilter("bandicoot")} />
+            <EditMenuItem icon={Cloud} label="Escala de Cinza" onSelect={() => applyFilter("grayscale")} />
+            <EditMenuItem icon={CircleDot} label="B&W" onSelect={() => applyFilter("bw")} />
+            <EditMenuItem icon={RefreshCw} label="Negativo" onSelect={() => applyFilter("negative")} />
             <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Orientação</DropdownMenuLabel>
-            <EditMenuItem icon={RotateCw} label="Girar Horário" shortcut="Ctrl+R" onSelect={showDevelopmentToast} />
-            <EditMenuItem icon={RotateCcw} label="Girar Anti-horário" shortcut="Ctrl+L" onSelect={showDevelopmentToast} />
-            <EditMenuItem icon={ArrowUpDown} label="Espelhar Vertical" onSelect={showDevelopmentToast} />
-            <EditMenuItem icon={ArrowLeftRight} label="Espelhar Horizontal" onSelect={showDevelopmentToast} />
+            <EditMenuItem icon={RotateCw} label="Girar Horário" shortcut="Ctrl+R" onSelect={() => rotateActiveObject(90)} />
+            <EditMenuItem icon={RotateCcw} label="Girar Anti-horário" shortcut="Ctrl+L" onSelect={() => rotateActiveObject(-90)} />
+            <EditMenuItem icon={ArrowUpDown} label="Espelhar Vertical" onSelect={() => mirrorActiveObject("y")} />
+            <EditMenuItem icon={ArrowLeftRight} label="Espelhar Horizontal" onSelect={() => mirrorActiveObject("x")} />
             <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Dimensionamento</DropdownMenuLabel>
             <EditMenuItem icon={Scaling} label="Redimensionar" disabled onSelect={showDevelopmentToast} />
