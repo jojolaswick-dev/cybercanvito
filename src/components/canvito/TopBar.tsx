@@ -1,16 +1,33 @@
-import { useState } from "react";
-import { ChevronDown, MessageSquare, Share2, Undo2, Redo2, Square, RectangleVertical, Smartphone, Check } from "lucide-react";
+import { useState, type ComponentType, type ReactNode } from "react";
+import {
+  Check,
+  ChevronDown,
+  CloudUpload,
+  Download,
+  FileText,
+  MessageSquare,
+  Printer,
+  Redo2,
+  Settings,
+  Share2,
+  Smartphone,
+  Square,
+  RectangleVertical,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useEditor, ARTBOARD_PRESETS, type ArtboardPresetId } from "./editor-context";
 
-const PRESET_ICONS: Record<ArtboardPresetId, React.ComponentType<{ className?: string }>> = {
+const PRESET_ICONS: Record<ArtboardPresetId, ComponentType<{ className?: string }>> = {
   square: Square,
   portrait: RectangleVertical,
   story: Smartphone,
@@ -18,7 +35,34 @@ const PRESET_ICONS: Record<ArtboardPresetId, React.ComponentType<{ className?: s
 
 export function TopBar() {
   const [name, setName] = useState("Design sem nome");
-  const { artboard, setArtboardPreset, preset } = useEditor();
+  const {
+    activeCanvas,
+    activePageId,
+    artboard,
+    deleteActiveObject,
+    deletePage,
+    openImagePicker,
+    pages,
+    preset,
+    setArtboardPreset,
+  } = useEditor();
+
+  const showSoon = (label: string) => {
+    console.log(`${label}: em breve`);
+    window.alert(`${label}: Em breve`);
+  };
+
+  const moveToTrash = () => {
+    if (activeCanvas?.getActiveObject()) {
+      deleteActiveObject();
+      return;
+    }
+    if (activePageId && pages.length > 1) {
+      deletePage(activePageId);
+      return;
+    }
+    console.log("Mover para lixeira: nada selecionado");
+  };
 
   return (
     <header className="relative z-30 flex h-14 items-center justify-between border-b border-white/10 bg-cyber-bar px-3 text-white">
@@ -33,7 +77,24 @@ export function TopBar() {
           <span className="ml-2 font-bold tracking-widest text-white/90">CANVITO</span>
         </div>
 
-        <NavButton label="Arquivo" hasChevron />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white data-[state=open]:bg-white/10 data-[state=open]:text-white">
+              Arquivo
+              <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-72 border-white/10 bg-[var(--panel)] p-1.5 text-white shadow-[0_18px_60px_oklch(0_0_0/0.45)]">
+            <FileMenuItem icon={FileText} label="Criar novo design" shortcut="Ctrl+N" onSelect={() => showSoon("Criar novo design")} />
+            <FileMenuItem icon={CloudUpload} label="Fazer upload de arquivos" shortcut="Ctrl+U" onSelect={() => openImagePicker()} />
+            <FileMenuItem icon={Settings} label="Configurações" shortcut="Ctrl+," onSelect={() => showSoon("Configurações")} />
+            <DropdownMenuSeparator className="bg-white/10" />
+            <FileMenuItem icon={Download} label="Exportar" shortcut="Ctrl+E" onSelect={() => showSoon("Exportar")} />
+            <FileMenuItem icon={Printer} label="Imprimir" shortcut="Ctrl+P" onSelect={() => showSoon("Imprimir")} />
+            <DropdownMenuSeparator className="bg-white/10" />
+            <FileMenuItem icon={Trash2} label="Mover para lixeira" shortcut="Del" danger onSelect={moveToTrash} />
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Redimensionar dropdown */}
         <DropdownMenu>
@@ -130,7 +191,34 @@ function NavButton({ label, hasChevron }: { label: string; hasChevron?: boolean 
   );
 }
 
-function IconBtn({ children }: { children: React.ReactNode }) {
+function FileMenuItem({
+  icon: Icon,
+  label,
+  shortcut,
+  danger,
+  onSelect,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  shortcut: string;
+  danger?: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <DropdownMenuItem
+      onSelect={onSelect}
+      className={`flex cursor-pointer items-center gap-3 rounded-md px-2.5 py-2 text-sm focus:bg-white/10 focus:text-white ${
+        danger ? "text-[var(--destructive)] focus:text-[var(--destructive)]" : "text-white/90"
+      }`}
+    >
+      <Icon className={`h-4 w-4 ${danger ? "text-[var(--destructive)]" : "text-[var(--neon-cyan)]"}`} />
+      <span className="flex-1">{label}</span>
+      <DropdownMenuShortcut className="ml-4 tracking-normal text-white/45">{shortcut}</DropdownMenuShortcut>
+    </DropdownMenuItem>
+  );
+}
+
+function IconBtn({ children }: { children: ReactNode }) {
   return (
     <button className="inline-flex h-8 w-8 items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/10 hover:text-white">
       {children}
