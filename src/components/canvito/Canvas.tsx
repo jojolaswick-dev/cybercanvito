@@ -26,16 +26,12 @@ export function Canvas() {
     addPage,
     deletePage,
     addImageFromFile,
-    openImagePicker,
-    getPageCanvas,
     activeCanvas,
     activePageId,
-    setActivePageId,
     deleteActiveObject,
     fitToScreen,
   } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
-  const [contextMenu, setContextMenu] = useState<CtxMenuState | null>(null);
 
   // ---------- Drag & drop on the entire workspace ----------
   const onDragOver = (e: React.DragEvent) => {
@@ -106,96 +102,6 @@ export function Canvas() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeCanvas, deleteActiveObject, activePageId, pages.length, deletePage]);
 
-  // ---------- Right-click context menu ----------
-  const onContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const rect = scrollRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const localX = e.clientX - rect.left;
-    const localY = e.clientY - rect.top;
-
-    // 1) Walk up from the event target to find which page (if any) was hit.
-    //    This works for ALL pages — including page 1 — and regardless of
-    //    selection state on any other canvas.
-    let node = e.target as HTMLElement | null;
-    let pageId: string | null = null;
-    let pageEl: HTMLElement | null = null;
-    while (node && node !== scrollRef.current) {
-      const id = node.dataset?.pageId;
-      if (id) {
-        pageId = id;
-        pageEl = node;
-        break;
-      }
-      node = node.parentElement;
-    }
-
-    if (pageId && pageEl) {
-      const fab = getPageCanvas(pageId);
-      const z = fab?.getZoom() ?? 1;
-      const pRect = pageEl.getBoundingClientRect();
-      const ax = (e.clientX - pRect.left) / z;
-      const ay = (e.clientY - pRect.top) / z;
-
-      // 2) Only treat as "object click" if the right-click actually landed on a
-      //    real (non-artboard) Fabric object on THIS page. We hit-test in
-      //    artboard coordinates so the result is independent of zoom.
-      let hitObject = false;
-      if (fab) {
-        const objs = fab.getObjects();
-        for (let i = objs.length - 1; i >= 0; i--) {
-          const o = objs[i] as fabric.Object & { isArtboard?: boolean };
-          if (o.isArtboard) continue;
-          // Fabric's containsPoint expects a Point in canvas (artboard) coords.
-          if (typeof o.containsPoint === "function") {
-            try {
-              if (o.containsPoint({ x: ax, y: ay } as fabric.Point)) {
-                hitObject = true;
-                break;
-              }
-            } catch {
-              // ignore – fall through to background menu
-            }
-          }
-        }
-      }
-
-      if (hitObject) {
-        // Make sure the page whose object we're acting on is the active one.
-        setContextMenu({ x: localX, y: localY, hasObject: true });
-        return;
-      }
-
-      setContextMenu({
-        x: localX,
-        y: localY,
-        hasObject: false,
-        page: { id: pageId, x: ax, y: ay },
-      });
-      return;
-    }
-
-    // 3) Empty workspace area outside any page — no menu.
-    setContextMenu(null);
-  };
-
-  useEffect(() => {
-    if (!contextMenu) return;
-    const close = () => setContextMenu(null);
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setContextMenu(null);
-    };
-    window.addEventListener("mousedown", close);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("mousedown", close);
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [contextMenu]);
-
   return (
     <div className="relative flex flex-1 flex-col bg-[var(--canvas-bg)]">
       {/* Subtle dot grid */}
@@ -213,7 +119,6 @@ export function Canvas() {
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        onContextMenu={onContextMenu}
         className="relative flex-1 overflow-y-auto overflow-x-hidden"
       >
         <div className="flex flex-col items-center px-4 py-10">
@@ -237,67 +142,6 @@ export function Canvas() {
             </button>
           </div>
         </div>
-
-      {/* Custom right-click menu — Cyberpunk dark style */}
-        {contextMenu && (
-          <div
-            style={{ left: contextMenu.x, top: contextMenu.y, position: "absolute" }}
-            onMouseDown={(e) => e.stopPropagation()}
-            onContextMenu={(e) => e.preventDefault()}
-            className="z-50 min-w-[200px] overflow-hidden rounded-lg border border-[var(--neon-violet)]/40 bg-[oklch(0.18_0.03_280)]/95 shadow-[0_10px_30px_oklch(0.55_0.28_295/0.35),0_0_0_1px_oklch(0.55_0.28_295/0.15)] backdrop-blur-md"
-          >
-            {contextMenu.hasObject ? (
-              <button
-                type="button"
-                onClick={() => {
-                  deleteActiveObject();
-                  setContextMenu(null);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.85_0.18_25)] transition-colors hover:bg-[oklch(0.5_0.22_25)]/20 hover:text-[oklch(0.92_0.2_25)]"
-              >
-                <Trash2 className="h-4 w-4" />
-                Deletar Imagem
-              </button>
-            ) : contextMenu.page ? (
-              <>
-                <button
-                  type="button"
-                  disabled={false}
-                  onClick={() => {
-                    const target = contextMenu.page;
-                    setContextMenu(null);
-                    if (target) {
-                      setActivePageId(target.id);
-                      openImagePicker({ pageId: target.id, x: target.x, y: target.y });
-                    }
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.95_0.01_280)] transition-colors hover:bg-[var(--neon-violet)]/20 hover:text-[var(--neon-violet)]"
-                >
-                  <ImagePlus className="h-4 w-4 text-[var(--neon-violet)]" />
-                  Adicionar Imagem
-                </button>
-                <div className="h-px bg-[var(--neon-violet)]/20" />
-                <button
-                  type="button"
-                  disabled={pages.length <= 1}
-                  onClick={() => {
-                    const target = contextMenu.page;
-                    setContextMenu(null);
-                    if (target && pages.length > 1) {
-                      deletePage(target.id);
-                    }
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.85_0.18_25)] transition-colors hover:bg-[oklch(0.5_0.22_25)]/20 hover:text-[oklch(0.92_0.2_25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
-                  title={pages.length <= 1 ? "Não é possível excluir a única página" : "Deletar esta página"}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Deletar Página
-                </button>
-              </>
-            ) : null}
-          </div>
-        )}
-
         {/* Drag overlay */}
         {isDragging && (
           <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-[oklch(0.55_0.28_295/0.08)] ring-2 ring-inset ring-[var(--neon-violet)]">
