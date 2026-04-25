@@ -78,6 +78,49 @@ export function TopBar() {
     toast.info("Funcionalidade em desenvolvimento");
   };
 
+  const getEditableObject = () => {
+    const target = activeCanvas?.getActiveObject();
+    if (!target || (target as fabric.Object & { isArtboard?: boolean }).isArtboard) {
+      toast.info("Selecione uma imagem no canvas");
+      return null;
+    }
+    return target;
+  };
+
+  const applyFilter = (filter: EditFilter) => {
+    const target = getEditableObject();
+    if (!target) return;
+    (target as fabric.Object & { cssFilter?: string }).cssFilter = CSS_FILTERS[filter];
+    if (target instanceof fabric.FabricImage) {
+      const filters = fabric.filters;
+      target.filters =
+        filter === "sepia" ? [new filters.Sepia()] :
+        filter === "bandicoot" ? [new filters.Sepia(), new filters.Saturation({ saturation: 0.5 }), new filters.HueRotation({ rotation: -30 / 180 })] :
+        filter === "grayscale" ? [new filters.Grayscale()] :
+        filter === "bw" ? [new filters.Contrast({ contrast: 0.5 }), new filters.Grayscale()] :
+        [new filters.Invert()];
+      target.applyFilters();
+    }
+    activeCanvas?.requestRenderAll();
+  };
+
+  const rotateActiveObject = (delta: number) => {
+    const target = getEditableObject();
+    if (!target) return;
+    target.rotate(((target.angle ?? 0) + delta) % 360);
+    target.setCoords();
+    activeCanvas?.requestRenderAll();
+  };
+
+  const mirrorActiveObject = (axis: "x" | "y") => {
+    const target = getEditableObject();
+    if (!target) return;
+    if (axis === "x") target.set("scaleX", -(target.scaleX || 1));
+    else target.set("scaleY", -(target.scaleY || 1));
+    target.setCoords();
+    activeCanvas?.requestRenderAll();
+  };
+
   const moveToTrash = () => {
     if (activeCanvas?.getActiveObject()) {
       deleteActiveObject();
