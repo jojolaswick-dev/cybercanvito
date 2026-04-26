@@ -95,7 +95,7 @@ type EditorCtx = {
   /** Start professional cropping mode on the current selected object */
   startCropMode: () => void;
   /** Finish crop and update the image */
-  finishCrop: () => void;
+  finishCrop: () => void | Promise<void>;
   /** Cancel crop mode */
   cancelCrop: () => void;
 };
