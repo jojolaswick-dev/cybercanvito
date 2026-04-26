@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { memo, useCallback, useState, type ComponentType, type ReactNode } from "react";
 import * as fabric from "fabric";
 import {
   ArrowLeftRight,
