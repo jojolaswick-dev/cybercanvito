@@ -44,6 +44,8 @@ type CropSession = {
   lockScalingX: boolean;
   lockScalingY: boolean;
   lockRotation: boolean;
+  canvasSelection: boolean;
+  ghost?: fabric.FabricImage;
 };
 
 type CroppableImage = fabric.FabricImage & {
