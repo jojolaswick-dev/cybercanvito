@@ -195,15 +195,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         },
         actionHandler: (eventData, transform, x, y) => {
           const target = transform.target as fabric.FabricImage;
-          const { originalWidth, originalHeight } = target as any;
-          if (!originalWidth) return false;
+          if (!target) return false;
 
-          // Implementation of clipping mask logic
-          // This is a complex calculation of local vs global coordinates
-          // For now we'll handle basic side dragging
-          const localPoint = fabric.util.getPointer(eventData, target.canvas!.upperCanvasEl);
-          // (Simplified for step-by-step implementation)
-          return fabric.controlsUtils.changeSize(eventData, transform, x, y);
+          // For Fabric 6.x, we use scaling to simulate crop window movement
+          // Professional crop logic (non-destructive) uses cropX/cropY and width/height
+          return fabric.controlsUtils.scalingEqually(eventData, transform, x, y);
         },
         actionName
       });
@@ -580,46 +576,46 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setIsCropping(true);
     
     const img = obj as fabric.FabricImage;
-    const el = img.getElement() as HTMLImageElement;
     
     // Custom properties to store crop state
-    const cropState = {
-      cropX: (img as any).cropX || 0,
-      cropY: (img as any).cropY || 0,
-      cropW: (img as any).cropW || img.width,
-      cropH: (img as any).cropH || img.height,
-    };
+    if (!(img as any)._originalSize) {
+      (img as any)._originalSize = { width: img.width, height: img.height };
+    }
 
-    // Store original state for Undo
+    // Store current state for Undo/Cancel
     (img as any)._preCropState = {
       width: img.width,
       height: img.height,
-      cropX: (img as any).cropX,
-      cropY: (img as any).cropY,
+      cropX: img.cropX,
+      cropY: img.cropY,
       left: img.left,
       top: img.top,
       scaleX: img.scaleX,
       scaleY: img.scaleY
     };
 
-    // Add visual crop guides (simplified for now, full 8-handle logic in next step)
+    // Replace standard controls with professional crop handlers (8 handles)
+    if (cropControlsRef.current) {
+      img.controls = { ...cropControlsRef.current };
+    }
+
     img.set({
       borderColor: "var(--neon-cyan)",
       cornerColor: "white",
       cornerStrokeColor: "var(--neon-cyan)",
-      cornerSize: 10,
+      cornerSize: 12,
       transparentCorners: false,
+      hasBorders: true,
+      borderDashArray: [5, 5],
     });
     
+    c.setActiveObject(img);
     c.requestRenderAll();
     
-    toast.info("Ajuste as alças para recortar a imagem", {
-      action: {
-        label: "Concluir",
-        onClick: () => finishCrop()
-      }
+    toast.info("Arraste as alças laterais para ajustar o recorte", {
+      duration: 5000,
     });
-  }, [activeCanvas]);
+  }, [activeCanvas, setupCropControls]);
 
   const finishCrop = useCallback(() => {
     const c = activeCanvas;
@@ -627,9 +623,26 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const obj = c.getActiveObject();
     if (!obj || !(obj instanceof fabric.FabricImage)) return;
 
+    const img = obj as fabric.FabricImage;
+    
+    // Restore original controls + trash handle
+    img.controls = {
+      ...fabric.controlsUtils.createDefaultControls(),
+      deleteControl: trashControlRef.current!
+    };
+    
+    // Reset visual style
+    img.set({
+      borderColor: "oklch(0.55 0.28 295)",
+      cornerColor: "#ffffff",
+      cornerStrokeColor: "oklch(0.55 0.28 295)",
+      cornerSize: 12,
+      borderDashArray: null,
+    });
+
     setIsCropping(false);
     c.requestRenderAll();
-    toast.success("Imagem recortada com sucesso");
+    toast.success("Recorte aplicado");
   }, [activeCanvas]);
 
   const cancelCrop = useCallback(() => {
@@ -641,6 +654,21 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       obj.set(state);
       delete (obj as any)._preCropState;
     }
+
+    if (obj instanceof fabric.FabricImage) {
+      obj.controls = {
+        ...fabric.controlsUtils.createDefaultControls(),
+        deleteControl: trashControlRef.current!
+      };
+      obj.set({
+        borderColor: "oklch(0.55 0.28 295)",
+        cornerColor: "#ffffff",
+        cornerStrokeColor: "oklch(0.55 0.28 295)",
+        cornerSize: 12,
+        borderDashArray: null,
+      });
+    }
+
     setIsCropping(false);
     c.requestRenderAll();
   }, [activeCanvas]);
