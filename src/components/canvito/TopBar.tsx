@@ -69,6 +69,9 @@ export function TopBar() {
     preset,
     setArtboardPreset,
     setIsCropping,
+    startCropMode,
+    finishCrop,
+    isCropping,
   } = useEditor();
 
   const showSoon = (label: string) => {
@@ -124,13 +127,7 @@ export function TopBar() {
   };
   
   const startCropping = () => {
-    const target = getEditableObject();
-    if (!target) return;
-    if (!(target instanceof fabric.FabricImage)) {
-      toast.info("Apenas imagens podem ser recortadas");
-      return;
-    }
-    setIsCropping(true);
+    startCropMode();
   };
 
   const moveToTrash = () => {
@@ -280,11 +277,30 @@ export function TopBar() {
 
       {/* Right */}
       <div className="flex items-center gap-2">
-        <IconBtn><MessageSquare className="h-4 w-4" /></IconBtn>
-        <IconBtn><Share2 className="h-4 w-4" /></IconBtn>
-        <button className="ml-1 inline-flex items-center gap-2 rounded-md bg-white px-5 py-2 text-sm font-bold text-[var(--background)] shadow-[0_0_24px_oklch(1_0_0/0.3)] transition-all hover:shadow-[0_0_32px_oklch(1_0_0/0.5)] hover:scale-[1.02] active:scale-95">
-          Exportar
-        </button>
+        {isCropping ? (
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => useEditor().cancelCrop()}
+              className="rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium hover:bg-white/10"
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={() => finishCrop()}
+              className="rounded-md bg-[var(--neon-cyan)] px-5 py-2 text-sm font-bold text-black shadow-[0_0_15px_oklch(0.7_0.2_180/0.5)] transition-all hover:scale-[1.02]"
+            >
+              Concluir Recorte
+            </button>
+          </div>
+        ) : (
+          <>
+            <IconBtn><MessageSquare className="h-4 w-4" /></IconBtn>
+            <IconBtn><Share2 className="h-4 w-4" /></IconBtn>
+            <button className="ml-1 inline-flex items-center gap-2 rounded-md bg-white px-5 py-2 text-sm font-bold text-[var(--background)] shadow-[0_0_24px_oklch(1_0_0/0.3)] transition-all hover:shadow-[0_0_32px_oklch(1_0_0/0.5)] hover:scale-[1.02] active:scale-95">
+              Exportar
+            </button>
+          </>
+        )}
       </div>
     </header>
   );
