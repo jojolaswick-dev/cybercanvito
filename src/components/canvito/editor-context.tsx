@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from "react";
 import * as fabric from "fabric";
 import { toast } from "sonner";
 
@@ -63,7 +63,6 @@ type EditorCtx = {
   activePageId: string | null;
   /** Crop mode state */
   isCropping: boolean;
-  setIsCropping: (val: boolean) => void;
   /** Start professional cropping mode on the current selected object */
   startCropMode: () => void;
   /** Finish crop and update the image */
@@ -94,15 +93,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
   const [isCropping, setIsCropping] = useState(false);
-  const cropDataRef = useRef<{
-    originalSrc?: string;
-    originalWidth?: number;
-    originalHeight?: number;
-    cropX: number;
-    cropY: number;
-    cropW: number;
-    cropH: number;
-  } | null>(null);
 
   // Map of pageId -> Fabric.Canvas (one canvas per stacked page)
   const canvasesRef = useRef<Map<string, fabric.Canvas>>(new Map());
