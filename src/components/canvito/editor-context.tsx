@@ -723,7 +723,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       cropY,
       cropW,
       cropH,
-      controls: img.controls,
+      controls: { ...img.controls },
       lockMovementX: Boolean(img.lockMovementX),
       lockMovementY: Boolean(img.lockMovementY),
       lockScalingX: Boolean(img.lockScalingX),
