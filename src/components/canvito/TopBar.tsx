@@ -71,7 +71,6 @@ export function TopBar() {
     setIsCropping,
     startCropMode,
     finishCrop,
-    cancelCrop,
     isCropping,
   } = useEditor();
 
@@ -281,7 +280,7 @@ export function TopBar() {
         {isCropping ? (
           <div className="flex items-center gap-2">
             <button 
-              onClick={cancelCrop}
+              onClick={() => useEditor().cancelCrop()}
               className="rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium hover:bg-white/10"
             >
               Cancelar
