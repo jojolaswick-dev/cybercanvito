@@ -24,6 +24,32 @@ export type ImageInsertPoint = {
   y?: number;
 };
 
+type CropHandle = "tl" | "tr" | "bl" | "br" | "mt" | "mb" | "ml" | "mr";
+
+type CropSession = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  scaleX: number;
+  scaleY: number;
+  angle: number;
+  cropX: number;
+  cropY: number;
+  cropW: number;
+  cropH: number;
+  controls: fabric.Control[] | Record<string, fabric.Control>;
+  lockMovementX: boolean;
+  lockMovementY: boolean;
+  lockScalingX: boolean;
+  lockScalingY: boolean;
+  lockRotation: boolean;
+};
+
+type CroppableImage = fabric.FabricImage & {
+  _cropSession?: CropSession;
+};
+
 type EditorCtx = {
   /** The currently focused canvas (last interacted). Used by tool/sidebar actions. */
   activeCanvas: fabric.Canvas | null;
