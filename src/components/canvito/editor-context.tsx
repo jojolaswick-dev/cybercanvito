@@ -627,7 +627,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     
     // Restore original controls + trash handle
     img.controls = {
-      ...fabric.controlsUtils.createDefaultControls(),
+      ...fabric.controlsUtils.createObjectDefaultControls(),
       deleteControl: trashControlRef.current!
     };
     
@@ -657,7 +657,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
     if (obj instanceof fabric.FabricImage) {
       obj.controls = {
-        ...fabric.controlsUtils.createDefaultControls(),
+        ...fabric.controlsUtils.createObjectDefaultControls(),
         deleteControl: trashControlRef.current!
       };
       obj.set({
