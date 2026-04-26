@@ -24,6 +24,7 @@ import {
   RotateCw,
   Sun,
   Trash2,
+  Crop,
   Undo2,
   Zap,
 } from "lucide-react";
@@ -64,9 +65,10 @@ export function TopBar() {
     deleteActiveObject,
     deletePage,
     openImagePicker,
-    pages,
+     pages,
     preset,
     setArtboardPreset,
+    setIsCropping,
   } = useEditor();
 
   const showSoon = (label: string) => {
@@ -119,6 +121,16 @@ export function TopBar() {
     else target.set("scaleY", -(target.scaleY || 1));
     target.setCoords();
     activeCanvas?.requestRenderAll();
+  };
+  
+  const startCropping = () => {
+    const target = getEditableObject();
+    if (!target) return;
+    if (!(target instanceof fabric.FabricImage)) {
+      toast.info("Apenas imagens podem ser recortadas");
+      return;
+    }
+    setIsCropping(true);
   };
 
   const moveToTrash = () => {
@@ -206,6 +218,9 @@ export function TopBar() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-72 border-white/10 bg-[var(--panel)] p-1.5 text-white shadow-[0_18px_60px_oklch(0_0_0/0.45)]">
+             <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Recorte</DropdownMenuLabel>
+            <EditMenuItem icon={Crop} label="Recortar" shortcut="C" onSelect={startCropping} />
+            <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Filtros</DropdownMenuLabel>
             <EditMenuItem icon={Sun} label="Sépia" onSelect={() => applyFilter("sepia")} />
             <EditMenuItem icon={Zap} label="Bandicoot" onSelect={() => applyFilter("bandicoot")} />
