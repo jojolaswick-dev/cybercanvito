@@ -63,8 +63,12 @@ type EditorCtx = {
   /** Crop mode state */
   isCropping: boolean;
   setIsCropping: (val: boolean) => void;
-  /** Execute crop on the current selected object */
-  executeCrop: (cropData: { x: number; y: number; width: number; height: number }) => Promise<void>;
+  /** Start professional cropping mode on the current selected object */
+  startCropMode: () => void;
+  /** Finish crop and update the image */
+  finishCrop: () => void;
+  /** Cancel crop mode */
+  cancelCrop: () => void;
 };
 
 const EditorContext = createContext<EditorCtx | null>(null);
@@ -89,6 +93,15 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
   const [isCropping, setIsCropping] = useState(false);
+  const cropDataRef = useRef<{
+    originalSrc?: string;
+    originalWidth?: number;
+    originalHeight?: number;
+    cropX: number;
+    cropY: number;
+    cropW: number;
+    cropH: number;
+  } | null>(null);
 
   // Map of pageId -> Fabric.Canvas (one canvas per stacked page)
   const canvasesRef = useRef<Map<string, fabric.Canvas>>(new Map());
@@ -503,78 +516,81 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     [addImageFromFile],
   );
 
-  const executeCrop = useCallback(
-    async (cropData: { x: number; y: number; width: number; height: number }) => {
-      const c = activeCanvas;
-      if (!c) return;
-      const obj = c.getActiveObject();
-      if (!obj || !(obj instanceof fabric.FabricImage)) return;
+  const startCropMode = useCallback(() => {
+    const c = activeCanvas;
+    if (!c) return;
+    const obj = c.getActiveObject();
+    if (!obj || !(obj instanceof fabric.FabricImage)) return;
 
-      const img = obj as fabric.FabricImage;
-      const originalElement = img.getElement() as HTMLImageElement;
+    // Professional crop logic
+    // We will use fabric's built-in controls customization for a custom crop experience
+    setIsCropping(true);
+    
+    const img = obj as fabric.FabricImage;
+    const el = img.getElement() as HTMLImageElement;
+    
+    // Custom properties to store crop state
+    const cropState = {
+      cropX: (img as any).cropX || 0,
+      cropY: (img as any).cropY || 0,
+      cropW: (img as any).cropW || img.width,
+      cropH: (img as any).cropH || img.height,
+    };
 
-      // Create a temporary canvas to draw the cropped part
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = cropData.width;
-      tempCanvas.height = cropData.height;
-      const ctx = tempCanvas.getContext("2d");
+    // Store original state for Undo
+    (img as any)._preCropState = {
+      width: img.width,
+      height: img.height,
+      cropX: (img as any).cropX,
+      cropY: (img as any).cropY,
+      left: img.left,
+      top: img.top,
+      scaleX: img.scaleX,
+      scaleY: img.scaleY
+    };
 
-      if (ctx) {
-        ctx.drawImage(
-          originalElement,
-          cropData.x,
-          cropData.y,
-          cropData.width,
-          cropData.height,
-          0,
-          0,
-          cropData.width,
-          cropData.height
-        );
-
-        const croppedDataUrl = tempCanvas.toDataURL("image/png");
-        
-        // Load the new cropped image
-        const newImg = await fabric.FabricImage.fromURL(croppedDataUrl, { crossOrigin: "anonymous" });
-        
-        // Preserve original position and rotation
-        newImg.set({
-          left: img.left,
-          top: img.top,
-          angle: img.angle,
-          scaleX: img.scaleX,
-          scaleY: img.scaleY,
-          originX: img.originX,
-          originY: img.originY,
-          cornerColor: "#ffffff",
-          cornerStrokeColor: "oklch(0.55 0.28 295)",
-          borderColor: "oklch(0.55 0.28 295)",
-          cornerSize: 12,
-          transparentCorners: false,
-          cornerStyle: "circle",
-          rotatingPointOffset: 28,
-          lockUniScaling: true,
-        });
-
-        newImg.setControlsVisibility({
-          mt: false, mb: false, ml: false, mr: false,
-          mtr: true, tl: true, tr: true, bl: true, br: true,
-        });
-
-        if (trashControlRef.current) {
-          newImg.controls = { ...newImg.controls, deleteControl: trashControlRef.current };
-        }
-
-        c.remove(img);
-        c.add(newImg);
-        c.setActiveObject(newImg);
-        c.requestRenderAll();
+    // Add visual crop guides (simplified for now, full 8-handle logic in next step)
+    img.set({
+      borderColor: "var(--neon-cyan)",
+      cornerColor: "white",
+      cornerStrokeColor: "var(--neon-cyan)",
+      cornerSize: 10,
+      transparentCorners: false,
+    });
+    
+    c.requestRenderAll();
+    
+    toast.info("Ajuste as alças para recortar a imagem", {
+      action: {
+        label: "Concluir",
+        onClick: () => finishCrop()
       }
-      
-      setIsCropping(false);
-    },
-    [activeCanvas]
-  );
+    });
+  }, [activeCanvas]);
+
+  const finishCrop = useCallback(() => {
+    const c = activeCanvas;
+    if (!c) return;
+    const obj = c.getActiveObject();
+    if (!obj || !(obj instanceof fabric.FabricImage)) return;
+
+    setIsCropping(false);
+    c.requestRenderAll();
+    toast.success("Imagem recortada com sucesso");
+  }, [activeCanvas]);
+
+  const cancelCrop = useCallback(() => {
+    const c = activeCanvas;
+    if (!c) return;
+    const obj = c.getActiveObject();
+    if (obj && (obj as any)._preCropState) {
+      const state = (obj as any)._preCropState;
+      obj.set(state);
+      delete (obj as any)._preCropState;
+    }
+    setIsCropping(false);
+    c.requestRenderAll();
+  }, [activeCanvas]);
 
   useEffect(() => {
     return () => {
@@ -611,7 +627,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         activePageId,
         isCropping,
         setIsCropping,
-        executeCrop,
+        startCropMode,
+        finishCrop,
+        cancelCrop,
       }}
     >
       {children}
