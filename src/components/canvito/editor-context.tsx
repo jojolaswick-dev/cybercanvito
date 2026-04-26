@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import * as fabric from "fabric";
+import { toast } from "sonner";
 
 export type ArtboardPresetId = "square" | "story" | "portrait";
 
