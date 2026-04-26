@@ -1,4 +1,5 @@
 import { X, Search } from "lucide-react";
+import { memo, useCallback } from "react";
 import { TOOLS, type ToolId } from "./Sidebar";
 
 const PANEL_CONTENT: Record<ToolId, { title: string; description: string; items: string[] }> = {
@@ -49,7 +50,7 @@ const PANEL_CONTENT: Record<ToolId, { title: string; description: string; items:
   },
 };
 
-export function SidePanel({
+export const SidePanel = memo(function SidePanel({
   active,
   onClose,
 }: {
@@ -60,6 +61,7 @@ export function SidePanel({
   const content = PANEL_CONTENT[active];
   const tool = TOOLS.find((t) => t.id === active)!;
   const Icon = tool.icon;
+  const handleClose = useCallback(() => onClose(), [onClose]);
 
   return (
     <div className="relative z-10 flex w-80 flex-col border-r border-white/10 bg-[var(--panel)] text-white shadow-panel animate-in slide-in-from-left-4 duration-200">
@@ -74,7 +76,7 @@ export function SidePanel({
           </div>
         </div>
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="rounded-md p-1 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
           aria-label="Fechar"
         >
@@ -94,19 +96,20 @@ export function SidePanel({
 
       <div className="flex-1 overflow-y-auto p-3">
         <div className="grid grid-cols-2 gap-2">
-          {content.items.map((item) => (
-            <button
-              key={item}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-white/5 p-3 text-left transition-all hover:border-[var(--electric-blue)]/60 hover:bg-white/10 hover:shadow-[0_0_16px_oklch(0.62_0.24_255/0.25)]"
-            >
-              <div className="flex h-full flex-col justify-end">
-                <span className="text-xs font-medium text-white/90">{item}</span>
-              </div>
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--neon-violet)]/0 to-[var(--electric-blue)]/0 opacity-0 transition-opacity group-hover:opacity-30" />
-            </button>
-          ))}
+          {content.items.map((item) => <PanelItem key={item} item={item} />)}
         </div>
       </div>
     </div>
   );
-}
+});
+
+const PanelItem = memo(function PanelItem({ item }: { item: string }) {
+  return (
+    <button className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-white/5 p-3 text-left transition-all hover:border-[var(--electric-blue)]/60 hover:bg-white/10 hover:shadow-[0_0_16px_oklch(0.62_0.24_255/0.25)]">
+      <div className="flex h-full flex-col justify-end">
+        <span className="text-xs font-medium text-white/90">{item}</span>
+      </div>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--neon-violet)]/0 to-[var(--electric-blue)]/0 opacity-0 transition-opacity group-hover:opacity-30" />
+    </button>
+  );
+});

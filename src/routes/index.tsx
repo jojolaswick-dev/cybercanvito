@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { TopBar } from "@/components/canvito/TopBar";
 import { Sidebar, type ToolId } from "@/components/canvito/Sidebar";
 import { SidePanel } from "@/components/canvito/SidePanel";
@@ -22,6 +22,10 @@ export const Route = createFileRoute("/")({
 
 function CanvitoApp() {
   const [activeTool, setActiveTool] = useState<ToolId | null>("elementos");
+  const handleToolSelect = useCallback((id: ToolId) => {
+    setActiveTool((cur) => (cur === id ? null : id));
+  }, []);
+  const handlePanelClose = useCallback(() => setActiveTool(null), []);
 
   return (
     <EditorProvider>
@@ -30,9 +34,9 @@ function CanvitoApp() {
         <div className="flex flex-1 overflow-hidden">
           <Sidebar
             active={activeTool}
-            onSelect={(id) => setActiveTool((cur) => (cur === id ? null : id))}
+            onSelect={handleToolSelect}
           />
-          <SidePanel active={activeTool} onClose={() => setActiveTool(null)} />
+          <SidePanel active={activeTool} onClose={handlePanelClose} />
           <Canvas />
         </div>
         <BottomBar />

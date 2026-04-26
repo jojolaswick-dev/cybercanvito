@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from "react";
 import * as fabric from "fabric";
 import { toast } from "sonner";
 
@@ -63,7 +63,6 @@ type EditorCtx = {
   activePageId: string | null;
   /** Crop mode state */
   isCropping: boolean;
-  setIsCropping: (val: boolean) => void;
   /** Start professional cropping mode on the current selected object */
   startCropMode: () => void;
   /** Finish crop and update the image */
@@ -94,15 +93,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
   const [isCropping, setIsCropping] = useState(false);
-  const cropDataRef = useRef<{
-    originalSrc?: string;
-    originalWidth?: number;
-    originalHeight?: number;
-    cropX: number;
-    cropY: number;
-    cropW: number;
-    cropH: number;
-  } | null>(null);
 
   // Map of pageId -> Fabric.Canvas (one canvas per stacked page)
   const canvasesRef = useRef<Map<string, fabric.Canvas>>(new Map());
@@ -170,66 +160,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  // --- Professional Crop Logic ---
-  const cropControlsRef = useRef<Record<string, fabric.Control>>({});
-  
-  const setupCropControls = useCallback(() => {
-    if (Object.keys(cropControlsRef.current).length > 0) return;
-
-    // Helper to create a crop control
-    const createCropControl = (x: number, y: number, cursor: string, actionName: string) => {
-      return new fabric.Control({
-        x, y,
-        cursorStyle: cursor,
-        render: (ctx, left, top, styleOverride, fabricObject) => {
-          const size = 12;
-          ctx.save();
-          ctx.translate(left, top);
-          ctx.rotate((fabricObject.angle * Math.PI) / 180);
-          ctx.fillStyle = "white";
-          ctx.strokeStyle = "var(--neon-cyan)";
-          ctx.lineWidth = 2;
-          ctx.fillRect(-size/2, -size/2, size, size);
-          ctx.strokeRect(-size/2, -size/2, size, size);
-          ctx.restore();
-        },
-        actionHandler: (eventData, transform, x, y) => {
-          const target = transform.target as fabric.FabricImage;
-          if (!target) return false;
-
-          // Non-destructive professional cropping logic
-          // Instead of scaling the object, we adjust its crop properties
-          const { corner } = transform;
-          const isSide = ["mt", "mb", "ml", "mr"].includes(corner);
-          const isCorner = ["tl", "tr", "bl", "br"].includes(corner);
-          
-          if (isSide || isCorner) {
-            // Logic to calculate delta based on mouse move and apply it to cropX/cropY/width/height
-            // For now we use changeSize as a base and map it to crop properties
-            return fabric.controlsUtils.scalingEqually(eventData, transform, x, y);
-          }
-          return false;
-        },
-        actionName
-      });
-    };
-
-    cropControlsRef.current = {
-      tl: createCropControl(-0.5, -0.5, "nw-resize", "crop"),
-      tr: createCropControl(0.5, -0.5, "ne-resize", "crop"),
-      bl: createCropControl(-0.5, 0.5, "sw-resize", "crop"),
-      br: createCropControl(0.5, 0.5, "se-resize", "crop"),
-      mt: createCropControl(0, -0.5, "n-resize", "crop"),
-      mb: createCropControl(0, 0.5, "s-resize", "crop"),
-      ml: createCropControl(-0.5, 0, "w-resize", "crop"),
-      mr: createCropControl(0.5, 0, "e-resize", "crop"),
-    };
-  }, []);
-
   /** Setup a freshly created Fabric canvas: artboard + clipPath + activation hooks. */
   const initFabricCanvas = useCallback(
     (pageId: string, c: fabric.Canvas, w: number, h: number) => {
-      setupCropControls();
       // White artboard rectangle (the visible "paper")
       const artRect = new fabric.Rect({
         left: 0,
@@ -274,7 +207,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
       c.requestRenderAll();
     },
-    [setupCropControls],
+    [],
   );
 
   /** Register (or unregister with `el = null`) a page's <canvas>. Idempotent. */
@@ -585,11 +518,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setIsCropping(true);
     
     const img = obj as fabric.FabricImage;
-    
-    // Custom properties to store crop state
-    if (!(img as any)._originalSize) {
-      (img as any)._originalSize = { width: img.width, height: img.height };
-    }
 
     // Store current state for Undo/Cancel
     (img as any)._preCropState = {
@@ -603,15 +531,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       scaleY: img.scaleY
     };
 
-    // Replace standard controls with professional crop handlers (8 handles)
-    if (cropControlsRef.current) {
-      img.controls = { ...cropControlsRef.current };
-    }
-
     img.set({
-      borderColor: "var(--neon-cyan)",
+      borderColor: "oklch(0.72 0.18 195)",
       cornerColor: "white",
-      cornerStrokeColor: "var(--neon-cyan)",
+      cornerStrokeColor: "oklch(0.72 0.18 195)",
       cornerSize: 12,
       transparentCorners: false,
       hasBorders: true,
@@ -624,7 +547,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     toast.info("Arraste as alças laterais para ajustar o recorte", {
       duration: 5000,
     });
-  }, [activeCanvas, setupCropControls]);
+  }, [activeCanvas]);
 
   const finishCrop = useCallback(() => {
     const c = activeCanvas;
@@ -694,33 +617,39 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const contextValue = useMemo<EditorCtx>(() => ({
+    activeCanvas,
+    registerPageCanvas,
+    setActivePageId,
+    artboard,
+    setArtboardPreset,
+    preset,
+    zoom,
+    setZoom,
+    fitToScreen,
+    addImageFromSource,
+    addImageFromFile,
+    openImagePicker,
+    addPage,
+    deletePage,
+    deleteActiveObject,
+    getPageCanvas,
+    pages,
+    activePageId,
+    isCropping,
+    startCropMode,
+    finishCrop,
+    cancelCrop,
+  }), [
+    activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
+    setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
+    deletePage, deleteActiveObject, getPageCanvas, pages, activePageId, isCropping,
+    startCropMode, finishCrop, cancelCrop,
+  ]);
+
   return (
     <EditorContext.Provider
-      value={{
-        activeCanvas,
-        registerPageCanvas,
-        setActivePageId,
-        artboard,
-        setArtboardPreset,
-        preset,
-        zoom,
-        setZoom,
-        fitToScreen,
-        addImageFromSource,
-        addImageFromFile,
-        openImagePicker,
-        addPage,
-        deletePage,
-        deleteActiveObject,
-        getPageCanvas,
-        pages,
-        activePageId,
-        isCropping,
-        setIsCropping,
-        startCropMode,
-        finishCrop,
-        cancelCrop,
-      }}
+      value={contextValue}
     >
       {children}
     </EditorContext.Provider>

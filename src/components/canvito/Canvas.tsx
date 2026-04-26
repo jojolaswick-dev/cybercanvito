@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ImagePlus, Plus, Trash2 } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
@@ -20,7 +20,7 @@ type CtxMenuState = {
  * each one is its own Fabric canvas. The "+ Adicionar página" button sits at
  * the very bottom of the stack.
  */
-export function Canvas() {
+export const Canvas = memo(function Canvas() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const {
     pages,
@@ -31,29 +31,28 @@ export function Canvas() {
     activePageId,
     deleteActiveObject,
     fitToScreen,
-    isCropping,
   } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
 
   // ---------- Drag & drop on the entire workspace ----------
-  const onDragOver = (e: React.DragEvent) => {
+  const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     if (!isDragging) setIsDragging(true);
-  };
-  const onDragLeave = (e: React.DragEvent) => {
+  }, [isDragging]);
+  const onDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.currentTarget === e.target) setIsDragging(false);
-  };
-  const onDrop = (e: React.DragEvent) => {
+  }, []);
+  const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
     const files = Array.from(e.dataTransfer?.files ?? []);
     files.filter((f) => f.type.startsWith("image/")).forEach((f) => addImageFromFile(f));
-  };
+  }, [addImageFromFile]);
 
   // Block the rest of the document from opening a dropped file in a new tab
   useEffect(() => {
@@ -155,10 +154,10 @@ export function Canvas() {
       </div>
     </div>
   );
-}
+});
 
 /** A single stacked page = one Fabric canvas instance, with a 20px gap below. */
-function PageBoard({
+const PageBoard = memo(function PageBoard({
   pageId,
   index,
 }: {
@@ -181,9 +180,13 @@ function PageBoard({
   const canDelete = pages.length > 1;
   const [contextMenu, setContextMenu] = useState<CtxMenuState | null>(null);
 
-  const scale = zoom / 100;
-  const w = Math.round(artboard.width * scale);
-  const h = Math.round(artboard.height * scale);
+  const { w, h } = useMemo(() => {
+    const nextScale = zoom / 100;
+    return {
+      w: Math.round(artboard.width * nextScale),
+      h: Math.round(artboard.height * nextScale),
+    };
+  }, [artboard.width, artboard.height, zoom]);
 
   // Register on mount, unregister on unmount
   useEffect(() => {
@@ -194,12 +197,12 @@ function PageBoard({
 
   const isActive = activePageId === pageId;
 
-  const onAddImage = (x?: number, y?: number) => {
+  const onAddImage = useCallback((x?: number, y?: number) => {
     setActivePageId(pageId);
     openImagePicker(x === undefined || y === undefined ? { pageId } : { pageId, x, y });
-  };
+  }, [openImagePicker, pageId, setActivePageId]);
 
-  const onContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onContextMenu = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setActivePageId(pageId);
@@ -232,7 +235,7 @@ function PageBoard({
     }
 
     setContextMenu({ x: localX, y: localY, hasObject: Boolean(hitObject), insertX: ax, insertY: ay });
-  };
+  }, [getPageCanvas, pageId, setActivePageId]);
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -249,6 +252,15 @@ function PageBoard({
       window.removeEventListener("keydown", onKey);
     };
   }, [contextMenu]);
+
+  const pageStyle = useMemo(() => ({
+    width: w,
+    height: h,
+    flexShrink: 0,
+    overflow: "hidden",
+    willChange: "transform, contents",
+    contain: "layout paint size",
+  }) satisfies CSSProperties, [w, h]);
 
   return (
     // Outer wrapper: fixed-shrink so it never collapses, centered on the
@@ -303,12 +315,7 @@ function PageBoard({
             ? "shadow-[0_18px_50px_-12px_oklch(0.55_0.28_295/0.45)] ring-2 ring-[var(--neon-violet)]/50"
             : "shadow-[0_12px_40px_-12px_oklch(0.2_0.05_270/0.35)]")
         }
-        style={{
-          width: w,
-          height: h,
-          flexShrink: 0,
-          overflow: "hidden",
-        }}
+        style={pageStyle}
       >
         <canvas ref={canvasElRef} />
         <PageEmptyCTA pageId={pageId} onAddImage={onAddImage} />
@@ -367,14 +374,14 @@ function PageBoard({
       </div>
     </div>
   );
-}
+});
 
 /**
  * The "+ Adicionar Imagem" CTA — lives INSIDE its own page, absolutely
  * positioned only relative to that page's paper. Disappears as soon as the
  * page has at least one non-artboard object.
  */
-function PageEmptyCTA({
+const PageEmptyCTA = memo(function PageEmptyCTA({
   pageId,
   onAddImage,
 }: {
@@ -420,14 +427,16 @@ function PageEmptyCTA({
 
   if (hasObjects) return null;
 
+  const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    onAddImage();
+  }, [onAddImage]);
+
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onAddImage();
-        }}
+        onClick={handleClick}
         className="pointer-events-auto group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[oklch(0.7_0.05_280)] bg-white/70 px-8 py-6 text-[var(--background)] backdrop-blur-sm transition-all hover:border-[var(--neon-violet)] hover:bg-white/90 hover:shadow-[0_0_24px_oklch(0.55_0.28_295/0.35)]"
       >
         <ImagePlus className="h-7 w-7 text-[var(--neon-violet)]" />
@@ -438,4 +447,4 @@ function PageEmptyCTA({
       </button>
     </div>
   );
-}
+});

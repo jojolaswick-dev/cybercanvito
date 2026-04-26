@@ -1,4 +1,4 @@
-import { useState, type ComponentType, type ReactNode } from "react";
+import { memo, useCallback, useState, type ComponentType, type ReactNode } from "react";
 import * as fabric from "fabric";
 import {
   ArrowLeftRight,
@@ -56,7 +56,7 @@ const CSS_FILTERS: Record<EditFilter, string> = {
   negative: "invert(100%)",
 };
 
-export function TopBar() {
+export const TopBar = memo(function TopBar() {
   const [name, setName] = useState("Design sem nome");
   const {
     activeCanvas,
@@ -68,31 +68,31 @@ export function TopBar() {
      pages,
     preset,
     setArtboardPreset,
-    setIsCropping,
     startCropMode,
     finishCrop,
+    cancelCrop,
     isCropping,
   } = useEditor();
 
-  const showSoon = (label: string) => {
+  const showSoon = useCallback((label: string) => {
     console.log(`${label}: em breve`);
     window.alert(`${label}: Em breve`);
-  };
+  }, []);
 
-  const showDevelopmentToast = () => {
+  const showDevelopmentToast = useCallback(() => {
     toast.info("Funcionalidade em desenvolvimento");
-  };
+  }, []);
 
-  const getEditableObject = () => {
+  const getEditableObject = useCallback(() => {
     const target = activeCanvas?.getActiveObject();
     if (!target || (target as fabric.Object & { isArtboard?: boolean }).isArtboard) {
       toast.info("Selecione uma imagem no canvas");
       return null;
     }
     return target;
-  };
+  }, [activeCanvas]);
 
-  const applyFilter = (filter: EditFilter) => {
+  const applyFilter = useCallback((filter: EditFilter) => {
     const target = getEditableObject();
     if (!target) return;
     (target as fabric.Object & { cssFilter?: string }).cssFilter = CSS_FILTERS[filter];
@@ -107,30 +107,30 @@ export function TopBar() {
       target.applyFilters();
     }
     activeCanvas?.requestRenderAll();
-  };
+  }, [activeCanvas, getEditableObject]);
 
-  const rotateActiveObject = (delta: number) => {
+  const rotateActiveObject = useCallback((delta: number) => {
     const target = getEditableObject();
     if (!target) return;
     target.rotate(((target.angle ?? 0) + delta) % 360);
     target.setCoords();
     activeCanvas?.requestRenderAll();
-  };
+  }, [activeCanvas, getEditableObject]);
 
-  const mirrorActiveObject = (axis: "x" | "y") => {
+  const mirrorActiveObject = useCallback((axis: "x" | "y") => {
     const target = getEditableObject();
     if (!target) return;
     if (axis === "x") target.set("scaleX", -(target.scaleX || 1));
     else target.set("scaleY", -(target.scaleY || 1));
     target.setCoords();
     activeCanvas?.requestRenderAll();
-  };
+  }, [activeCanvas, getEditableObject]);
   
-  const startCropping = () => {
+  const startCropping = useCallback(() => {
     startCropMode();
-  };
+  }, [startCropMode]);
 
-  const moveToTrash = () => {
+  const moveToTrash = useCallback(() => {
     if (activeCanvas?.getActiveObject()) {
       deleteActiveObject();
       return;
@@ -140,7 +140,7 @@ export function TopBar() {
       return;
     }
     console.log("Mover para lixeira: nada selecionado");
-  };
+  }, [activeCanvas, activePageId, deleteActiveObject, deletePage, pages.length]);
 
   return (
     <header className="relative z-30 flex h-14 items-center justify-between border-b border-white/10 bg-cyber-bar px-3 text-white">
@@ -280,13 +280,13 @@ export function TopBar() {
         {isCropping ? (
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => useEditor().cancelCrop()}
+              onClick={cancelCrop}
               className="rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium hover:bg-white/10"
             >
               Cancelar
             </button>
             <button 
-              onClick={() => finishCrop()}
+              onClick={finishCrop}
               className="rounded-md bg-[var(--neon-cyan)] px-5 py-2 text-sm font-bold text-black shadow-[0_0_15px_oklch(0.7_0.2_180/0.5)] transition-all hover:scale-[1.02]"
             >
               Concluir Recorte
@@ -304,7 +304,7 @@ export function TopBar() {
       </div>
     </header>
   );
-}
+});
 
 function NavButton({ label, hasChevron }: { label: string; hasChevron?: boolean }) {
   return (
