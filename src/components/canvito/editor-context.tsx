@@ -120,15 +120,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
   const [isCropping, setIsCropping] = useState(false);
-  const cropDataRef = useRef<{
-    originalSrc?: string;
-    originalWidth?: number;
-    originalHeight?: number;
-    cropX: number;
-    cropY: number;
-    cropW: number;
-    cropH: number;
-  } | null>(null);
+  const cropTargetRef = useRef<CroppableImage | null>(null);
 
   // Map of pageId -> Fabric.Canvas (one canvas per stacked page)
   const canvasesRef = useRef<Map<string, fabric.Canvas>>(new Map());
