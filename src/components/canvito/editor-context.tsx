@@ -60,6 +60,11 @@ type EditorCtx = {
 
   pages: PageState[];
   activePageId: string | null;
+  /** Crop mode state */
+  isCropping: boolean;
+  setIsCropping: (val: boolean) => void;
+  /** Execute crop on the current selected object */
+  executeCrop: (cropData: { x: number; y: number; width: number; height: number }) => Promise<void>;
 };
 
 const EditorContext = createContext<EditorCtx | null>(null);
@@ -83,6 +88,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [pages, setPages] = useState<PageState[]>([{ id: makePageId() }]);
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
 
   // Map of pageId -> Fabric.Canvas (one canvas per stacked page)
   const canvasesRef = useRef<Map<string, fabric.Canvas>>(new Map());
@@ -497,6 +503,79 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     [addImageFromFile],
   );
 
+  const executeCrop = useCallback(
+    async (cropData: { x: number; y: number; width: number; height: number }) => {
+      const c = activeCanvas;
+      if (!c) return;
+      const obj = c.getActiveObject();
+      if (!obj || !(obj instanceof fabric.FabricImage)) return;
+
+      const img = obj as fabric.FabricImage;
+      const originalElement = img.getElement() as HTMLImageElement;
+
+      // Create a temporary canvas to draw the cropped part
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = cropData.width;
+      tempCanvas.height = cropData.height;
+      const ctx = tempCanvas.getContext("2d");
+
+      if (ctx) {
+        ctx.drawImage(
+          originalElement,
+          cropData.x,
+          cropData.y,
+          cropData.width,
+          cropData.height,
+          0,
+          0,
+          cropData.width,
+          cropData.height
+        );
+
+        const croppedDataUrl = tempCanvas.toDataURL("image/png");
+        
+        // Load the new cropped image
+        const newImg = await fabric.FabricImage.fromURL(croppedDataUrl, { crossOrigin: "anonymous" });
+        
+        // Preserve original position and rotation
+        newImg.set({
+          left: img.left,
+          top: img.top,
+          angle: img.angle,
+          scaleX: img.scaleX,
+          scaleY: img.scaleY,
+          originX: img.originX,
+          originY: img.originY,
+          cornerColor: "#ffffff",
+          cornerStrokeColor: "oklch(0.55 0.28 295)",
+          borderColor: "oklch(0.55 0.28 295)",
+          cornerSize: 12,
+          transparentCorners: false,
+          cornerStyle: "circle",
+          rotatingPointOffset: 28,
+          lockUniScaling: true,
+        });
+
+        newImg.setControlsVisibility({
+          mt: false, mb: false, ml: false, mr: false,
+          mtr: true, tl: true, tr: true, bl: true, br: true,
+        });
+
+        if (trashControlRef.current) {
+          newImg.controls = { ...newImg.controls, deleteControl: trashControlRef.current };
+        }
+
+        c.remove(img);
+        c.add(newImg);
+        c.setActiveObject(newImg);
+        c.requestRenderAll();
+      }
+      
+      setIsCropping(false);
+    },
+    [activeCanvas]
+  );
+
   useEffect(() => {
     return () => {
       if (fileInputRef.current) {
@@ -530,6 +609,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         getPageCanvas,
         pages,
         activePageId,
+        isCropping,
+        setIsCropping,
+        executeCrop,
       }}
     >
       {children}
