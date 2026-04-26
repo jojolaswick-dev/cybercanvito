@@ -646,56 +646,114 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     [addImageFromFile],
   );
 
+  const restoreCropTarget = useCallback((img: CroppableImage) => {
+    const session = img._cropSession;
+    if (!session) return;
+    if (session.ghost && img.canvas) img.canvas.remove(session.ghost);
+    img.controls = session.controls;
+    img.set({
+      lockMovementX: session.lockMovementX,
+      lockMovementY: session.lockMovementY,
+      lockScalingX: session.lockScalingX,
+      lockScalingY: session.lockScalingY,
+      lockRotation: session.lockRotation,
+      borderColor: "oklch(0.55 0.28 295)",
+      cornerColor: "#ffffff",
+      cornerStrokeColor: "oklch(0.55 0.28 295)",
+      cornerSize: 12,
+      borderDashArray: null,
+      opacity: 1,
+    });
+    if (img.canvas) img.canvas.selection = session.canvasSelection;
+    delete img._cropSession;
+  }, []);
+
   const startCropMode = useCallback(() => {
     const c = activeCanvas;
     if (!c) return;
     const obj = c.getActiveObject();
     if (!obj || !(obj instanceof fabric.FabricImage)) return;
 
-    // Professional crop logic
-    // We will use fabric's built-in controls customization for a custom crop experience
+    setupCropControls();
     setIsCropping(true);
-    
-    const img = obj as fabric.FabricImage;
-    
-    // Custom properties to store crop state
-    if (!(img as any)._originalSize) {
-      (img as any)._originalSize = { width: img.width, height: img.height };
+    const img = obj as CroppableImage;
+    const cropX = img.cropX ?? 0;
+    const cropY = img.cropY ?? 0;
+    const cropW = img.width ?? 1;
+    const cropH = img.height ?? 1;
+    const scaleX = img.scaleX ?? 1;
+    const scaleY = img.scaleY ?? 1;
+    const fullWidth = cropX + cropW;
+    const fullHeight = cropY + cropH;
+    const left = (img.left ?? 0) - (cropW * scaleX) / 2 + ((fullWidth / 2) - cropX) * scaleX;
+    const top = (img.top ?? 0) - (cropH * scaleY) / 2 + ((fullHeight / 2) - cropY) * scaleY;
+
+    let ghost: fabric.FabricImage | undefined;
+    try {
+      ghost = new fabric.FabricImage(img.getElement(), {
+        left,
+        top,
+        originX: "center",
+        originY: "center",
+        width: fullWidth,
+        height: fullHeight,
+        scaleX,
+        scaleY,
+        angle: img.angle ?? 0,
+        opacity: 0.35,
+        selectable: false,
+        evented: false,
+        excludeFromExport: true,
+      });
+      c.add(ghost);
+      c.sendObjectBackwards(ghost);
+    } catch {
+      ghost = undefined;
     }
 
-    // Store current state for Undo/Cancel
-    (img as any)._preCropState = {
-      width: img.width,
-      height: img.height,
-      cropX: img.cropX,
-      cropY: img.cropY,
-      left: img.left,
-      top: img.top,
-      scaleX: img.scaleX,
-      scaleY: img.scaleY
+    img._cropSession = {
+      left,
+      top,
+      width: fullWidth,
+      height: fullHeight,
+      scaleX,
+      scaleY,
+      angle: img.angle ?? 0,
+      cropX,
+      cropY,
+      cropW,
+      cropH,
+      controls: img.controls,
+      lockMovementX: Boolean(img.lockMovementX),
+      lockMovementY: Boolean(img.lockMovementY),
+      lockScalingX: Boolean(img.lockScalingX),
+      lockScalingY: Boolean(img.lockScalingY),
+      lockRotation: Boolean(img.lockRotation),
+      canvasSelection: c.selection,
+      ghost,
     };
 
-    // Replace standard controls with professional crop handlers (8 handles)
-    if (cropControlsRef.current) {
-      img.controls = { ...cropControlsRef.current };
-    }
+    if (cropControlsRef.current) img.controls = { ...cropControlsRef.current };
 
     img.set({
-      borderColor: "var(--neon-cyan)",
+      borderColor: "#22d3ee",
       cornerColor: "white",
-      cornerStrokeColor: "var(--neon-cyan)",
+      cornerStrokeColor: "#22d3ee",
       cornerSize: 12,
       transparentCorners: false,
       hasBorders: true,
       borderDashArray: [5, 5],
+      lockMovementX: true,
+      lockMovementY: true,
+      lockScalingX: true,
+      lockScalingY: true,
+      lockRotation: true,
     });
-    
+    c.selection = false;
     c.setActiveObject(img);
     c.requestRenderAll();
-    
-    toast.info("Arraste as alças laterais para ajustar o recorte", {
-      duration: 5000,
-    });
+    cropTargetRef.current = img;
+    toast.info("Arraste as 8 alças para ajustar o recorte", { duration: 5000 });
   }, [activeCanvas, setupCropControls]);
 
   const finishCrop = useCallback(() => {
