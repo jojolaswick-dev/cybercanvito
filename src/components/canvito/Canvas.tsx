@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ImagePlus, Plus, Trash2 } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
@@ -180,10 +180,9 @@ const PageBoard = memo(function PageBoard({
   const canDelete = pages.length > 1;
   const [contextMenu, setContextMenu] = useState<CtxMenuState | null>(null);
 
-  const { scale, w, h } = useMemo(() => {
+  const { w, h } = useMemo(() => {
     const nextScale = zoom / 100;
     return {
-      scale: nextScale,
       w: Math.round(artboard.width * nextScale),
       h: Math.round(artboard.height * nextScale),
     };
@@ -261,7 +260,7 @@ const PageBoard = memo(function PageBoard({
     overflow: "hidden",
     willChange: "transform, contents",
     contain: "layout paint size",
-  }) satisfies React.CSSProperties, [w, h]);
+  }) satisfies CSSProperties, [w, h]);
 
   return (
     // Outer wrapper: fixed-shrink so it never collapses, centered on the
