@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ImagePlus, Plus, Trash2 } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
@@ -20,7 +20,7 @@ type CtxMenuState = {
  * each one is its own Fabric canvas. The "+ Adicionar página" button sits at
  * the very bottom of the stack.
  */
-export function Canvas() {
+export const Canvas = memo(function Canvas() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const {
     pages,
@@ -31,29 +31,28 @@ export function Canvas() {
     activePageId,
     deleteActiveObject,
     fitToScreen,
-    isCropping,
   } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
 
   // ---------- Drag & drop on the entire workspace ----------
-  const onDragOver = (e: React.DragEvent) => {
+  const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     if (!isDragging) setIsDragging(true);
-  };
-  const onDragLeave = (e: React.DragEvent) => {
+  }, [isDragging]);
+  const onDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.currentTarget === e.target) setIsDragging(false);
-  };
-  const onDrop = (e: React.DragEvent) => {
+  }, []);
+  const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
     const files = Array.from(e.dataTransfer?.files ?? []);
     files.filter((f) => f.type.startsWith("image/")).forEach((f) => addImageFromFile(f));
-  };
+  }, [addImageFromFile]);
 
   // Block the rest of the document from opening a dropped file in a new tab
   useEffect(() => {
@@ -155,7 +154,7 @@ export function Canvas() {
       </div>
     </div>
   );
-}
+});
 
 /** A single stacked page = one Fabric canvas instance, with a 20px gap below. */
 function PageBoard({
