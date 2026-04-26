@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { ImagePlus, Plus, Trash2 } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
-import { CropOverlay } from "./CropOverlay";
 
 /** What was hit on right-click — used to choose menu options. */
 type CtxMenuState = {
@@ -154,7 +153,6 @@ export function Canvas() {
           </div>
         )}
       </div>
-      {isCropping && <CropOverlay />}
     </div>
   );
 }
