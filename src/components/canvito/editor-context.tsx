@@ -226,7 +226,47 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     (pageId: string, c: fabric.Canvas, w: number, h: number) => {
       setupCropControls();
       // White artboard rectangle (the visible "paper")
-...
+      const artRect = new fabric.Rect({
+        left: 0,
+        top: 0,
+        width: w,
+        height: h,
+        fill: "#ffffff",
+        selectable: false,
+        evented: false,
+        hoverCursor: "default",
+      });
+      (artRect as fabric.Rect & { isArtboard?: boolean }).isArtboard = true;
+      c.add(artRect);
+      c.sendObjectToBack(artRect);
+
+      // Clip everything to the artboard so dropped images don't bleed out.
+      c.clipPath = new fabric.Rect({
+        left: 0,
+        top: 0,
+        width: w,
+        height: h,
+        absolutePositioned: true,
+      });
+
+      // Activation: focusing this canvas marks it active for the toolbar/sidebar.
+      const markActive = () => {
+        activePageIdRef.current = pageId;
+        setActivePageIdState(pageId);
+        setActiveCanvas(c);
+      };
+      c.on("mouse:down", markActive);
+
+      // Keep the deletion handle wired on every newly added object
+      c.on("object:added", (e) => {
+        const obj = e.target;
+        if (!obj) return;
+        if ((obj as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
+        if (trashControlRef.current) {
+          obj.controls = { ...obj.controls, deleteControl: trashControlRef.current };
+        }
+      });
+
       c.requestRenderAll();
     },
     [setupCropControls],
