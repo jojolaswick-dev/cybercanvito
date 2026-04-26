@@ -160,66 +160,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  // --- Professional Crop Logic ---
-  const cropControlsRef = useRef<Record<string, fabric.Control>>({});
-  
-  const setupCropControls = useCallback(() => {
-    if (Object.keys(cropControlsRef.current).length > 0) return;
-
-    // Helper to create a crop control
-    const createCropControl = (x: number, y: number, cursor: string, actionName: string) => {
-      return new fabric.Control({
-        x, y,
-        cursorStyle: cursor,
-        render: (ctx, left, top, styleOverride, fabricObject) => {
-          const size = 12;
-          ctx.save();
-          ctx.translate(left, top);
-          ctx.rotate((fabricObject.angle * Math.PI) / 180);
-          ctx.fillStyle = "white";
-          ctx.strokeStyle = "var(--neon-cyan)";
-          ctx.lineWidth = 2;
-          ctx.fillRect(-size/2, -size/2, size, size);
-          ctx.strokeRect(-size/2, -size/2, size, size);
-          ctx.restore();
-        },
-        actionHandler: (eventData, transform, x, y) => {
-          const target = transform.target as fabric.FabricImage;
-          if (!target) return false;
-
-          // Non-destructive professional cropping logic
-          // Instead of scaling the object, we adjust its crop properties
-          const { corner } = transform;
-          const isSide = ["mt", "mb", "ml", "mr"].includes(corner);
-          const isCorner = ["tl", "tr", "bl", "br"].includes(corner);
-          
-          if (isSide || isCorner) {
-            // Logic to calculate delta based on mouse move and apply it to cropX/cropY/width/height
-            // For now we use changeSize as a base and map it to crop properties
-            return fabric.controlsUtils.scalingEqually(eventData, transform, x, y);
-          }
-          return false;
-        },
-        actionName
-      });
-    };
-
-    cropControlsRef.current = {
-      tl: createCropControl(-0.5, -0.5, "nw-resize", "crop"),
-      tr: createCropControl(0.5, -0.5, "ne-resize", "crop"),
-      bl: createCropControl(-0.5, 0.5, "sw-resize", "crop"),
-      br: createCropControl(0.5, 0.5, "se-resize", "crop"),
-      mt: createCropControl(0, -0.5, "n-resize", "crop"),
-      mb: createCropControl(0, 0.5, "s-resize", "crop"),
-      ml: createCropControl(-0.5, 0, "w-resize", "crop"),
-      mr: createCropControl(0.5, 0, "e-resize", "crop"),
-    };
-  }, []);
-
   /** Setup a freshly created Fabric canvas: artboard + clipPath + activation hooks. */
   const initFabricCanvas = useCallback(
     (pageId: string, c: fabric.Canvas, w: number, h: number) => {
-      setupCropControls();
       // White artboard rectangle (the visible "paper")
       const artRect = new fabric.Rect({
         left: 0,
@@ -264,7 +207,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
       c.requestRenderAll();
     },
-    [setupCropControls],
+    [],
   );
 
   /** Register (or unregister with `el = null`) a page's <canvas>. Idempotent. */
