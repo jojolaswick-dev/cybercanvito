@@ -518,11 +518,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setIsCropping(true);
     
     const img = obj as fabric.FabricImage;
-    
-    // Custom properties to store crop state
-    if (!(img as any)._originalSize) {
-      (img as any)._originalSize = { width: img.width, height: img.height };
-    }
 
     // Store current state for Undo/Cancel
     (img as any)._preCropState = {
@@ -536,15 +531,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       scaleY: img.scaleY
     };
 
-    // Replace standard controls with professional crop handlers (8 handles)
-    if (cropControlsRef.current) {
-      img.controls = { ...cropControlsRef.current };
-    }
-
     img.set({
-      borderColor: "var(--neon-cyan)",
+      borderColor: "oklch(0.72 0.18 195)",
       cornerColor: "white",
-      cornerStrokeColor: "var(--neon-cyan)",
+      cornerStrokeColor: "oklch(0.72 0.18 195)",
       cornerSize: 12,
       transparentCorners: false,
       hasBorders: true,
@@ -557,7 +547,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     toast.info("Arraste as alças laterais para ajustar o recorte", {
       duration: 5000,
     });
-  }, [activeCanvas, setupCropControls]);
+  }, [activeCanvas]);
 
   const finishCrop = useCallback(() => {
     const c = activeCanvas;
@@ -627,33 +617,39 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const contextValue = useMemo<EditorCtx>(() => ({
+    activeCanvas,
+    registerPageCanvas,
+    setActivePageId,
+    artboard,
+    setArtboardPreset,
+    preset,
+    zoom,
+    setZoom,
+    fitToScreen,
+    addImageFromSource,
+    addImageFromFile,
+    openImagePicker,
+    addPage,
+    deletePage,
+    deleteActiveObject,
+    getPageCanvas,
+    pages,
+    activePageId,
+    isCropping,
+    startCropMode,
+    finishCrop,
+    cancelCrop,
+  }), [
+    activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
+    setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
+    deletePage, deleteActiveObject, getPageCanvas, pages, activePageId, isCropping,
+    startCropMode, finishCrop, cancelCrop,
+  ]);
+
   return (
     <EditorContext.Provider
-      value={{
-        activeCanvas,
-        registerPageCanvas,
-        setActivePageId,
-        artboard,
-        setArtboardPreset,
-        preset,
-        zoom,
-        setZoom,
-        fitToScreen,
-        addImageFromSource,
-        addImageFromFile,
-        openImagePicker,
-        addPage,
-        deletePage,
-        deleteActiveObject,
-        getPageCanvas,
-        pages,
-        activePageId,
-        isCropping,
-        setIsCropping,
-        startCropMode,
-        finishCrop,
-        cancelCrop,
-      }}
+      value={contextValue}
     >
       {children}
     </EditorContext.Provider>
