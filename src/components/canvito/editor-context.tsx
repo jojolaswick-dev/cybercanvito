@@ -756,29 +756,59 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     toast.info("Arraste as 8 alças para ajustar o recorte", { duration: 5000 });
   }, [activeCanvas, setupCropControls]);
 
-  const finishCrop = useCallback(() => {
+  const finishCrop = useCallback(async () => {
     const c = activeCanvas;
     if (!c) return;
     const obj = c.getActiveObject();
     if (!obj || !(obj instanceof fabric.FabricImage)) return;
 
-    const img = obj as fabric.FabricImage;
-    
-    // Restore original controls + trash handle
-    img.controls = {
-      ...fabric.controlsUtils.createObjectDefaultControls(),
-      deleteControl: trashControlRef.current!
-    };
-    
-    // Reset visual style
-    img.set({
-      borderColor: "oklch(0.55 0.28 295)",
+    const img = obj as CroppableImage;
+    const session = img._cropSession;
+    if (!session) return;
+
+    const outputCanvas = document.createElement("canvas");
+    const cropX = Math.round(img.cropX ?? session.cropX);
+    const cropY = Math.round(img.cropY ?? session.cropY);
+    const cropW = Math.max(1, Math.round(img.width ?? session.cropW));
+    const cropH = Math.max(1, Math.round(img.height ?? session.cropH));
+    outputCanvas.width = cropW;
+    outputCanvas.height = cropH;
+    const ctx = outputCanvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(img.getElement(), cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+    const dataUrl = outputCanvas.toDataURL("image/png");
+    const cropped = await fabric.FabricImage.fromURL(dataUrl);
+
+    cropped.set({
+      left: img.left,
+      top: img.top,
+      originX: "center",
+      originY: "center",
+      scaleX: session.scaleX,
+      scaleY: session.scaleY,
+      angle: session.angle,
       cornerColor: "#ffffff",
       cornerStrokeColor: "oklch(0.55 0.28 295)",
+      borderColor: "oklch(0.55 0.28 295)",
       cornerSize: 12,
-      borderDashArray: null,
+      transparentCorners: false,
+      cornerStyle: "circle",
+      rotatingPointOffset: 28,
+      lockUniScaling: true,
     });
+    cropped.setControlsVisibility({
+      mt: false, mb: false, ml: false, mr: false,
+      mtr: true, tl: true, tr: true, bl: true, br: true,
+    });
+    if (trashControlRef.current) cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
 
+    if (session.ghost) c.remove(session.ghost);
+    c.remove(img);
+    c.add(cropped);
+    c.setActiveObject(cropped);
+
+    cropTargetRef.current = null;
     setIsCropping(false);
     c.requestRenderAll();
     toast.success("Recorte aplicado");
@@ -787,30 +817,30 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const cancelCrop = useCallback(() => {
     const c = activeCanvas;
     if (!c) return;
-    const obj = c.getActiveObject();
-    if (obj && (obj as any)._preCropState) {
-      const state = (obj as any)._preCropState;
-      obj.set(state);
-      delete (obj as any)._preCropState;
-    }
-
+    const obj = (cropTargetRef.current ?? c.getActiveObject()) as CroppableImage | null;
     if (obj instanceof fabric.FabricImage) {
-      obj.controls = {
-        ...fabric.controlsUtils.createObjectDefaultControls(),
-        deleteControl: trashControlRef.current!
-      };
-      obj.set({
-        borderColor: "oklch(0.55 0.28 295)",
-        cornerColor: "#ffffff",
-        cornerStrokeColor: "oklch(0.55 0.28 295)",
-        cornerSize: 12,
-        borderDashArray: null,
-      });
+      const session = obj._cropSession;
+      if (session) {
+        obj.set({
+          left: session.left,
+          top: session.top,
+          width: session.cropW,
+          height: session.cropH,
+          cropX: session.cropX,
+          cropY: session.cropY,
+          scaleX: session.scaleX,
+          scaleY: session.scaleY,
+          angle: session.angle,
+        });
+        restoreCropTarget(obj);
+        c.setActiveObject(obj);
+      }
     }
 
+    cropTargetRef.current = null;
     setIsCropping(false);
     c.requestRenderAll();
-  }, [activeCanvas]);
+  }, [activeCanvas, restoreCropTarget]);
 
   useEffect(() => {
     return () => {
