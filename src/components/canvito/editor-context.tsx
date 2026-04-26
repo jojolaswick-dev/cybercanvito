@@ -38,7 +38,7 @@ type CropSession = {
   cropY: number;
   cropW: number;
   cropH: number;
-  controls: fabric.Control[] | Record<string, fabric.Control>;
+  controls: Record<string, fabric.Control>;
   lockMovementX: boolean;
   lockMovementY: boolean;
   lockScalingX: boolean;
