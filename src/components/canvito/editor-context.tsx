@@ -107,6 +107,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const activePageIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingInsertAtRef = useRef<ImageInsertPoint | null>(null);
+  const cropSessionRef = useRef<CropSession | null>(null);
 
   // ---------- Trash icon + custom Fabric Control (delete handle on objects) ----------
   const trashIconRef = useRef<HTMLImageElement | null>(null);
