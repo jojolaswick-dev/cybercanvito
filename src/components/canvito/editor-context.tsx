@@ -631,9 +631,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const session = cropSessionRef.current;
     if (!session) return;
     
-    // Save state BEFORE crop result as the "pre-crop" history entry
-    // This allows Ctrl+Z to jump back exactly to before the crop
-    saveHistory();
+    // We don't save history here because we already saved the "pre-crop" state 
+    // when entering crop mode.
 
     const { canvas, image, cropBox } = session;
     const target = image;
