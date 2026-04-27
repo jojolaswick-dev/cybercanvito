@@ -588,6 +588,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const applyCrop = useCallback(async () => {
     const session = cropSessionRef.current;
     if (!session) return;
+    
+    // Save state BEFORE crop result as the "pre-crop" history entry
+    // This allows Ctrl+Z to jump back exactly to before the crop
+    saveHistory();
+
     const { canvas, image, cropBox } = session;
     const target = image;
     const box = cropBox.getBoundingRect();
@@ -624,12 +629,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       lockUniScaling: true 
     });
 
-    // Use a transactional approach: apply changes, then clear session
-    // This ensures history doesn't capture intermediate states
     try {
       isInternalUpdateRef.current = true;
 
-      // Clean up temporary UI before final swap
       const { canvas, image, cropBox } = session;
       
       canvas.remove(cropBox, ...session.overlays, ...session.actions);
@@ -637,7 +639,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       canvas.off("object:moving", session.refresh);
       canvas.off("object:scaling", session.refresh);
 
-      // Final object swap
       canvas.remove(target);
       canvas.add(cropped);
       
@@ -645,7 +646,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
       }
       
-      // Ensure image is fully visible
       cropped.set({ opacity: 1, visible: true });
       canvas.setActiveObject(cropped);
 
@@ -653,7 +653,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       setIsCropMode(false);
       
       isInternalUpdateRef.current = false;
-      // Save history AFTER crop is confirmed as a single atomic event
+      // Save history AFTER crop to finalize the "post-crop" state
       saveHistory();
       canvas.requestRenderAll();
     } catch (err) {
