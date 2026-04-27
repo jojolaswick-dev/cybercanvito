@@ -121,6 +121,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const undoStackRef = useRef<HistoryState[]>([]);
   const redoStackRef = useRef<HistoryState[]>([]);
   const isInternalUpdateRef = useRef(false);
+  const originalImageStateRef = useRef<{ 
+    pageId: string;
+    json: string; // The specific image object JSON
+    id: string;   // Image ID if we have one, or we can use the object itself
+  } | null>(null);
 
   // Map of pageId -> Fabric.Canvas (one canvas per stacked page)
   const canvasesRef = useRef<Map<string, fabric.Canvas>>(new Map());
