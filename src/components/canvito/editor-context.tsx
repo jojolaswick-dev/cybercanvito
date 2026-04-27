@@ -61,14 +61,6 @@ type EditorCtx = {
 
   pages: PageState[];
   activePageId: string | null;
-  /** Crop mode state */
-  isCropping: boolean;
-  /** Start professional cropping mode on the current selected object */
-  startCropMode: () => void;
-  /** Finish crop and update the image */
-  finishCrop: () => void;
-  /** Cancel crop mode */
-  cancelCrop: () => void;
 };
 
 const EditorContext = createContext<EditorCtx | null>(null);
@@ -92,11 +84,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [pages, setPages] = useState<PageState[]>([{ id: makePageId() }]);
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
-  const [isCropping, setIsCropping] = useState(false);
 
   // Map of pageId -> Fabric.Canvas (one canvas per stacked page)
   const canvasesRef = useRef<Map<string, fabric.Canvas>>(new Map());
   const activePageIdRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingInsertAtRef = useRef<ImageInsertPoint | null>(null);
 
   // ---------- Trash icon + custom Fabric Control (delete handle on objects) ----------
   const trashIconRef = useRef<HTMLImageElement | null>(null);
@@ -403,7 +396,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ---------- Image insertion (always targets the active page's canvas) ----------
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const addImageFromSource = useCallback(
     async (src: string, at?: ImageInsertPoint) => {
@@ -477,7 +469,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
   // Pending insertion point used by openImagePicker(at) — applied to the next
   // file selected via the shared <input type=file>.
-  const pendingInsertAtRef = useRef<ImageInsertPoint | null>(null);
 
   const openImagePicker = useCallback(
     (at?: ImageInsertPoint) => {
