@@ -605,7 +605,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       c.remove(active);
     }
     c.discardActiveObject();
-    c.requestRenderAll();
+        c.requestRenderAll();
+        saveHistory();
     saveHistory();
   }, [saveHistory]);
 
