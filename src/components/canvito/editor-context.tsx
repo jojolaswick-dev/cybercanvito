@@ -541,6 +541,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       if (trashControlRef.current) cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
       c.setActiveObject(cropped);
       c.requestRenderAll();
+      saveHistory();
     };
 
     const keydown = (event: KeyboardEvent) => { if (event.key === "Escape") clearCropSession(); if (event.key === "Enter") void applyCrop(); };
@@ -552,7 +553,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", keydown);
     setIsCropMode(true);
     refresh();
-  }, [clearCropSession]);
+  }, [clearCropSession, saveHistory]);
 
   const applyCrop = useCallback(async () => {
     const session = cropSessionRef.current;
