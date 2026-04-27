@@ -196,7 +196,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   }
 
   const saveHistory = useCallback(() => {
-    if (isInternalUpdateRef.current) return;
+    if (isInternalUpdateRef.current || isCropMode) return;
     
     const currentState: HistoryState = {
       pages: pages.map(p => ({
@@ -209,7 +209,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     undoStackRef.current.push(currentState);
     if (undoStackRef.current.length > 50) undoStackRef.current.shift();
     redoStackRef.current = [];
-  }, [pages]);
+  }, [pages, isCropMode]);
 
   /** Setup a freshly created Fabric canvas: artboard + clipPath + activation hooks. */
   const initFabricCanvas = useCallback(
@@ -588,6 +588,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const applyCrop = useCallback(async () => {
     const session = cropSessionRef.current;
     if (!session) return;
+    
+    // Save state BEFORE crop result as the "pre-crop" history entry
+    // This allows Ctrl+Z to jump back exactly to before the crop
+    saveHistory();
+
     const { canvas, image, cropBox } = session;
     const target = image;
     const box = cropBox.getBoundingRect();
@@ -624,12 +629,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       lockUniScaling: true 
     });
 
-    // Use a transactional approach: apply changes, then clear session
-    // This ensures history doesn't capture intermediate states
     try {
       isInternalUpdateRef.current = true;
 
-      // Clean up temporary UI before final swap
       const { canvas, image, cropBox } = session;
       
       canvas.remove(cropBox, ...session.overlays, ...session.actions);
@@ -637,7 +639,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       canvas.off("object:moving", session.refresh);
       canvas.off("object:scaling", session.refresh);
 
-      // Final object swap
       canvas.remove(target);
       canvas.add(cropped);
       
@@ -645,7 +646,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
       }
       
-      // Ensure image is fully visible
       cropped.set({ opacity: 1, visible: true });
       canvas.setActiveObject(cropped);
 
@@ -653,7 +653,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       setIsCropMode(false);
       
       isInternalUpdateRef.current = false;
-      // Save history AFTER crop is confirmed as a single atomic event
+      // Save history AFTER crop to finalize the "post-crop" state
       saveHistory();
       canvas.requestRenderAll();
     } catch (err) {
@@ -836,55 +836,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     if (isCropMode) {
       cancelCrop();
       return;
-    }
-
-    const c = canvasesRef.current.get(activePageIdRef.current ?? "");
-    const active = c?.getActiveObject();
-    
-    // Lógica de Restauração Manual for Crop
-    if (c && active && (active as any).isCroppedImage && originalImageStateRef.current) {
-      const state = originalImageStateRef.current;
-      if (state.pageId === activePageIdRef.current) {
-        isInternalUpdateRef.current = true;
-        
-        // Immediate Cleanup
-        c.remove(active);
-        
-        // Remove any lingering crop UI just in case
-        c.getObjects().forEach(obj => {
-          if ((obj as any).isCropOverlay) c.remove(obj);
-        });
-
-        // Reinsert Original Image from Snapshot
-        const originalData = JSON.parse(state.json);
-        const originalImg = await fabric.FabricImage.fromObject(originalData);
-        
-        // Force Opacity 1.0 and Normal State
-        originalImg.set({
-          opacity: 1,
-          visible: true,
-          selectable: true,
-          evented: true
-        });
-
-        c.add(originalImg);
-        
-        if (trashControlRef.current) {
-          originalImg.controls = { ...originalImg.controls, deleteControl: trashControlRef.current };
-        }
-
-        c.setActiveObject(originalImg);
-        c.requestRenderAll();
-        
-        originalImageStateRef.current = null;
-        isInternalUpdateRef.current = false;
-        
-        // Remove the CROP_CONFIRM state from the stack if needed, 
-        // or just let the standard undo handle the rest of the stack later.
-        // For now, we've manually undone the crop.
-        undoStackRef.current.pop();
-        return;
-      }
     }
 
     const currentState: HistoryState = {
