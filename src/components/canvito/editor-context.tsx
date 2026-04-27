@@ -606,7 +606,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     }
     c.discardActiveObject();
     c.requestRenderAll();
-  }, []);
+    saveHistory();
+  }, [saveHistory]);
 
   // ---------- Image insertion (always targets the active page's canvas) ----------
 
