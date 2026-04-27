@@ -423,15 +423,35 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const minSize = 24;
     target.set({ selectable: false, evented: false, opacity: 0.82 });
     target.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false, mtr: false, tl: false, tr: false, bl: false, br: false });
-    const cropBox = new fabric.Rect({ left: bounds.left + bounds.width * 0.12, top: bounds.top + bounds.height * 0.12, width: bounds.width * 0.76, height: bounds.height * 0.76, fill: "transparent", stroke: "oklch(0.98 0 0)", strokeWidth: 2 / c.getZoom(), cornerColor: "oklch(0.55 0.28 295)", cornerStrokeColor: "oklch(0.98 0 0)", borderColor: "oklch(0.98 0 0)", cornerSize: 12, transparentCorners: false, lockRotation: true, hasRotatingPoint: false, objectCaching: false });
-    cropBox.setControlsVisibility({ mtr: false, mt: true, mb: true, ml: true, mr: true, tl: true, tr: true, bl: true, br: true });
-    cropBox.controls.mtr.visible = false;
-    cropBox.on("scaling", () => {
-      const scaledW = Math.max(minSize, cropBox.getScaledWidth());
-      const scaledH = Math.max(minSize, cropBox.getScaledHeight());
-      cropBox.set({ width: scaledW, height: scaledH, scaleX: 1, scaleY: 1 });
+    const cropBox = new fabric.Rect({ left: bounds.left + bounds.width * 0.12, top: bounds.top + bounds.height * 0.12, width: bounds.width * 0.76, height: bounds.height * 0.76, originX: "left", originY: "top", fill: "transparent", stroke: "oklch(0.98 0 0)", strokeWidth: 2 / c.getZoom(), cornerColor: "oklch(0.55 0.28 295)", cornerStrokeColor: "oklch(0.98 0 0)", borderColor: "oklch(0.98 0 0)", cornerSize: 12, transparentCorners: false, lockRotation: true, hasRotatingPoint: false, centeredScaling: false, lockScalingFlip: true, objectCaching: false, noScaleCache: true });
+    const resizeCropBox = (handle: "tl" | "tr" | "bl" | "br" | "mt" | "mb" | "ml" | "mr") => (_eventData: unknown, _transform: unknown, x: number, y: number) => {
+      const left = cropBox.left ?? bounds.left;
+      const top = cropBox.top ?? bounds.top;
+      const right = left + (cropBox.width ?? minSize);
+      const bottom = top + (cropBox.height ?? minSize);
+      let nextLeft = left;
+      let nextTop = top;
+      let nextRight = right;
+      let nextBottom = bottom;
+      if (handle.includes("l")) nextLeft = Math.min(Math.max(x, bounds.left), right - minSize);
+      if (handle.includes("r")) nextRight = Math.max(Math.min(x, bounds.left + bounds.width), left + minSize);
+      if (handle.includes("t")) nextTop = Math.min(Math.max(y, bounds.top), bottom - minSize);
+      if (handle.includes("b")) nextBottom = Math.max(Math.min(y, bounds.top + bounds.height), top + minSize);
+      cropBox.set({ left: nextLeft, top: nextTop, width: nextRight - nextLeft, height: nextBottom - nextTop, scaleX: 1, scaleY: 1 });
       cropBox.setCoords();
-    });
+      refresh();
+      return true;
+    };
+    cropBox.controls = {
+      tl: new fabric.Control({ x: -0.5, y: -0.5, cursorStyle: "nwse-resize", actionHandler: resizeCropBox("tl") }),
+      tr: new fabric.Control({ x: 0.5, y: -0.5, cursorStyle: "nesw-resize", actionHandler: resizeCropBox("tr") }),
+      bl: new fabric.Control({ x: -0.5, y: 0.5, cursorStyle: "nesw-resize", actionHandler: resizeCropBox("bl") }),
+      br: new fabric.Control({ x: 0.5, y: 0.5, cursorStyle: "nwse-resize", actionHandler: resizeCropBox("br") }),
+      mt: new fabric.Control({ x: 0, y: -0.5, cursorStyle: "ns-resize", actionHandler: resizeCropBox("mt") }),
+      mb: new fabric.Control({ x: 0, y: 0.5, cursorStyle: "ns-resize", actionHandler: resizeCropBox("mb") }),
+      ml: new fabric.Control({ x: -0.5, y: 0, cursorStyle: "ew-resize", actionHandler: resizeCropBox("ml") }),
+      mr: new fabric.Control({ x: 0.5, y: 0, cursorStyle: "ew-resize", actionHandler: resizeCropBox("mr") }),
+    };
     (cropBox as CropOverlayObject).isCropOverlay = true;
 
     const overlays = [0, 1, 2, 3].map(() => {
@@ -450,13 +470,15 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
     const refresh = () => {
       const box = cropBox.getBoundingRect();
+      const actionsLeft = box.left + box.width / 2 - 100;
+      const actionsTop = Math.max(bounds.top, box.top) - 46;
       overlays[0].set({ left: bounds.left, top: bounds.top, width: bounds.width, height: Math.max(0, box.top - bounds.top) });
       overlays[1].set({ left: bounds.left, top: box.top, width: Math.max(0, box.left - bounds.left), height: box.height });
       overlays[2].set({ left: box.left + box.width, top: box.top, width: Math.max(0, bounds.left + bounds.width - box.left - box.width), height: box.height });
       overlays[3].set({ left: bounds.left, top: box.top + box.height, width: bounds.width, height: Math.max(0, bounds.top + bounds.height - box.top - box.height) });
-      confirmButton.set({ left: box.left, top: Math.max(bounds.top, box.top) - 46 });
-      cancelButton.set({ left: box.left + 104, top: Math.max(bounds.top, box.top) - 46 });
-      c.requestRenderAll();
+      confirmButton.set({ left: actionsLeft, top: actionsTop });
+      cancelButton.set({ left: actionsLeft + 104, top: actionsTop });
+      c.renderAll();
     };
 
     const applyCrop = async () => {
