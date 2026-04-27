@@ -477,8 +477,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       ctx.drawImage(element, sx, sy, out.width, out.height, 0, 0, out.width, out.height);
       const cropped = await fabric.FabricImage.fromURL(out.toDataURL("image/png"));
       cropped.set({ left: box.left + box.width / 2, top: box.top + box.height / 2, originX: "center", originY: "center", scaleX: box.width / out.width, scaleY: box.height / out.height, cornerColor: "#ffffff", cornerStrokeColor: "oklch(0.55 0.28 295)", borderColor: "oklch(0.55 0.28 295)", cornerSize: 12, transparentCorners: false, cornerStyle: "circle", lockUniScaling: true });
-      c.remove(target);
       clearCropSession();
+      c.remove(target);
       c.add(cropped);
       if (trashControlRef.current) cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
       c.setActiveObject(cropped);
@@ -645,13 +645,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     addPage,
     deletePage,
     deleteActiveObject,
+    startCropMode,
     getPageCanvas,
     pages,
     activePageId,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
-    deletePage, deleteActiveObject, getPageCanvas, pages, activePageId,
+    deletePage, deleteActiveObject, startCropMode, getPageCanvas, pages, activePageId,
   ]);
 
   return (
