@@ -579,11 +579,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       ml: new fabric.Control({ x: -0.5, y: 0, cursorStyle: "ew-resize", actionHandler: resizeCropBox("ml") }),
       mr: new fabric.Control({ x: 0.5, y: 0, cursorStyle: "ew-resize", actionHandler: resizeCropBox("mr") }),
     };
-    (cropBox as CropOverlayObject).isCropOverlay = true;
+    (cropBox as any).isCropOverlay = true;
+    (cropBox as any).isCropControl = true;
 
     const overlays = [0, 1, 2, 3].map(() => {
       const overlay = new fabric.Rect({ fill: "oklch(0.08 0.02 280 / 0.56)", selectable: false, evented: false, objectCaching: false });
-      (overlay as CropOverlayObject).isCropOverlay = true;
+      (overlay as any).isCropOverlay = true;
+      (overlay as any).isCropControl = true;
       return overlay as CropOverlayObject;
     });
 
