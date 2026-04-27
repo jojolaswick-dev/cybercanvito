@@ -55,12 +55,30 @@ type EditorCtx = {
   addPage: () => void;
   deletePage: (pageId: string) => void;
   deleteActiveObject: () => void;
+  startCropMode: () => void;
 
   /** Read the live Fabric.Canvas for a given page (null if not registered yet). */
   getPageCanvas: (pageId: string) => fabric.Canvas | null;
 
   pages: PageState[];
   activePageId: string | null;
+};
+
+type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
+
+type CropSession = {
+  canvas: fabric.Canvas;
+  image: fabric.FabricImage;
+  cropBox: CropOverlayObject;
+  overlays: CropOverlayObject[];
+  actions: fabric.Group[];
+  refresh: () => void;
+  keydown: (event: KeyboardEvent) => void;
+  original: {
+    selectable: boolean;
+    evented: boolean;
+    opacity: number;
+  };
 };
 
 const EditorContext = createContext<EditorCtx | null>(null);
@@ -90,6 +108,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const activePageIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingInsertAtRef = useRef<ImageInsertPoint | null>(null);
+  const cropSessionRef = useRef<CropSession | null>(null);
 
   // ---------- Trash icon + custom Fabric Control (delete handle on objects) ----------
   const trashIconRef = useRef<HTMLImageElement | null>(null);
@@ -255,6 +274,20 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setActiveCanvas(c);
   }, []);
 
+  const clearCropSession = useCallback(() => {
+    const session = cropSessionRef.current;
+    if (!session) return;
+    window.removeEventListener("keydown", session.keydown);
+    session.canvas.off("object:moving", session.refresh);
+    session.canvas.off("object:scaling", session.refresh);
+    session.canvas.remove(session.cropBox, ...session.overlays, ...session.actions);
+    session.image.set({ selectable: session.original.selectable, evented: session.original.evented, opacity: session.original.opacity });
+    session.image.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false, mtr: true, tl: true, tr: true, bl: true, br: true });
+    session.canvas.setActiveObject(session.image);
+    session.canvas.requestRenderAll();
+    cropSessionRef.current = null;
+  }, []);
+
   // ---------- Artboard preset ----------
   // When the preset changes, every existing canvas needs to be resized + clipped
   // to the new dimensions. We rebuild artboard + clipPath in place to preserve
@@ -376,6 +409,92 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     (pageId: string) => canvasesRef.current.get(pageId) ?? null,
     [],
   );
+
+  const startCropMode = useCallback(() => {
+    clearCropSession();
+    const c = canvasesRef.current.get(activePageIdRef.current ?? "");
+    const target = c?.getActiveObject();
+    if (!c || !(target instanceof fabric.FabricImage)) {
+      toast.info("Selecione uma imagem para recortar");
+      return;
+    }
+
+    const bounds = target.getBoundingRect();
+    const minSize = 24;
+    target.set({ selectable: false, evented: false, opacity: 0.82 });
+    target.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false, mtr: false, tl: false, tr: false, bl: false, br: false });
+    const cropBox = new fabric.Rect({ left: bounds.left + bounds.width * 0.12, top: bounds.top + bounds.height * 0.12, width: bounds.width * 0.76, height: bounds.height * 0.76, fill: "transparent", stroke: "oklch(0.98 0 0)", strokeWidth: 2 / c.getZoom(), cornerColor: "oklch(0.55 0.28 295)", cornerStrokeColor: "oklch(0.98 0 0)", borderColor: "oklch(0.98 0 0)", cornerSize: 12, transparentCorners: false, lockRotation: true, hasRotatingPoint: false, objectCaching: false });
+    cropBox.setControlsVisibility({ mtr: false, mt: true, mb: true, ml: true, mr: true, tl: true, tr: true, bl: true, br: true });
+    cropBox.controls.mtr.visible = false;
+    cropBox.on("scaling", () => {
+      const scaledW = Math.max(minSize, cropBox.getScaledWidth());
+      const scaledH = Math.max(minSize, cropBox.getScaledHeight());
+      cropBox.set({ width: scaledW, height: scaledH, scaleX: 1, scaleY: 1 });
+      cropBox.setCoords();
+    });
+    (cropBox as CropOverlayObject).isCropOverlay = true;
+
+    const overlays = [0, 1, 2, 3].map(() => {
+      const overlay = new fabric.Rect({ fill: "oklch(0.08 0.02 280 / 0.56)", selectable: false, evented: false, objectCaching: false });
+      (overlay as CropOverlayObject).isCropOverlay = true;
+      return overlay as CropOverlayObject;
+    });
+
+    const makeAction = (label: string, left: number, fill: string) => {
+      const bg = new fabric.Rect({ width: 96, height: 34, rx: 7, ry: 7, fill, stroke: "oklch(1 0 0 / 0.16)", strokeWidth: 1 });
+      const text = new fabric.Text(label, { left: 48, top: 17, originX: "center", originY: "center", fill: "oklch(0.98 0 0)", fontSize: 13, fontFamily: "Inter, sans-serif", fontWeight: "700" });
+      return new fabric.Group([bg, text], { left, top: bounds.top - 46, selectable: false, hasControls: false, hasBorders: false, hoverCursor: "pointer", subTargetCheck: false });
+    };
+    const confirmButton = makeAction("Confirmar", bounds.left, "oklch(0.55 0.28 295)");
+    const cancelButton = makeAction("Cancelar", bounds.left + 104, "oklch(0.18 0.03 280)");
+
+    const refresh = () => {
+      const box = cropBox.getBoundingRect();
+      overlays[0].set({ left: bounds.left, top: bounds.top, width: bounds.width, height: Math.max(0, box.top - bounds.top) });
+      overlays[1].set({ left: bounds.left, top: box.top, width: Math.max(0, box.left - bounds.left), height: box.height });
+      overlays[2].set({ left: box.left + box.width, top: box.top, width: Math.max(0, bounds.left + bounds.width - box.left - box.width), height: box.height });
+      overlays[3].set({ left: bounds.left, top: box.top + box.height, width: bounds.width, height: Math.max(0, bounds.top + bounds.height - box.top - box.height) });
+      confirmButton.set({ left: box.left, top: Math.max(bounds.top, box.top) - 46 });
+      cancelButton.set({ left: box.left + 104, top: Math.max(bounds.top, box.top) - 46 });
+      c.requestRenderAll();
+    };
+
+    const applyCrop = async () => {
+      const box = cropBox.getBoundingRect();
+      const imageBounds = target.getBoundingRect();
+      const element = target.getElement() as HTMLImageElement | HTMLCanvasElement;
+      const sourceWidth = element instanceof HTMLImageElement ? element.naturalWidth : element.width;
+      const sourceHeight = element instanceof HTMLImageElement ? element.naturalHeight : element.height;
+      const sx = Math.max(0, Math.round(((box.left - imageBounds.left) / imageBounds.width) * sourceWidth));
+      const sy = Math.max(0, Math.round(((box.top - imageBounds.top) / imageBounds.height) * sourceHeight));
+      const sw = Math.max(1, Math.round((box.width / imageBounds.width) * sourceWidth));
+      const sh = Math.max(1, Math.round((box.height / imageBounds.height) * sourceHeight));
+      const out = document.createElement("canvas");
+      out.width = Math.min(sourceWidth - sx, sw);
+      out.height = Math.min(sourceHeight - sy, sh);
+      const ctx = out.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(element, sx, sy, out.width, out.height, 0, 0, out.width, out.height);
+      const cropped = await fabric.FabricImage.fromURL(out.toDataURL("image/png"));
+      cropped.set({ left: box.left + box.width / 2, top: box.top + box.height / 2, originX: "center", originY: "center", scaleX: box.width / out.width, scaleY: box.height / out.height, cornerColor: "#ffffff", cornerStrokeColor: "oklch(0.55 0.28 295)", borderColor: "oklch(0.55 0.28 295)", cornerSize: 12, transparentCorners: false, cornerStyle: "circle", lockUniScaling: true });
+      clearCropSession();
+      c.remove(target);
+      c.add(cropped);
+      if (trashControlRef.current) cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
+      c.setActiveObject(cropped);
+      c.requestRenderAll();
+    };
+    confirmButton.on("mousedown", () => void applyCrop());
+    cancelButton.on("mousedown", clearCropSession);
+    const keydown = (event: KeyboardEvent) => { if (event.key === "Escape") clearCropSession(); if (event.key === "Enter") void applyCrop(); };
+    cropSessionRef.current = { canvas: c, image: target, cropBox, overlays, actions: [confirmButton, cancelButton], refresh, keydown, original: { selectable: Boolean(target.selectable), evented: Boolean(target.evented), opacity: target.opacity ?? 1 } };
+    c.add(...overlays, cropBox, confirmButton, cancelButton);
+    c.setActiveObject(cropBox);
+    c.on("object:moving", refresh);
+    c.on("object:scaling", refresh);
+    window.addEventListener("keydown", keydown);
+    refresh();
+  }, [clearCropSession]);
 
   // ---------- Delete active object ----------
   const deleteActiveObject = useCallback(() => {
@@ -526,13 +645,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     addPage,
     deletePage,
     deleteActiveObject,
+    startCropMode,
     getPageCanvas,
     pages,
     activePageId,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
-    deletePage, deleteActiveObject, getPageCanvas, pages, activePageId,
+    deletePage, deleteActiveObject, startCropMode, getPageCanvas, pages, activePageId,
   ]);
 
   return (
