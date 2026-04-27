@@ -199,10 +199,35 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     if (isInternalUpdateRef.current || isCropMode) return;
     
     const currentState: HistoryState = {
-      pages: pages.map(p => ({
-        id: p.id,
-        json: JSON.stringify(canvasesRef.current.get(p.id)?.toJSON() || {})
-      })),
+      pages: pages.map(p => {
+        const c = canvasesRef.current.get(p.id);
+        if (!c) return { id: p.id, json: "{}" };
+        
+        // Filter out any crop-related support objects from the snapshot
+        const filteredObjects = c.getObjects().filter(obj => {
+          const o = obj as any;
+          return !o.isCropOverlay && !o.isCropControl && !o.isGuideLine && !o.isCropAction;
+        });
+        
+        // Use a temporary cloned view if possible, or just stringify filtering
+        // For simplicity and performance, we'll manually filter during toJSON if we could, 
+        // but since Fabric's toJSON is global, we temporarily hide objects.
+        const hiddenObjects: fabric.Object[] = [];
+        c.getObjects().forEach(obj => {
+          const o = obj as any;
+          if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction) {
+            obj.set('excludeFromExport', true);
+            hiddenObjects.push(obj);
+          }
+        });
+
+        const json = JSON.stringify(c.toJSON());
+        
+        // Restore
+        hiddenObjects.forEach(obj => obj.set('excludeFromExport', false));
+
+        return { id: p.id, json };
+      }),
       activePageId: activePageIdRef.current
     };
 
@@ -253,8 +278,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         if (!obj) return;
         if ((obj as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
         
-        // Skip history save for crop overlays to avoid "ghost states"
-        if ((obj as any).isCropOverlay) return;
+        // Skip history save for support objects to avoid "ghost states" or fragmented undo
+        const o = obj as any;
+        if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction) return;
         
         // Keep the deletion handle wired on every newly added object
         if (trashControlRef.current) {
@@ -265,6 +291,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       c.on("object:removed", (e) => {
         const obj = e.target;
         if (obj && (obj as any).isCropOverlay) return;
+        if (obj && (obj as any).isCropControl) return;
+        if (obj && (obj as any).isGuideLine) return;
         saveHistory();
       });
 
@@ -478,7 +506,19 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     };
 
     // Save history BEFORE starting crop mode so Undo returns to pre-crop state
-    saveHistory();
+    // We explicitly call saveHistory here and ensures it's not blocked by isCropMode yet
+    const currentState: HistoryState = {
+      pages: pages.map(p => ({
+        id: p.id,
+        json: JSON.stringify(canvasesRef.current.get(p.id)?.toJSON() || {})
+      })),
+      activePageId: activePageIdRef.current
+    };
+    undoStackRef.current.push(currentState);
+    if (undoStackRef.current.length > 50) undoStackRef.current.shift();
+    redoStackRef.current = [];
+
+    setIsCropMode(true);
 
     const bounds = target.getBoundingRect();
     const minSize = 24;
