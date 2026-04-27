@@ -55,12 +55,29 @@ type EditorCtx = {
   addPage: () => void;
   deletePage: (pageId: string) => void;
   deleteActiveObject: () => void;
+  startCropMode: () => void;
 
   /** Read the live Fabric.Canvas for a given page (null if not registered yet). */
   getPageCanvas: (pageId: string) => fabric.Canvas | null;
 
   pages: PageState[];
   activePageId: string | null;
+};
+
+type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
+
+type CropSession = {
+  canvas: fabric.Canvas;
+  image: fabric.FabricImage;
+  cropBox: CropOverlayObject;
+  overlays: CropOverlayObject[];
+  refresh: () => void;
+  keydown: (event: KeyboardEvent) => void;
+  original: {
+    selectable: boolean;
+    evented: boolean;
+    opacity: number;
+  };
 };
 
 const EditorContext = createContext<EditorCtx | null>(null);
