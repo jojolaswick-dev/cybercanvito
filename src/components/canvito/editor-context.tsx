@@ -71,6 +71,7 @@ type CropSession = {
   image: fabric.FabricImage;
   cropBox: CropOverlayObject;
   overlays: CropOverlayObject[];
+  actions: fabric.Group[];
   refresh: () => void;
   keydown: (event: KeyboardEvent) => void;
   original: {
