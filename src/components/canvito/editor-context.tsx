@@ -472,6 +472,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Snapshot Pré-Crop: Save the exact state of the image before crop
+    originalImageStateRef.current = {
+      pageId: activePageIdRef.current!,
+      json: JSON.stringify(target.toJSON())
+    };
+
     // Save history BEFORE starting crop mode so Undo returns to pre-crop state
     saveHistory();
 
