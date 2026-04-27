@@ -460,11 +460,39 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Save history BEFORE starting crop mode so Undo returns to pre-crop state
+    saveHistory();
+
     const bounds = target.getBoundingRect();
     const minSize = 24;
+    
+    // Dim the image during crop
     target.set({ selectable: false, evented: false, opacity: 0.82 });
     target.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false, mtr: false, tl: false, tr: false, bl: false, br: false });
-    const cropBox = new fabric.Rect({ left: bounds.left + bounds.width * 0.12, top: bounds.top + bounds.height * 0.12, width: bounds.width * 0.76, height: bounds.height * 0.76, originX: "left", originY: "top", fill: "transparent", stroke: "oklch(0.98 0 0)", strokeWidth: 2 / c.getZoom(), cornerColor: "oklch(0.55 0.28 295)", cornerStrokeColor: "oklch(0.98 0 0)", borderColor: "oklch(0.98 0 0)", cornerSize: 12, transparentCorners: false, lockRotation: true, hasRotatingPoint: false, centeredScaling: false, lockScalingFlip: true, objectCaching: false, noScaleCache: true });
+    
+    const cropBox = new fabric.Rect({ 
+      left: bounds.left + bounds.width * 0.12, 
+      top: bounds.top + bounds.height * 0.12, 
+      width: bounds.width * 0.76, 
+      height: bounds.height * 0.76, 
+      originX: "left", 
+      originY: "top", 
+      fill: "transparent", 
+      stroke: "oklch(0.98 0 0)", 
+      strokeWidth: 2 / c.getZoom(), 
+      cornerColor: "oklch(0.55 0.28 295)", 
+      cornerStrokeColor: "oklch(0.98 0 0)", 
+      borderColor: "oklch(0.98 0 0)", 
+      cornerSize: 12, 
+      transparentCorners: false, 
+      lockRotation: true, 
+      hasRotatingPoint: false, 
+      centeredScaling: false, 
+      lockScalingFlip: true, 
+      objectCaching: false, 
+      noScaleCache: true 
+    });
+
     const resizeCropBox = (handle: "tl" | "tr" | "bl" | "br" | "mt" | "mb" | "ml" | "mr") => (_eventData: unknown, _transform: unknown, x: number, y: number) => {
       const left = cropBox.left ?? bounds.left;
       const top = cropBox.top ?? bounds.top;
@@ -483,6 +511,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       refresh();
       return true;
     };
+
     cropBox.controls = {
       tl: new fabric.Control({ x: -0.5, y: -0.5, cursorStyle: "nwse-resize", actionHandler: resizeCropBox("tl") }),
       tr: new fabric.Control({ x: 0.5, y: -0.5, cursorStyle: "nesw-resize", actionHandler: resizeCropBox("tr") }),
@@ -501,13 +530,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       return overlay as CropOverlayObject;
     });
 
-    const makeAction = (label: string, left: number, fill: string) => {
-      // Buttons removed from canvas - logic moved to TopBar
-      return new fabric.Group([], { visible: false });
-    };
-    const confirmButton = makeAction("Confirmar", 0, "transparent");
-    const cancelButton = makeAction("Cancelar", 0, "transparent");
-
     const refresh = () => {
       const box = cropBox.getBoundingRect();
       overlays[0].set({ left: bounds.left, top: bounds.top, width: bounds.width, height: Math.max(0, box.top - bounds.top) });
@@ -517,35 +539,26 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       c.renderAll();
     };
 
-    const applyCrop = async () => {
-      const box = cropBox.getBoundingRect();
-      const imageBounds = target.getBoundingRect();
-      const element = target.getElement() as HTMLImageElement | HTMLCanvasElement;
-      const sourceWidth = element instanceof HTMLImageElement ? element.naturalWidth : element.width;
-      const sourceHeight = element instanceof HTMLImageElement ? element.naturalHeight : element.height;
-      const sx = Math.max(0, Math.round(((box.left - imageBounds.left) / imageBounds.width) * sourceWidth));
-      const sy = Math.max(0, Math.round(((box.top - imageBounds.top) / imageBounds.height) * sourceHeight));
-      const sw = Math.max(1, Math.round((box.width / imageBounds.width) * sourceWidth));
-      const sh = Math.max(1, Math.round((box.height / imageBounds.height) * sourceHeight));
-      const out = document.createElement("canvas");
-      out.width = Math.min(sourceWidth - sx, sw);
-      out.height = Math.min(sourceHeight - sy, sh);
-      const ctx = out.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(element, sx, sy, out.width, out.height, 0, 0, out.width, out.height);
-      const cropped = await fabric.FabricImage.fromURL(out.toDataURL("image/png"));
-      cropped.set({ left: box.left + box.width / 2, top: box.top + box.height / 2, originX: "center", originY: "center", scaleX: box.width / out.width, scaleY: box.height / out.height, cornerColor: "#ffffff", cornerStrokeColor: "oklch(0.55 0.28 295)", borderColor: "oklch(0.55 0.28 295)", cornerSize: 12, transparentCorners: false, cornerStyle: "circle", lockUniScaling: true });
-      clearCropSession();
-      c.remove(target);
-      c.add(cropped);
-      if (trashControlRef.current) cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
-      c.setActiveObject(cropped);
-      c.requestRenderAll();
-      saveHistory();
+    const keydown = (event: KeyboardEvent) => { 
+      if (event.key === "Escape") cancelCrop(); 
+      if (event.key === "Enter") void applyCrop(); 
     };
 
-    const keydown = (event: KeyboardEvent) => { if (event.key === "Escape") clearCropSession(); if (event.key === "Enter") void applyCrop(); };
-    cropSessionRef.current = { canvas: c, image: target, cropBox, overlays, actions: [], refresh, keydown, original: { selectable: Boolean(target.selectable), evented: Boolean(target.evented), opacity: target.opacity ?? 1 } };
+    cropSessionRef.current = { 
+      canvas: c, 
+      image: target, 
+      cropBox, 
+      overlays, 
+      actions: [], 
+      refresh, 
+      keydown, 
+      original: { 
+        selectable: Boolean(target.selectable), 
+        evented: Boolean(target.evented), 
+        opacity: 1 // Force restore to full opacity
+      } 
+    };
+
     c.add(...overlays, cropBox);
     c.setActiveObject(cropBox);
     c.on("object:moving", refresh);
@@ -576,13 +589,31 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     if (!ctx) return;
     ctx.drawImage(element, sx, sy, out.width, out.height, 0, 0, out.width, out.height);
     const cropped = await fabric.FabricImage.fromURL(out.toDataURL("image/png"));
-    cropped.set({ left: box.left + box.width / 2, top: box.top + box.height / 2, originX: "center", originY: "center", scaleX: box.width / out.width, scaleY: box.height / out.height, cornerColor: "#ffffff", cornerStrokeColor: "oklch(0.55 0.28 295)", borderColor: "oklch(0.55 0.28 295)", cornerSize: 12, transparentCorners: false, cornerStyle: "circle", lockUniScaling: true });
+    cropped.set({ 
+      left: box.left + box.width / 2, 
+      top: box.top + box.height / 2, 
+      originX: "center", 
+      originY: "center", 
+      scaleX: box.width / out.width, 
+      scaleY: box.height / out.height, 
+      cornerColor: "#ffffff", 
+      cornerStrokeColor: "oklch(0.55 0.28 295)", 
+      borderColor: "oklch(0.55 0.28 295)", 
+      cornerSize: 12, 
+      transparentCorners: false, 
+      cornerStyle: "circle", 
+      lockUniScaling: true 
+    });
+    
+    // Clean up temporary UI before saving history
     clearCropSession();
     canvas.remove(target);
     canvas.add(cropped);
     if (trashControlRef.current) cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
     canvas.setActiveObject(cropped);
     canvas.requestRenderAll();
+    
+    // Save history AFTER crop is confirmed so it's a new atomic state
     saveHistory();
   }, [clearCropSession, saveHistory]);
 
