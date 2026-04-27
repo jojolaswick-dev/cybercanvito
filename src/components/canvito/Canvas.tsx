@@ -78,15 +78,30 @@ export const Canvas = memo(function Canvas() {
     return () => cancelAnimationFrame(id);
   }, [activeCanvas, fitToScreen]);
 
-  // ---------- Keyboard delete (Delete / Backspace) ----------
+  // ---------- Keyboard shortcuts (Delete, Undo, Redo) ----------
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Delete" && e.key !== "Backspace") return;
       const target = e.target as HTMLElement | null;
-      if (target) {
-        const tag = target.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
+      const isInput = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      
+      // Undo/Redo (Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z)
+      if ((e.ctrlKey || e.metaKey) && !isInput) {
+        if (e.key.toLowerCase() === "z") {
+          e.preventDefault();
+          if (e.shiftKey) redo();
+          else undo();
+          return;
+        }
+        if (e.key.toLowerCase() === "y") {
+          e.preventDefault();
+          redo();
+          return;
+        }
       }
+
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      if (isInput) return;
+
       // Object selected? -> delete the object (existing behavior).
       if (activeCanvas?.getActiveObject()) {
         e.preventDefault();
@@ -101,7 +116,7 @@ export const Canvas = memo(function Canvas() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeCanvas, deleteActiveObject, activePageId, pages.length, deletePage]);
+  }, [activeCanvas, deleteActiveObject, activePageId, pages.length, deletePage, undo, redo]);
 
   return (
     <div className="relative flex flex-1 flex-col bg-[var(--canvas-bg)]">
