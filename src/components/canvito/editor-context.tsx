@@ -612,21 +612,75 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       lockUniScaling: true 
     });
     
-    // Clean up temporary UI before saving history
-    clearCropSession();
-    canvas.remove(target);
-    canvas.add(cropped);
-    if (trashControlRef.current) cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
-    canvas.setActiveObject(cropped);
-    canvas.requestRenderAll();
-    
-    // Save history AFTER crop is confirmed so it's a new atomic state
-    saveHistory();
+    // Use a transactional approach: apply changes, then clear session
+    // This ensures history doesn't capture intermediate states
+    try {
+      isInternalUpdateRef.current = true;
+
+      // Clean up temporary UI before final swap
+      const { canvas, image, cropBox } = session;
+      
+      canvas.remove(cropBox, ...session.overlays, ...session.actions);
+      window.removeEventListener("keydown", session.keydown);
+      canvas.off("object:moving", session.refresh);
+      canvas.off("object:scaling", session.refresh);
+
+      // Final object swap
+      canvas.remove(target);
+      canvas.add(cropped);
+      
+      if (trashControlRef.current) {
+        cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
+      }
+      
+      // Ensure image is fully visible
+      cropped.set({ opacity: 1, visible: true });
+      canvas.setActiveObject(cropped);
+
+      cropSessionRef.current = null;
+      setIsCropMode(false);
+      
+      isInternalUpdateRef.current = false;
+      // Save history AFTER crop is confirmed as a single atomic event
+      saveHistory();
+      canvas.requestRenderAll();
+    } catch (err) {
+      console.error("Crop error:", err);
+      isInternalUpdateRef.current = false;
+    }
   }, [clearCropSession, saveHistory]);
 
   const cancelCrop = useCallback(() => {
-    clearCropSession();
-  }, [clearCropSession]);
+    const session = cropSessionRef.current;
+    if (!session) return;
+
+    isInternalUpdateRef.current = true;
+    
+    session.canvas.remove(session.cropBox, ...session.overlays, ...session.actions);
+    window.removeEventListener("keydown", session.keydown);
+    session.canvas.off("object:moving", session.refresh);
+    session.canvas.off("object:scaling", session.refresh);
+    
+    // Restore original state
+    session.image.set({ 
+      selectable: session.original.selectable, 
+      evented: session.original.evented, 
+      opacity: 1, 
+      visible: true 
+    });
+    
+    session.image.setControlsVisibility({ 
+      mt: false, mb: false, ml: false, mr: false, 
+      mtr: true, tl: true, tr: true, bl: true, br: true 
+    });
+    
+    session.canvas.setActiveObject(session.image);
+    session.canvas.requestRenderAll();
+    
+    cropSessionRef.current = null;
+    setIsCropMode(false);
+    isInternalUpdateRef.current = false;
+  }, []);
 
   // ---------- Delete active object ----------
   const deleteActiveObject = useCallback(() => {
@@ -766,6 +820,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const undo = useCallback(async () => {
     if (undoStackRef.current.length === 0) return;
     
+    // If in crop mode, undoing should cancel crop and return to pre-crop state
+    if (isCropMode) {
+      cancelCrop();
+      return;
+    }
+
     const currentState: HistoryState = {
       pages: pages.map(p => ({
         id: p.id,
@@ -778,18 +838,28 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const prevState = undoStackRef.current.pop()!;
     isInternalUpdateRef.current = true;
     
-    // Restore pages and their content
+    // Restore pages metadata
     const newPages = prevState.pages.map(p => ({ id: p.id }));
     setPages(newPages);
     
-    // We need to wait for canvases to be re-registered if pages changed
-    // In a real app, we'd handle this more robustly, but here we can try to restore
-    // to existing canvases immediately.
     for (const p of prevState.pages) {
       const c = canvasesRef.current.get(p.id);
       if (c) {
         await c.loadFromJSON(JSON.parse(p.json));
-        // Re-apply artboard and controls if needed
+        
+        // Post-load cleanup: enforce opacity 1 and remove residues
+        c.getObjects().forEach(obj => {
+          if (obj instanceof fabric.FabricImage) {
+            obj.set({ opacity: 1, visible: true });
+          }
+          // Remove any surviving crop overlays or "ghost" objects
+          if ((obj as any).isCropOverlay) c.remove(obj);
+          
+          if (trashControlRef.current && !obj.isArtboard) {
+            obj.controls = { ...obj.controls, deleteControl: trashControlRef.current };
+          }
+        });
+        
         c.requestRenderAll();
       }
     }
@@ -799,7 +869,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     }
     
     isInternalUpdateRef.current = false;
-  }, [pages, setActivePageId]);
+  }, [pages, setActivePageId, isCropMode, cancelCrop]);
 
   const redo = useCallback(async () => {
     if (redoStackRef.current.length === 0) return;
