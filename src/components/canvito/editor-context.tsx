@@ -701,7 +701,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       setIsCropMode(false);
       
       isInternalUpdateRef.current = false;
-      // Save history AFTER crop to finalize the "post-crop" state
+      // Save history AFTER crop to finalize the "post-crop" state as a single atomic action
       saveHistory();
       canvas.requestRenderAll();
     } catch (err) {
