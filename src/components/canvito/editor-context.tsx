@@ -196,7 +196,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   }
 
   const saveHistory = useCallback(() => {
-    if (isInternalUpdateRef.current) return;
+    if (isInternalUpdateRef.current || isCropMode) return;
     
     const currentState: HistoryState = {
       pages: pages.map(p => ({
@@ -209,7 +209,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     undoStackRef.current.push(currentState);
     if (undoStackRef.current.length > 50) undoStackRef.current.shift();
     redoStackRef.current = [];
-  }, [pages]);
+  }, [pages, isCropMode]);
 
   /** Setup a freshly created Fabric canvas: artboard + clipPath + activation hooks. */
   const initFabricCanvas = useCallback(
