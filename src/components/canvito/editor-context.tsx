@@ -470,13 +470,15 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
     const refresh = () => {
       const box = cropBox.getBoundingRect();
+      const actionsLeft = box.left + box.width / 2 - 100;
+      const actionsTop = Math.max(bounds.top, box.top) - 46;
       overlays[0].set({ left: bounds.left, top: bounds.top, width: bounds.width, height: Math.max(0, box.top - bounds.top) });
       overlays[1].set({ left: bounds.left, top: box.top, width: Math.max(0, box.left - bounds.left), height: box.height });
       overlays[2].set({ left: box.left + box.width, top: box.top, width: Math.max(0, bounds.left + bounds.width - box.left - box.width), height: box.height });
       overlays[3].set({ left: bounds.left, top: box.top + box.height, width: bounds.width, height: Math.max(0, bounds.top + bounds.height - box.top - box.height) });
-      confirmButton.set({ left: box.left, top: Math.max(bounds.top, box.top) - 46 });
-      cancelButton.set({ left: box.left + 104, top: Math.max(bounds.top, box.top) - 46 });
-      c.requestRenderAll();
+      confirmButton.set({ left: actionsLeft, top: actionsTop });
+      cancelButton.set({ left: actionsLeft + 104, top: actionsTop });
+      c.renderAll();
     };
 
     const applyCrop = async () => {
