@@ -121,6 +121,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const undoStackRef = useRef<HistoryState[]>([]);
   const redoStackRef = useRef<HistoryState[]>([]);
   const isInternalUpdateRef = useRef(false);
+  const originalImageStateRef = useRef<{ 
+    pageId: string;
+    json: string; // The specific image object JSON
+  } | null>(null);
 
   // Map of pageId -> Fabric.Canvas (one canvas per stacked page)
   const canvasesRef = useRef<Map<string, fabric.Canvas>>(new Map());
@@ -467,6 +471,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Snapshot Pré-Crop: Save the exact state of the image before crop
+    originalImageStateRef.current = {
+      pageId: activePageIdRef.current!,
+      json: JSON.stringify(target.toJSON())
+    };
+
     // Save history BEFORE starting crop mode so Undo returns to pre-crop state
     saveHistory();
 
@@ -596,6 +606,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     if (!ctx) return;
     ctx.drawImage(element, sx, sy, out.width, out.height, 0, 0, out.width, out.height);
     const cropped = await fabric.FabricImage.fromURL(out.toDataURL("image/png"));
+    // @ts-ignore
+    cropped.isCroppedImage = true;
     cropped.set({ 
       left: box.left + box.width / 2, 
       top: box.top + box.height / 2, 
@@ -611,7 +623,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       cornerStyle: "circle", 
       lockUniScaling: true 
     });
-    
+
     // Use a transactional approach: apply changes, then clear session
     // This ensures history doesn't capture intermediate states
     try {
@@ -826,6 +838,55 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    const c = canvasesRef.current.get(activePageIdRef.current ?? "");
+    const active = c?.getActiveObject();
+    
+    // Lógica de Restauração Manual for Crop
+    if (c && active && (active as any).isCroppedImage && originalImageStateRef.current) {
+      const state = originalImageStateRef.current;
+      if (state.pageId === activePageIdRef.current) {
+        isInternalUpdateRef.current = true;
+        
+        // Immediate Cleanup
+        c.remove(active);
+        
+        // Remove any lingering crop UI just in case
+        c.getObjects().forEach(obj => {
+          if ((obj as any).isCropOverlay) c.remove(obj);
+        });
+
+        // Reinsert Original Image from Snapshot
+        const originalData = JSON.parse(state.json);
+        const originalImg = await fabric.FabricImage.fromObject(originalData);
+        
+        // Force Opacity 1.0 and Normal State
+        originalImg.set({
+          opacity: 1,
+          visible: true,
+          selectable: true,
+          evented: true
+        });
+
+        c.add(originalImg);
+        
+        if (trashControlRef.current) {
+          originalImg.controls = { ...originalImg.controls, deleteControl: trashControlRef.current };
+        }
+
+        c.setActiveObject(originalImg);
+        c.requestRenderAll();
+        
+        originalImageStateRef.current = null;
+        isInternalUpdateRef.current = false;
+        
+        // Remove the CROP_CONFIRM state from the stack if needed, 
+        // or just let the standard undo handle the rest of the stack later.
+        // For now, we've manually undone the crop.
+        undoStackRef.current.pop();
+        return;
+      }
+    }
+
     const currentState: HistoryState = {
       pages: pages.map(p => ({
         id: p.id,
@@ -843,24 +904,24 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setPages(newPages);
     
     for (const p of prevState.pages) {
-      const c = canvasesRef.current.get(p.id);
-      if (c) {
-        await c.loadFromJSON(JSON.parse(p.json));
+      const canv = canvasesRef.current.get(p.id);
+      if (canv) {
+        await canv.loadFromJSON(JSON.parse(p.json));
         
         // Post-load cleanup: enforce opacity 1 and remove residues
-        c.getObjects().forEach(obj => {
+        canv.getObjects().forEach(obj => {
           if (obj instanceof fabric.FabricImage) {
             obj.set({ opacity: 1, visible: true });
           }
           // Remove any surviving crop overlays or "ghost" objects
-          if ((obj as any).isCropOverlay) c.remove(obj);
+          if ((obj as any).isCropOverlay) canv.remove(obj);
           
           if (trashControlRef.current && !(obj as any).isArtboard) {
             obj.controls = { ...obj.controls, deleteControl: trashControlRef.current };
           }
         });
-
-        c.requestRenderAll();
+        
+        canv.requestRenderAll();
       }
     }
     
