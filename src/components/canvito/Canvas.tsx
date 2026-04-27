@@ -262,13 +262,35 @@ const PageBoard = memo(function PageBoard({
     contain: "layout paint size",
   }) satisfies CSSProperties, [w, h]);
 
+  const onPageMouseDown = useCallback(() => setActivePageId(pageId), [pageId, setActivePageId]);
+  const onDeleteMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+  }, []);
+  const onDeletePageClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (canDelete) deletePage(pageId);
+  }, [canDelete, deletePage, pageId]);
+  const onDeleteObjectFromMenu = useCallback(() => {
+    deleteActiveObject();
+    setContextMenu(null);
+  }, [deleteActiveObject]);
+  const onAddImageFromMenu = useCallback(() => {
+    if (!contextMenu) return;
+    onAddImage(contextMenu.insertX, contextMenu.insertY);
+    setContextMenu(null);
+  }, [contextMenu, onAddImage]);
+  const onDeletePageFromMenu = useCallback(() => {
+    setContextMenu(null);
+    if (canDelete) deletePage(pageId);
+  }, [canDelete, deletePage, pageId]);
+
   return (
     // Outer wrapper: fixed-shrink so it never collapses, centered on the
     // workspace's central axis, 20px gap below.
     <div
       className="flex flex-col items-center"
       style={{ flexShrink: 0, marginBottom: 20 }}
-      onMouseDown={() => setActivePageId(pageId)}
+        onMouseDown={onPageMouseDown}
     >
       {/* Page label + delete button */}
       <div className="mb-2 flex items-center gap-2 text-xs font-medium text-[oklch(0.45_0.02_270)]">
@@ -284,12 +306,8 @@ const PageBoard = memo(function PageBoard({
         </span>
         <button
           type="button"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!canDelete) return;
-            deletePage(pageId);
-          }}
+          onMouseDown={onDeleteMouseDown}
+          onClick={onDeletePageClick}
           disabled={!canDelete}
           title={canDelete ? "Excluir esta página" : "Não é possível excluir a única página"}
           aria-label="Excluir página"
@@ -330,10 +348,7 @@ const PageBoard = memo(function PageBoard({
             {contextMenu.hasObject ? (
               <button
                 type="button"
-                onClick={() => {
-                  deleteActiveObject();
-                  setContextMenu(null);
-                }}
+                onClick={onDeleteObjectFromMenu}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.85_0.18_25)] transition-colors hover:bg-[oklch(0.5_0.22_25)]/20 hover:text-[oklch(0.92_0.2_25)]"
               >
                 <Trash2 className="h-4 w-4" />
@@ -344,10 +359,7 @@ const PageBoard = memo(function PageBoard({
                 <button
                   type="button"
                   disabled={false}
-                  onClick={() => {
-                    onAddImage(contextMenu.insertX, contextMenu.insertY);
-                    setContextMenu(null);
-                  }}
+                  onClick={onAddImageFromMenu}
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.95_0.01_280)] transition-colors hover:bg-[var(--neon-violet)]/20 hover:text-[var(--neon-violet)]"
                 >
                   <ImagePlus className="h-4 w-4 text-[var(--neon-violet)]" />
@@ -357,10 +369,7 @@ const PageBoard = memo(function PageBoard({
                 <button
                   type="button"
                   disabled={!canDelete}
-                  onClick={() => {
-                    setContextMenu(null);
-                    if (canDelete) deletePage(pageId);
-                  }}
+                  onClick={onDeletePageFromMenu}
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-[oklch(0.85_0.18_25)] transition-colors hover:bg-[oklch(0.5_0.22_25)]/20 hover:text-[oklch(0.92_0.2_25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                   title={canDelete ? "Deletar esta página" : "Não é possível excluir a única página"}
                 >
