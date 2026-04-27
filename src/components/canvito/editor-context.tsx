@@ -24,6 +24,11 @@ export type ImageInsertPoint = {
   y?: number;
 };
 
+type HistoryState = {
+  pages: { id: string; json: string }[];
+  activePageId: string | null;
+};
+
 type EditorCtx = {
   /** The currently focused canvas (last interacted). Used by tool/sidebar actions. */
   activeCanvas: fabric.Canvas | null;
@@ -59,6 +64,11 @@ type EditorCtx = {
   applyCrop: () => Promise<void>;
   cancelCrop: () => void;
   isCropMode: boolean;
+
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 
   /** Read the live Fabric.Canvas for a given page (null if not registered yet). */
   getPageCanvas: (pageId: string) => fabric.Canvas | null;
@@ -106,6 +116,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [pages, setPages] = useState<PageState[]>([{ id: makePageId() }]);
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
+
+  // Undo/Redo Stacks
+  const undoStackRef = useRef<HistoryState[]>([]);
+  const redoStackRef = useRef<HistoryState[]>([]);
+  const isInternalUpdateRef = useRef(false);
 
   // Map of pageId -> Fabric.Canvas (one canvas per stacked page)
   const canvasesRef = useRef<Map<string, fabric.Canvas>>(new Map());
@@ -176,6 +191,22 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  const saveHistory = useCallback(() => {
+    if (isInternalUpdateRef.current) return;
+    
+    const currentState: HistoryState = {
+      pages: pages.map(p => ({
+        id: p.id,
+        json: JSON.stringify(canvasesRef.current.get(p.id)?.toJSON() || {})
+      })),
+      activePageId: activePageIdRef.current
+    };
+
+    undoStackRef.current.push(currentState);
+    if (undoStackRef.current.length > 50) undoStackRef.current.shift();
+    redoStackRef.current = [];
+  }, [pages]);
+
   /** Setup a freshly created Fabric canvas: artboard + clipPath + activation hooks. */
   const initFabricCanvas = useCallback(
     (pageId: string, c: fabric.Canvas, w: number, h: number) => {
@@ -211,19 +242,24 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       };
       c.on("mouse:down", markActive);
 
-      // Keep the deletion handle wired on every newly added object
+      // History tracking
+      c.on("object:modified", saveHistory);
       c.on("object:added", (e) => {
         const obj = e.target;
         if (!obj) return;
         if ((obj as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
+        
+        // Keep the deletion handle wired on every newly added object
         if (trashControlRef.current) {
           obj.controls = { ...obj.controls, deleteControl: trashControlRef.current };
         }
+        saveHistory();
       });
+      c.on("object:removed", saveHistory);
 
       c.requestRenderAll();
     },
-    [],
+    [saveHistory],
   );
 
   /** Register (or unregister with `el = null`) a page's <canvas>. Idempotent. */
