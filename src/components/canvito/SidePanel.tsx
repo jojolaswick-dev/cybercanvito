@@ -57,11 +57,12 @@ export const SidePanel = memo(function SidePanel({
   active: ToolId | null;
   onClose: () => void;
 }) {
+  const handleClose = useCallback(() => onClose(), [onClose]);
   if (!active) return null;
   const content = PANEL_CONTENT[active];
-  const tool = TOOLS.find((t) => t.id === active)!;
+  const tool = TOOLS.find((t) => t.id === active);
+  if (!tool) return null;
   const Icon = tool.icon;
-  const handleClose = useCallback(() => onClose(), [onClose]);
 
   return (
     <div className="relative z-10 flex w-80 flex-col border-r border-white/10 bg-[var(--panel)] text-white shadow-panel animate-in slide-in-from-left-4 duration-200">
