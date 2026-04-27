@@ -434,12 +434,12 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
     };
   }, [canvas]);
 
-  if (hasObjects) return null;
-
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     onAddImage();
   }, [onAddImage]);
+
+  if (hasObjects) return null;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
