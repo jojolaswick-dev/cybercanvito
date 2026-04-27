@@ -606,6 +606,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     if (!ctx) return;
     ctx.drawImage(element, sx, sy, out.width, out.height, 0, 0, out.width, out.height);
     const cropped = await fabric.FabricImage.fromURL(out.toDataURL("image/png"));
+    // @ts-ignore
+    cropped.isCroppedImage = true;
     cropped.set({ 
       left: box.left + box.width / 2, 
       top: box.top + box.height / 2, 
@@ -621,7 +623,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       cornerStyle: "circle", 
       lockUniScaling: true 
     });
-    
+
     // Use a transactional approach: apply changes, then clear session
     // This ensures history doesn't capture intermediate states
     try {
