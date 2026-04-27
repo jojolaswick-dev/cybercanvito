@@ -855,11 +855,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           // Remove any surviving crop overlays or "ghost" objects
           if ((obj as any).isCropOverlay) c.remove(obj);
           
-          if (trashControlRef.current && !obj.isArtboard) {
+          if (trashControlRef.current && !(obj as any).isArtboard) {
             obj.controls = { ...obj.controls, deleteControl: trashControlRef.current };
           }
         });
-        
+
         c.requestRenderAll();
       }
     }
