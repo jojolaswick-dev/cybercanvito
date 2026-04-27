@@ -838,55 +838,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const c = canvasesRef.current.get(activePageIdRef.current ?? "");
-    const active = c?.getActiveObject();
-    
-    // Lógica de Restauração Manual for Crop
-    if (c && active && (active as any).isCroppedImage && originalImageStateRef.current) {
-      const state = originalImageStateRef.current;
-      if (state.pageId === activePageIdRef.current) {
-        isInternalUpdateRef.current = true;
-        
-        // Immediate Cleanup
-        c.remove(active);
-        
-        // Remove any lingering crop UI just in case
-        c.getObjects().forEach(obj => {
-          if ((obj as any).isCropOverlay) c.remove(obj);
-        });
-
-        // Reinsert Original Image from Snapshot
-        const originalData = JSON.parse(state.json);
-        const originalImg = await fabric.FabricImage.fromObject(originalData);
-        
-        // Force Opacity 1.0 and Normal State
-        originalImg.set({
-          opacity: 1,
-          visible: true,
-          selectable: true,
-          evented: true
-        });
-
-        c.add(originalImg);
-        
-        if (trashControlRef.current) {
-          originalImg.controls = { ...originalImg.controls, deleteControl: trashControlRef.current };
-        }
-
-        c.setActiveObject(originalImg);
-        c.requestRenderAll();
-        
-        originalImageStateRef.current = null;
-        isInternalUpdateRef.current = false;
-        
-        // Remove the CROP_CONFIRM state from the stack if needed, 
-        // or just let the standard undo handle the rest of the stack later.
-        // For now, we've manually undone the crop.
-        undoStackRef.current.pop();
-        return;
-      }
-    }
-
     const currentState: HistoryState = {
       pages: pages.map(p => ({
         id: p.id,
@@ -928,6 +879,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     if (prevState.activePageId) {
       setActivePageId(prevState.activePageId);
     }
+    
+    isInternalUpdateRef.current = false;
+  }, [pages, setActivePageId, isCropMode, cancelCrop]);
     
     isInternalUpdateRef.current = false;
   }, [pages, setActivePageId, isCropMode, cancelCrop]);
