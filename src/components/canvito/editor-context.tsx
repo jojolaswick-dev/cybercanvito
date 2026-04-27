@@ -56,6 +56,9 @@ type EditorCtx = {
   deletePage: (pageId: string) => void;
   deleteActiveObject: () => void;
   startCropMode: () => void;
+  applyCrop: () => Promise<void>;
+  cancelCrop: () => void;
+  isCropMode: boolean;
 
   /** Read the live Fabric.Canvas for a given page (null if not registered yet). */
   getPageCanvas: (pageId: string) => fabric.Canvas | null;
@@ -98,6 +101,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [preset, setPreset] = useState<ArtboardPresetId>("square");
   const [artboard, setArtboard] = useState({ width: 1080, height: 1080 });
   const [zoom, setZoomState] = useState(40);
+  const [isCropMode, setIsCropMode] = useState(false);
 
   const [pages, setPages] = useState<PageState[]>([{ id: makePageId() }]);
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
@@ -286,6 +290,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     session.canvas.setActiveObject(session.image);
     session.canvas.requestRenderAll();
     cropSessionRef.current = null;
+    setIsCropMode(false);
   }, []);
 
   // ---------- Artboard preset ----------
@@ -461,23 +466,18 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     });
 
     const makeAction = (label: string, left: number, fill: string) => {
-      const bg = new fabric.Rect({ width: 96, height: 34, rx: 7, ry: 7, fill, stroke: "oklch(1 0 0 / 0.16)", strokeWidth: 1 });
-      const text = new fabric.Text(label, { left: 48, top: 17, originX: "center", originY: "center", fill: "oklch(0.98 0 0)", fontSize: 13, fontFamily: "Inter, sans-serif", fontWeight: "700" });
-      return new fabric.Group([bg, text], { left, top: bounds.top - 46, selectable: false, hasControls: false, hasBorders: false, hoverCursor: "pointer", subTargetCheck: false });
+      // Buttons removed from canvas - logic moved to TopBar
+      return new fabric.Group([], { visible: false });
     };
-    const confirmButton = makeAction("Confirmar", bounds.left, "oklch(0.55 0.28 295)");
-    const cancelButton = makeAction("Cancelar", bounds.left + 104, "oklch(0.18 0.03 280)");
+    const confirmButton = makeAction("Confirmar", 0, "transparent");
+    const cancelButton = makeAction("Cancelar", 0, "transparent");
 
     const refresh = () => {
       const box = cropBox.getBoundingRect();
-      const actionsLeft = box.left + box.width / 2 - 100;
-      const actionsTop = Math.max(bounds.top, box.top) - 46;
       overlays[0].set({ left: bounds.left, top: bounds.top, width: bounds.width, height: Math.max(0, box.top - bounds.top) });
       overlays[1].set({ left: bounds.left, top: box.top, width: Math.max(0, box.left - bounds.left), height: box.height });
       overlays[2].set({ left: box.left + box.width, top: box.top, width: Math.max(0, bounds.left + bounds.width - box.left - box.width), height: box.height });
       overlays[3].set({ left: bounds.left, top: box.top + box.height, width: bounds.width, height: Math.max(0, bounds.top + bounds.height - box.top - box.height) });
-      confirmButton.set({ left: actionsLeft, top: actionsTop });
-      cancelButton.set({ left: actionsLeft + 104, top: actionsTop });
       c.renderAll();
     };
 
@@ -506,16 +506,50 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       c.setActiveObject(cropped);
       c.requestRenderAll();
     };
-    confirmButton.on("mousedown", () => void applyCrop());
-    cancelButton.on("mousedown", clearCropSession);
+
     const keydown = (event: KeyboardEvent) => { if (event.key === "Escape") clearCropSession(); if (event.key === "Enter") void applyCrop(); };
-    cropSessionRef.current = { canvas: c, image: target, cropBox, overlays, actions: [confirmButton, cancelButton], refresh, keydown, original: { selectable: Boolean(target.selectable), evented: Boolean(target.evented), opacity: target.opacity ?? 1 } };
-    c.add(...overlays, cropBox, confirmButton, cancelButton);
+    cropSessionRef.current = { canvas: c, image: target, cropBox, overlays, actions: [], refresh, keydown, original: { selectable: Boolean(target.selectable), evented: Boolean(target.evented), opacity: target.opacity ?? 1 } };
+    c.add(...overlays, cropBox);
     c.setActiveObject(cropBox);
     c.on("object:moving", refresh);
     c.on("object:scaling", refresh);
     window.addEventListener("keydown", keydown);
+    setIsCropMode(true);
     refresh();
+  }, [clearCropSession]);
+
+  const applyCrop = useCallback(async () => {
+    const session = cropSessionRef.current;
+    if (!session) return;
+    const { canvas, image, cropBox } = session;
+    const target = image;
+    const box = cropBox.getBoundingRect();
+    const imageBounds = target.getBoundingRect();
+    const element = target.getElement() as HTMLImageElement | HTMLCanvasElement;
+    const sourceWidth = element instanceof HTMLImageElement ? element.naturalWidth : element.width;
+    const sourceHeight = element instanceof HTMLImageElement ? element.naturalHeight : element.height;
+    const sx = Math.max(0, Math.round(((box.left - imageBounds.left) / imageBounds.width) * sourceWidth));
+    const sy = Math.max(0, Math.round(((box.top - imageBounds.top) / imageBounds.height) * sourceHeight));
+    const sw = Math.max(1, Math.round((box.width / imageBounds.width) * sourceWidth));
+    const sh = Math.max(1, Math.round((box.height / imageBounds.height) * sourceHeight));
+    const out = document.createElement("canvas");
+    out.width = Math.min(sourceWidth - sx, sw);
+    out.height = Math.min(sourceHeight - sy, sh);
+    const ctx = out.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(element, sx, sy, out.width, out.height, 0, 0, out.width, out.height);
+    const cropped = await fabric.FabricImage.fromURL(out.toDataURL("image/png"));
+    cropped.set({ left: box.left + box.width / 2, top: box.top + box.height / 2, originX: "center", originY: "center", scaleX: box.width / out.width, scaleY: box.height / out.height, cornerColor: "#ffffff", cornerStrokeColor: "oklch(0.55 0.28 295)", borderColor: "oklch(0.55 0.28 295)", cornerSize: 12, transparentCorners: false, cornerStyle: "circle", lockUniScaling: true });
+    clearCropSession();
+    canvas.remove(target);
+    canvas.add(cropped);
+    if (trashControlRef.current) cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
+    canvas.setActiveObject(cropped);
+    canvas.requestRenderAll();
+  }, [clearCropSession]);
+
+  const cancelCrop = useCallback(() => {
+    clearCropSession();
   }, [clearCropSession]);
 
   // ---------- Delete active object ----------
@@ -668,13 +702,17 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     deletePage,
     deleteActiveObject,
     startCropMode,
+    applyCrop,
+    cancelCrop,
+    isCropMode,
     getPageCanvas,
     pages,
     activePageId,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
-    deletePage, deleteActiveObject, startCropMode, getPageCanvas, pages, activePageId,
+    deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
+    pages, activePageId,
   ]);
 
   return (
