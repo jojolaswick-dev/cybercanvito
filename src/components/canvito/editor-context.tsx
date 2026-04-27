@@ -498,104 +498,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     [addImageFromFile],
   );
 
-  const startCropMode = useCallback(() => {
-    const c = activeCanvas;
-    if (!c) return;
-    const obj = c.getActiveObject();
-    if (!obj || !(obj instanceof fabric.FabricImage)) return;
-
-    // Professional crop logic
-    // We will use fabric's built-in controls customization for a custom crop experience
-    setIsCropping(true);
-    
-    const img = obj as fabric.FabricImage;
-
-    // Store current state for Undo/Cancel
-    (img as any)._preCropState = {
-      width: img.width,
-      height: img.height,
-      cropX: img.cropX,
-      cropY: img.cropY,
-      left: img.left,
-      top: img.top,
-      scaleX: img.scaleX,
-      scaleY: img.scaleY
-    };
-
-    img.set({
-      borderColor: "oklch(0.72 0.18 195)",
-      cornerColor: "white",
-      cornerStrokeColor: "oklch(0.72 0.18 195)",
-      cornerSize: 12,
-      transparentCorners: false,
-      hasBorders: true,
-      borderDashArray: [5, 5],
-    });
-    
-    c.setActiveObject(img);
-    c.requestRenderAll();
-    
-    toast.info("Arraste as alças laterais para ajustar o recorte", {
-      duration: 5000,
-    });
-  }, [activeCanvas]);
-
-  const finishCrop = useCallback(() => {
-    const c = activeCanvas;
-    if (!c) return;
-    const obj = c.getActiveObject();
-    if (!obj || !(obj instanceof fabric.FabricImage)) return;
-
-    const img = obj as fabric.FabricImage;
-    
-    // Restore original controls + trash handle
-    img.controls = {
-      ...fabric.controlsUtils.createObjectDefaultControls(),
-      deleteControl: trashControlRef.current!
-    };
-    
-    // Reset visual style
-    img.set({
-      borderColor: "oklch(0.55 0.28 295)",
-      cornerColor: "#ffffff",
-      cornerStrokeColor: "oklch(0.55 0.28 295)",
-      cornerSize: 12,
-      borderDashArray: null,
-    });
-
-    setIsCropping(false);
-    c.requestRenderAll();
-    toast.success("Recorte aplicado");
-  }, [activeCanvas]);
-
-  const cancelCrop = useCallback(() => {
-    const c = activeCanvas;
-    if (!c) return;
-    const obj = c.getActiveObject();
-    if (obj && (obj as any)._preCropState) {
-      const state = (obj as any)._preCropState;
-      obj.set(state);
-      delete (obj as any)._preCropState;
-    }
-
-    if (obj instanceof fabric.FabricImage) {
-      obj.controls = {
-        ...fabric.controlsUtils.createObjectDefaultControls(),
-        deleteControl: trashControlRef.current!
-      };
-      obj.set({
-        borderColor: "oklch(0.55 0.28 295)",
-        cornerColor: "#ffffff",
-        cornerStrokeColor: "oklch(0.55 0.28 295)",
-        cornerSize: 12,
-        borderDashArray: null,
-      });
-    }
-
-    setIsCropping(false);
-    c.requestRenderAll();
-  }, [activeCanvas]);
-
   useEffect(() => {
     return () => {
       if (fileInputRef.current) {
@@ -627,15 +529,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     getPageCanvas,
     pages,
     activePageId,
-    isCropping,
-    startCropMode,
-    finishCrop,
-    cancelCrop,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
-    deletePage, deleteActiveObject, getPageCanvas, pages, activePageId, isCropping,
-    startCropMode, finishCrop, cancelCrop,
+    deletePage, deleteActiveObject, getPageCanvas, pages, activePageId,
   ]);
 
   return (
