@@ -31,6 +31,8 @@ export const Canvas = memo(function Canvas() {
     activePageId,
     deleteActiveObject,
     fitToScreen,
+    undo,
+    redo,
   } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
 
