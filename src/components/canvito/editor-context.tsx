@@ -882,9 +882,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     
     isInternalUpdateRef.current = false;
   }, [pages, setActivePageId, isCropMode, cancelCrop]);
-    
-    isInternalUpdateRef.current = false;
-  }, [pages, setActivePageId, isCropMode, cancelCrop]);
 
   const redo = useCallback(async () => {
     if (redoStackRef.current.length === 0) return;
