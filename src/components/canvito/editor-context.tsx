@@ -583,7 +583,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     if (trashControlRef.current) cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
     canvas.setActiveObject(cropped);
     canvas.requestRenderAll();
-  }, [clearCropSession]);
+    saveHistory();
+  }, [clearCropSession, saveHistory]);
 
   const cancelCrop = useCallback(() => {
     clearCropSession();
