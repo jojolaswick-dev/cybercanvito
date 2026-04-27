@@ -274,6 +274,20 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setActiveCanvas(c);
   }, []);
 
+  const clearCropSession = useCallback(() => {
+    const session = cropSessionRef.current;
+    if (!session) return;
+    window.removeEventListener("keydown", session.keydown);
+    session.canvas.off("object:moving", session.refresh);
+    session.canvas.off("object:scaling", session.refresh);
+    session.canvas.remove(session.cropBox, ...session.overlays, ...session.actions);
+    session.image.set({ selectable: session.original.selectable, evented: session.original.evented, opacity: session.original.opacity });
+    session.image.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false, mtr: true, tl: true, tr: true, bl: true, br: true });
+    session.canvas.setActiveObject(session.image);
+    session.canvas.requestRenderAll();
+    cropSessionRef.current = null;
+  }, []);
+
   // ---------- Artboard preset ----------
   // When the preset changes, every existing canvas needs to be resized + clipped
   // to the new dimensions. We rebuild artboard + clipPath in place to preserve
