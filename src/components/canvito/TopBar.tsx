@@ -24,7 +24,6 @@ import {
   RotateCw,
   Sun,
   Trash2,
-  Crop,
   Undo2,
   Zap,
 } from "lucide-react";
@@ -68,10 +67,6 @@ export const TopBar = memo(function TopBar() {
      pages,
     preset,
     setArtboardPreset,
-    startCropMode,
-    finishCrop,
-    cancelCrop,
-    isCropping,
   } = useEditor();
 
   const showSoon = useCallback((label: string) => {
@@ -126,10 +121,6 @@ export const TopBar = memo(function TopBar() {
     activeCanvas?.requestRenderAll();
   }, [activeCanvas, getEditableObject]);
   
-  const startCropping = useCallback(() => {
-    startCropMode();
-  }, [startCropMode]);
-
   const moveToTrash = useCallback(() => {
     if (activeCanvas?.getActiveObject()) {
       deleteActiveObject();
@@ -215,9 +206,6 @@ export const TopBar = memo(function TopBar() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-72 border-white/10 bg-[var(--panel)] p-1.5 text-white shadow-[0_18px_60px_oklch(0_0_0/0.45)]">
-             <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Recorte</DropdownMenuLabel>
-            <EditMenuItem icon={Crop} label="Recortar" shortcut="C" onSelect={startCropping} />
-            <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Filtros</DropdownMenuLabel>
             <EditMenuItem icon={Sun} label="Sépia" onSelect={() => applyFilter("sepia")} />
             <EditMenuItem icon={Zap} label="Bandicoot" onSelect={() => applyFilter("bandicoot")} />
@@ -277,30 +265,11 @@ export const TopBar = memo(function TopBar() {
 
       {/* Right */}
       <div className="flex items-center gap-2">
-        {isCropping ? (
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={cancelCrop}
-              className="rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium hover:bg-white/10"
-            >
-              Cancelar
-            </button>
-            <button 
-              onClick={finishCrop}
-              className="rounded-md bg-[var(--neon-cyan)] px-5 py-2 text-sm font-bold text-black shadow-[0_0_15px_oklch(0.7_0.2_180/0.5)] transition-all hover:scale-[1.02]"
-            >
-              Concluir Recorte
-            </button>
-          </div>
-        ) : (
-          <>
-            <IconBtn><MessageSquare className="h-4 w-4" /></IconBtn>
-            <IconBtn><Share2 className="h-4 w-4" /></IconBtn>
-            <button className="ml-1 inline-flex items-center gap-2 rounded-md bg-white px-5 py-2 text-sm font-bold text-[var(--background)] shadow-[0_0_24px_oklch(1_0_0/0.3)] transition-all hover:shadow-[0_0_32px_oklch(1_0_0/0.5)] hover:scale-[1.02] active:scale-95">
-              Exportar
-            </button>
-          </>
-        )}
+        <IconBtn><MessageSquare className="h-4 w-4" /></IconBtn>
+        <IconBtn><Share2 className="h-4 w-4" /></IconBtn>
+        <button className="ml-1 inline-flex items-center gap-2 rounded-md bg-white px-5 py-2 text-sm font-bold text-[var(--background)] shadow-[0_0_24px_oklch(1_0_0/0.3)] transition-all hover:shadow-[0_0_32px_oklch(1_0_0/0.5)] hover:scale-[1.02] active:scale-95">
+          Exportar
+        </button>
       </div>
     </header>
   );
