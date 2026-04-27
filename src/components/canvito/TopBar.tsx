@@ -144,7 +144,7 @@ export const TopBar = memo(function TopBar() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[var(--neon-pink)] to-transparent opacity-60" />
 
       {/* Left */}
-      <div className="flex items-center gap-1">
+      <div className="flex flex-shrink-0 items-center gap-1">
         <div className="mr-2 flex items-center gap-1.5 pl-1">
           <div className="h-2.5 w-2.5 rounded-full bg-[var(--neon-pink)] shadow-[0_0_8px_var(--neon-pink)]" />
           <div className="h-2.5 w-2.5 rounded-full bg-[var(--neon-cyan)] shadow-[0_0_8px_var(--neon-cyan)]" />
@@ -229,9 +229,22 @@ export const TopBar = memo(function TopBar() {
             <EditMenuItem icon={Scaling} label="Redimensionar" disabled onSelect={showDevelopmentToast} />
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
 
-        <div className="mx-2 h-6 w-px bg-white/15" />
+      {/* Center */}
+      <div className="flex flex-1 items-center justify-center gap-3 px-4 min-w-0">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="max-w-[320px] w-full rounded-md bg-white/5 px-3 py-1 text-sm font-medium text-white outline-none ring-1 ring-transparent transition-all hover:bg-white/10 focus:bg-white/10 focus:ring-[var(--electric-blue)]"
+        />
+        <span className="flex-shrink-0 text-xs tabular-nums text-white/60">{artboard.width} × {artboard.height} px</span>
+      </div>
 
+      {/* Right */}
+      <div className="flex flex-shrink-0 items-center gap-2">
+        <div className="mx-1 h-6 w-px bg-white/15" />
+        
         {/* Quick preset shortcuts */}
         <div className="flex items-center gap-0.5">
           {(Object.keys(ARTBOARD_PRESETS) as ArtboardPresetId[]).map((id) => {
@@ -254,23 +267,8 @@ export const TopBar = memo(function TopBar() {
           })}
         </div>
 
-        <div className="mx-2 h-6 w-px bg-white/15" />
-        <IconBtn><Undo2 className="h-4 w-4" /></IconBtn>
-        <IconBtn><Redo2 className="h-4 w-4" /></IconBtn>
-      </div>
+        <div className="mx-1 h-6 w-px bg-white/15" />
 
-      {/* Center */}
-      <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-3">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="rounded-md bg-white/5 px-3 py-1 text-sm font-medium text-white outline-none ring-1 ring-transparent transition-all hover:bg-white/10 focus:bg-white/10 focus:ring-[var(--electric-blue)]"
-        />
-        <span className="text-xs tabular-nums text-white/60">{artboard.width} × {artboard.height} px</span>
-      </div>
-
-      {/* Right */}
-      <div className="flex items-center gap-2">
         {isCropMode ? (
           <div className="flex items-center gap-2 pr-2">
             <button 

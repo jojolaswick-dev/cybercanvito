@@ -1,8 +1,8 @@
-import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize } from "lucide-react";
+import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize, Undo2, Redo2 } from "lucide-react";
 import { useEditor } from "./editor-context";
 
 export function BottomBar() {
-  const { zoom, setZoom, fitToScreen, pages } = useEditor();
+  const { zoom, setZoom, fitToScreen, pages, undo, redo, canUndo, canRedo } = useEditor();
 
   return (
     <footer className="relative z-30 flex h-11 items-center justify-between border-t border-white/10 bg-cyber-bar px-3 text-white">
@@ -10,6 +10,25 @@ export function BottomBar() {
 
       {/* Left */}
       <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 pr-2 mr-2 border-r border-white/10">
+          <button 
+            onClick={undo}
+            disabled={!canUndo}
+            title="Desfazer (Ctrl+Z)"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+          >
+            <Undo2 className="h-4 w-4" />
+          </button>
+          <button 
+            onClick={redo}
+            disabled={!canRedo}
+            title="Refazer (Ctrl+Y)"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+          >
+            <Redo2 className="h-4 w-4" />
+          </button>
+        </div>
+
         <FootBtn icon={StickyNote} label="Notas" />
         <FootBtn icon={Timer} label="Temporizador" />
         <FootBtn icon={Subtitles} label="Legendas" />
