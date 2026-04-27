@@ -199,10 +199,35 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     if (isInternalUpdateRef.current || isCropMode) return;
     
     const currentState: HistoryState = {
-      pages: pages.map(p => ({
-        id: p.id,
-        json: JSON.stringify(canvasesRef.current.get(p.id)?.toJSON() || {})
-      })),
+      pages: pages.map(p => {
+        const c = canvasesRef.current.get(p.id);
+        if (!c) return { id: p.id, json: "{}" };
+        
+        // Filter out any crop-related support objects from the snapshot
+        const filteredObjects = c.getObjects().filter(obj => {
+          const o = obj as any;
+          return !o.isCropOverlay && !o.isCropControl && !o.isGuideLine && !o.isCropAction;
+        });
+        
+        // Use a temporary cloned view if possible, or just stringify filtering
+        // For simplicity and performance, we'll manually filter during toJSON if we could, 
+        // but since Fabric's toJSON is global, we temporarily hide objects.
+        const hiddenObjects: fabric.Object[] = [];
+        c.getObjects().forEach(obj => {
+          const o = obj as any;
+          if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction) {
+            obj.set('excludeFromExport', true);
+            hiddenObjects.push(obj);
+          }
+        });
+
+        const json = JSON.stringify(c.toJSON());
+        
+        // Restore
+        hiddenObjects.forEach(obj => obj.set('excludeFromExport', false));
+
+        return { id: p.id, json };
+      }),
       activePageId: activePageIdRef.current
     };
 
@@ -253,8 +278,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         if (!obj) return;
         if ((obj as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
         
-        // Skip history save for crop overlays to avoid "ghost states"
-        if ((obj as any).isCropOverlay) return;
+        // Skip history save for support objects to avoid "ghost states" or fragmented undo
+        const o = obj as any;
+        if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction) return;
         
         // Keep the deletion handle wired on every newly added object
         if (trashControlRef.current) {
@@ -265,6 +291,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       c.on("object:removed", (e) => {
         const obj = e.target;
         if (obj && (obj as any).isCropOverlay) return;
+        if (obj && (obj as any).isCropControl) return;
+        if (obj && (obj as any).isGuideLine) return;
         saveHistory();
       });
 
@@ -332,6 +360,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     session.canvas.off("object:moving", session.refresh);
     session.canvas.off("object:scaling", session.refresh);
     session.canvas.remove(session.cropBox, ...session.overlays, ...session.actions);
+    // Remove any support objects
+    session.canvas.getObjects().forEach(obj => {
+      const o = obj as any;
+      if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction) {
+        session.canvas.remove(obj);
+      }
+    });
     session.image.set({ selectable: session.original.selectable, evented: session.original.evented, opacity: session.original.opacity });
     session.image.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false, mtr: true, tl: true, tr: true, bl: true, br: true });
     session.canvas.setActiveObject(session.image);
@@ -478,7 +513,19 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     };
 
     // Save history BEFORE starting crop mode so Undo returns to pre-crop state
-    saveHistory();
+    // We explicitly call saveHistory here and ensures it's not blocked by isCropMode yet
+    const currentState: HistoryState = {
+      pages: pages.map(p => ({
+        id: p.id,
+        json: JSON.stringify(canvasesRef.current.get(p.id)?.toJSON() || {})
+      })),
+      activePageId: activePageIdRef.current
+    };
+    undoStackRef.current.push(currentState);
+    if (undoStackRef.current.length > 50) undoStackRef.current.shift();
+    redoStackRef.current = [];
+
+    setIsCropMode(true);
 
     const bounds = target.getBoundingRect();
     const minSize = 24;
@@ -539,11 +586,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       ml: new fabric.Control({ x: -0.5, y: 0, cursorStyle: "ew-resize", actionHandler: resizeCropBox("ml") }),
       mr: new fabric.Control({ x: 0.5, y: 0, cursorStyle: "ew-resize", actionHandler: resizeCropBox("mr") }),
     };
-    (cropBox as CropOverlayObject).isCropOverlay = true;
+    (cropBox as any).isCropOverlay = true;
+    (cropBox as any).isCropControl = true;
 
     const overlays = [0, 1, 2, 3].map(() => {
       const overlay = new fabric.Rect({ fill: "oklch(0.08 0.02 280 / 0.56)", selectable: false, evented: false, objectCaching: false });
-      (overlay as CropOverlayObject).isCropOverlay = true;
+      (overlay as any).isCropOverlay = true;
+      (overlay as any).isCropControl = true;
       return overlay as CropOverlayObject;
     });
 
@@ -589,9 +638,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const session = cropSessionRef.current;
     if (!session) return;
     
-    // Save state BEFORE crop result as the "pre-crop" history entry
-    // This allows Ctrl+Z to jump back exactly to before the crop
-    saveHistory();
+    // We don't save history here because we already saved the "pre-crop" state 
+    // when entering crop mode.
 
     const { canvas, image, cropBox } = session;
     const target = image;
@@ -653,7 +701,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       setIsCropMode(false);
       
       isInternalUpdateRef.current = false;
-      // Save history AFTER crop to finalize the "post-crop" state
+      // Save history AFTER crop to finalize the "post-crop" state as a single atomic action
       saveHistory();
       canvas.requestRenderAll();
     } catch (err) {
