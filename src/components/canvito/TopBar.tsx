@@ -65,10 +65,13 @@ export const TopBar = memo(function TopBar() {
     deleteActiveObject,
     deletePage,
     openImagePicker,
-     pages,
+    pages,
     preset,
     setArtboardPreset,
     startCropMode,
+    isCropMode,
+    applyCrop,
+    cancelCrop,
   } = useEditor();
 
   const showSoon = useCallback((label: string) => {
@@ -268,8 +271,27 @@ export const TopBar = memo(function TopBar() {
 
       {/* Right */}
       <div className="flex items-center gap-2">
-        <IconBtn><MessageSquare className="h-4 w-4" /></IconBtn>
-        <IconBtn><Share2 className="h-4 w-4" /></IconBtn>
+        {isCropMode ? (
+          <div className="flex items-center gap-2 pr-2">
+            <button 
+              onClick={cancelCrop}
+              className="inline-flex items-center justify-center rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white transition-all hover:bg-white/20 active:scale-95"
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={applyCrop}
+              className="inline-flex items-center justify-center rounded-md bg-[oklch(0.65_0.15_180)] px-4 py-2 text-sm font-bold text-[var(--background)] shadow-[0_0_20px_oklch(0.65_0.15_180/0.3)] transition-all hover:shadow-[0_0_30px_oklch(0.65_0.15_180/0.5)] hover:scale-[1.02] active:scale-95"
+            >
+              Confirmar
+            </button>
+          </div>
+        ) : (
+          <>
+            <IconBtn><MessageSquare className="h-4 w-4" /></IconBtn>
+            <IconBtn><Share2 className="h-4 w-4" /></IconBtn>
+          </>
+        )}
         <button className="ml-1 inline-flex items-center gap-2 rounded-md bg-white px-5 py-2 text-sm font-bold text-[var(--background)] shadow-[0_0_24px_oklch(1_0_0/0.3)] transition-all hover:shadow-[0_0_32px_oklch(1_0_0/0.5)] hover:scale-[1.02] active:scale-95">
           Exportar
         </button>
