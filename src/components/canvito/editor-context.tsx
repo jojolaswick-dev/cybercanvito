@@ -249,13 +249,20 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         if (!obj) return;
         if ((obj as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
         
+        // Skip history save for crop overlays to avoid "ghost states"
+        if ((obj as any).isCropOverlay) return;
+        
         // Keep the deletion handle wired on every newly added object
         if (trashControlRef.current) {
           obj.controls = { ...obj.controls, deleteControl: trashControlRef.current };
         }
         saveHistory();
       });
-      c.on("object:removed", saveHistory);
+      c.on("object:removed", (e) => {
+        const obj = e.target;
+        if (obj && (obj as any).isCropOverlay) return;
+        saveHistory();
+      });
 
       c.requestRenderAll();
     },
