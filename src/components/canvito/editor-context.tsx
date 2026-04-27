@@ -725,6 +725,77 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const undo = useCallback(async () => {
+    if (undoStackRef.current.length === 0) return;
+    
+    const currentState: HistoryState = {
+      pages: pages.map(p => ({
+        id: p.id,
+        json: JSON.stringify(canvasesRef.current.get(p.id)?.toJSON() || {})
+      })),
+      activePageId: activePageIdRef.current
+    };
+    redoStackRef.current.push(currentState);
+    
+    const prevState = undoStackRef.current.pop()!;
+    isInternalUpdateRef.current = true;
+    
+    // Restore pages and their content
+    const newPages = prevState.pages.map(p => ({ id: p.id }));
+    setPages(newPages);
+    
+    // We need to wait for canvases to be re-registered if pages changed
+    // In a real app, we'd handle this more robustly, but here we can try to restore
+    // to existing canvases immediately.
+    for (const p of prevState.pages) {
+      const c = canvasesRef.current.get(p.id);
+      if (c) {
+        await c.loadFromJSON(JSON.parse(p.json));
+        // Re-apply artboard and controls if needed
+        c.requestRenderAll();
+      }
+    }
+    
+    if (prevState.activePageId) {
+      setActivePageId(prevState.activePageId);
+    }
+    
+    isInternalUpdateRef.current = false;
+  }, [pages, setActivePageId]);
+
+  const redo = useCallback(async () => {
+    if (redoStackRef.current.length === 0) return;
+    
+    const currentState: HistoryState = {
+      pages: pages.map(p => ({
+        id: p.id,
+        json: JSON.stringify(canvasesRef.current.get(p.id)?.toJSON() || {})
+      })),
+      activePageId: activePageIdRef.current
+    };
+    undoStackRef.current.push(currentState);
+    
+    const nextState = redoStackRef.current.pop()!;
+    isInternalUpdateRef.current = true;
+    
+    const newPages = nextState.pages.map(p => ({ id: p.id }));
+    setPages(newPages);
+    
+    for (const p of nextState.pages) {
+      const c = canvasesRef.current.get(p.id);
+      if (c) {
+        await c.loadFromJSON(JSON.parse(p.json));
+        c.requestRenderAll();
+      }
+    }
+    
+    if (nextState.activePageId) {
+      setActivePageId(nextState.activePageId);
+    }
+    
+    isInternalUpdateRef.current = false;
+  }, [pages, setActivePageId]);
+
   const contextValue = useMemo<EditorCtx>(() => ({
     activeCanvas,
     registerPageCanvas,
@@ -748,11 +819,15 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     getPageCanvas,
     pages,
     activePageId,
+    undo,
+    redo,
+    canUndo: undoStackRef.current.length > 0,
+    canRedo: redoStackRef.current.length > 0,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId,
+    pages, activePageId, undo, redo
   ]);
 
   return (
