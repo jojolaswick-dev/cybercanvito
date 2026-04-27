@@ -360,6 +360,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     session.canvas.off("object:moving", session.refresh);
     session.canvas.off("object:scaling", session.refresh);
     session.canvas.remove(session.cropBox, ...session.overlays, ...session.actions);
+    // Remove any support objects
+    session.canvas.getObjects().forEach(obj => {
+      const o = obj as any;
+      if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction) {
+        session.canvas.remove(obj);
+      }
+    });
     session.image.set({ selectable: session.original.selectable, evented: session.original.evented, opacity: session.original.opacity });
     session.image.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false, mtr: true, tl: true, tr: true, bl: true, br: true });
     session.canvas.setActiveObject(session.image);
