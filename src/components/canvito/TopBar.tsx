@@ -22,6 +22,7 @@ import {
   RectangleVertical,
   RotateCcw,
   RotateCw,
+  Scissors,
   Sun,
   Trash2,
   Undo2,
@@ -67,6 +68,7 @@ export const TopBar = memo(function TopBar() {
      pages,
     preset,
     setArtboardPreset,
+    startCropMode,
   } = useEditor();
 
   const showSoon = useCallback((label: string) => {
@@ -220,6 +222,7 @@ export const TopBar = memo(function TopBar() {
             <EditMenuItem icon={ArrowLeftRight} label="Espelhar Horizontal" onSelect={() => mirrorActiveObject("x")} />
             <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Dimensionamento</DropdownMenuLabel>
+            <EditMenuItem icon={Scissors} label="Recortar" onSelect={startCropMode} />
             <EditMenuItem icon={Scaling} label="Redimensionar" disabled onSelect={showDevelopmentToast} />
           </DropdownMenuContent>
         </DropdownMenu>
