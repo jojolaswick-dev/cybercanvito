@@ -24,6 +24,11 @@ export type ImageInsertPoint = {
   y?: number;
 };
 
+type HistoryState = {
+  pages: { id: string; json: string }[];
+  activePageId: string | null;
+};
+
 type EditorCtx = {
   /** The currently focused canvas (last interacted). Used by tool/sidebar actions. */
   activeCanvas: fabric.Canvas | null;
@@ -59,6 +64,11 @@ type EditorCtx = {
   applyCrop: () => Promise<void>;
   cancelCrop: () => void;
   isCropMode: boolean;
+
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 
   /** Read the live Fabric.Canvas for a given page (null if not registered yet). */
   getPageCanvas: (pageId: string) => fabric.Canvas | null;
@@ -106,6 +116,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [pages, setPages] = useState<PageState[]>([{ id: makePageId() }]);
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
+
+  // Undo/Redo Stacks
+  const undoStackRef = useRef<HistoryState[]>([]);
+  const redoStackRef = useRef<HistoryState[]>([]);
+  const isInternalUpdateRef = useRef(false);
 
   // Map of pageId -> Fabric.Canvas (one canvas per stacked page)
   const canvasesRef = useRef<Map<string, fabric.Canvas>>(new Map());
@@ -176,6 +191,22 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  const saveHistory = useCallback(() => {
+    if (isInternalUpdateRef.current) return;
+    
+    const currentState: HistoryState = {
+      pages: pages.map(p => ({
+        id: p.id,
+        json: JSON.stringify(canvasesRef.current.get(p.id)?.toJSON() || {})
+      })),
+      activePageId: activePageIdRef.current
+    };
+
+    undoStackRef.current.push(currentState);
+    if (undoStackRef.current.length > 50) undoStackRef.current.shift();
+    redoStackRef.current = [];
+  }, [pages]);
+
   /** Setup a freshly created Fabric canvas: artboard + clipPath + activation hooks. */
   const initFabricCanvas = useCallback(
     (pageId: string, c: fabric.Canvas, w: number, h: number) => {
@@ -211,19 +242,24 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       };
       c.on("mouse:down", markActive);
 
-      // Keep the deletion handle wired on every newly added object
+      // History tracking
+      c.on("object:modified", saveHistory);
       c.on("object:added", (e) => {
         const obj = e.target;
         if (!obj) return;
         if ((obj as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
+        
+        // Keep the deletion handle wired on every newly added object
         if (trashControlRef.current) {
           obj.controls = { ...obj.controls, deleteControl: trashControlRef.current };
         }
+        saveHistory();
       });
+      c.on("object:removed", saveHistory);
 
       c.requestRenderAll();
     },
-    [],
+    [saveHistory],
   );
 
   /** Register (or unregister with `el = null`) a page's <canvas>. Idempotent. */
@@ -505,6 +541,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       if (trashControlRef.current) cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
       c.setActiveObject(cropped);
       c.requestRenderAll();
+      saveHistory();
     };
 
     const keydown = (event: KeyboardEvent) => { if (event.key === "Escape") clearCropSession(); if (event.key === "Enter") void applyCrop(); };
@@ -516,7 +553,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", keydown);
     setIsCropMode(true);
     refresh();
-  }, [clearCropSession]);
+  }, [clearCropSession, saveHistory]);
 
   const applyCrop = useCallback(async () => {
     const session = cropSessionRef.current;
@@ -546,7 +583,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     if (trashControlRef.current) cropped.controls = { ...cropped.controls, deleteControl: trashControlRef.current };
     canvas.setActiveObject(cropped);
     canvas.requestRenderAll();
-  }, [clearCropSession]);
+    saveHistory();
+  }, [clearCropSession, saveHistory]);
 
   const cancelCrop = useCallback(() => {
     clearCropSession();
@@ -567,8 +605,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       c.remove(active);
     }
     c.discardActiveObject();
-    c.requestRenderAll();
-  }, []);
+        c.requestRenderAll();
+        saveHistory();
+    saveHistory();
+  }, [saveHistory]);
 
   // ---------- Image insertion (always targets the active page's canvas) ----------
 
@@ -685,6 +725,77 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const undo = useCallback(async () => {
+    if (undoStackRef.current.length === 0) return;
+    
+    const currentState: HistoryState = {
+      pages: pages.map(p => ({
+        id: p.id,
+        json: JSON.stringify(canvasesRef.current.get(p.id)?.toJSON() || {})
+      })),
+      activePageId: activePageIdRef.current
+    };
+    redoStackRef.current.push(currentState);
+    
+    const prevState = undoStackRef.current.pop()!;
+    isInternalUpdateRef.current = true;
+    
+    // Restore pages and their content
+    const newPages = prevState.pages.map(p => ({ id: p.id }));
+    setPages(newPages);
+    
+    // We need to wait for canvases to be re-registered if pages changed
+    // In a real app, we'd handle this more robustly, but here we can try to restore
+    // to existing canvases immediately.
+    for (const p of prevState.pages) {
+      const c = canvasesRef.current.get(p.id);
+      if (c) {
+        await c.loadFromJSON(JSON.parse(p.json));
+        // Re-apply artboard and controls if needed
+        c.requestRenderAll();
+      }
+    }
+    
+    if (prevState.activePageId) {
+      setActivePageId(prevState.activePageId);
+    }
+    
+    isInternalUpdateRef.current = false;
+  }, [pages, setActivePageId]);
+
+  const redo = useCallback(async () => {
+    if (redoStackRef.current.length === 0) return;
+    
+    const currentState: HistoryState = {
+      pages: pages.map(p => ({
+        id: p.id,
+        json: JSON.stringify(canvasesRef.current.get(p.id)?.toJSON() || {})
+      })),
+      activePageId: activePageIdRef.current
+    };
+    undoStackRef.current.push(currentState);
+    
+    const nextState = redoStackRef.current.pop()!;
+    isInternalUpdateRef.current = true;
+    
+    const newPages = nextState.pages.map(p => ({ id: p.id }));
+    setPages(newPages);
+    
+    for (const p of nextState.pages) {
+      const c = canvasesRef.current.get(p.id);
+      if (c) {
+        await c.loadFromJSON(JSON.parse(p.json));
+        c.requestRenderAll();
+      }
+    }
+    
+    if (nextState.activePageId) {
+      setActivePageId(nextState.activePageId);
+    }
+    
+    isInternalUpdateRef.current = false;
+  }, [pages, setActivePageId]);
+
   const contextValue = useMemo<EditorCtx>(() => ({
     activeCanvas,
     registerPageCanvas,
@@ -708,11 +819,15 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     getPageCanvas,
     pages,
     activePageId,
+    undo,
+    redo,
+    canUndo: undoStackRef.current.length > 0,
+    canRedo: redoStackRef.current.length > 0,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId,
+    pages, activePageId, undo, redo
   ]);
 
   return (
