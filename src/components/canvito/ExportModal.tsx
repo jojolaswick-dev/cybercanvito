@@ -33,9 +33,16 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [exportStatus, setExportStatus] = useState<string>("");
-  const { activePageId } = useEditor();
+  const { activePageId, getPageCanvas } = useEditor();
 
   const handleExport = async (format: ExportFormat) => {
+    // 1. Limpeza de UI: Desativar seleções no Fabric.js antes da captura
+    const canvas = activePageId ? getPageCanvas(activePageId) : null;
+    if (canvas) {
+      canvas.discardActiveObject();
+      canvas.requestRenderAll();
+    }
+
     const triggerDownload = (content: Blob | string, fileName: string) => {
       const url = typeof content === 'string' ? content : URL.createObjectURL(content);
       const link = document.createElement('a');
@@ -49,123 +56,92 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
     };
 
     try {
-      console.log(`Iniciando exportação: ${format}`);
-      const _window = window as any;
+      console.log(`Iniciando captura estrita: ${format}`);
       setIsExporting(true);
-      setProgress(5);
-      setExportStatus(`Preparando design para exportação...`);
+      setProgress(10);
+      setExportStatus(`Isolando área do design...`);
 
+      // Alvo Estrito: Focar no container do papel
       const targetSelector = activePageId ? `[data-page-id="${activePageId}"]` : '[data-page-id]';
       const activePageElement = document.querySelector(targetSelector) as HTMLElement;
       
       if (!activePageElement) {
-        throw new Error("Não foi possível encontrar o canvas para exportação.");
+        throw new Error("Elemento do Canvas não encontrado.");
       }
 
-      const fabricCanvasContainer = activePageElement.querySelector('.canvas-container');
-      if (fabricCanvasContainer) {
-        const style = document.createElement('style');
-        style.innerHTML = `
-          ${targetSelector} .canvas-container > canvas:not(:first-child) { opacity: 0 !important; }
-          ${targetSelector} .canvas-container > .upper-canvas { opacity: 0 !important; }
-        `;
-        document.head.appendChild(style);
-        
-        await new Promise(r => setTimeout(r, 100));
-        
-        setProgress(20);
-        setExportStatus("Capturando área do design (2x HQ)...");
+      // 2. Garantir ocultação total de controles via CSS (molduras roxas, etc)
+      const style = document.createElement('style');
+      style.innerHTML = `
+        ${targetSelector} .upper-canvas { display: none !important; }
+        ${targetSelector} { border: none !important; outline: none !important; box-shadow: none !important; }
+      `;
+      document.head.appendChild(style);
+      
+      // Delay para o browser processar o estilo
+      await new Promise(r => setTimeout(r, 150));
+      
+      setProgress(40);
+      setExportStatus("Gerando imagem em alta definição...");
 
-        const options = {
-          pixelRatio: 2,
-          backgroundColor: "#ffffff",
-          width: activePageElement.clientWidth,
-          height: activePageElement.clientHeight,
-          style: {
-            transform: 'none',
-            margin: '0',
-          }
-        };
-
-        const fileName = `${projectName || "Design sem nome"}.${format === 'pdf' ? 'pdf' : format}`;
-        
-        let blob: Blob | null = null;
-        let dataUrl = "";
-        
-        if (format === "png") {
-          blob = await htmlToImage.toBlob(activePageElement, options);
-        } else if (format === "jpg") {
-          blob = await htmlToImage.toBlob(activePageElement, { ...options, quality: 0.95, type: 'image/jpeg' });
-        } else if (format === "webp") {
-          blob = await htmlToImage.toBlob(activePageElement, { ...options, type: 'image/webp' });
-        } else {
-          dataUrl = await htmlToImage.toPng(activePageElement, options);
+      const options = {
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        width: activePageElement.clientWidth,
+        height: activePageElement.clientHeight,
+        style: {
+          transform: 'none',
+          margin: '0',
+          padding: '0'
         }
+      };
 
-        document.head.removeChild(style);
-
-        setProgress(80);
-        setExportStatus("Finalizando arquivo...");
-
-        if (format === "pdf") {
-          const pdf = new jsPDF({
-            orientation: activePageElement.clientWidth > activePageElement.clientHeight ? "landscape" : "portrait",
-            unit: "px",
-            format: [activePageElement.clientWidth * 2, activePageElement.clientHeight * 2]
-          });
-          pdf.addImage(dataUrl, "PNG", 0, 0, activePageElement.clientWidth * 2, activePageElement.clientHeight * 2);
-          blob = pdf.output('blob');
-        }
-
-        if (_window.showSaveFilePicker) {
-          try {
-            const mimeTypes: Record<string, string> = {
-              png: 'image/png',
-              jpg: 'image/jpeg',
-              webp: 'image/webp',
-              pdf: 'application/pdf',
-              mp4: 'video/mp4',
-              gif: 'image/gif'
-            };
-            
-            const handle = await _window.showSaveFilePicker({
-              suggestedName: fileName,
-              types: [{ 
-                description: `${format.toUpperCase()} File`, 
-                accept: { [mimeTypes[format] || 'application/octet-stream']: [`.${format}`] } 
-              }],
-            });
-            const writable = await handle.createWritable();
-            await writable.write(blob || dataUrl);
-            await writable.close();
-            toast.success(`Design salvo com sucesso!`);
-          } catch (e: any) {
-            if (e.name !== 'AbortError') {
-              console.error("Save Picker Error:", e);
-              triggerDownload(blob || dataUrl, fileName);
-            }
-          }
-        } else {
-          triggerDownload(blob || dataUrl, fileName);
-        }
-
-        setProgress(100);
-        setExportStatus("Concluído!");
-        
-        setTimeout(() => {
-          onOpenChange(false);
-          setIsExporting(false);
-          setProgress(0);
-        }, 1000);
+      const fileName = `${projectName.trim() || "Design_Canvito"}.${format === 'pdf' ? 'pdf' : format}`;
+      let output: Blob | string = "";
+      
+      // Captura via html-to-image (estável)
+      if (format === "png") {
+        output = await htmlToImage.toBlob(activePageElement, options) as Blob;
+      } else if (format === "jpg") {
+        output = await htmlToImage.toBlob(activePageElement, { ...options, quality: 0.95, type: 'image/jpeg' }) as Blob;
+      } else if (format === "webp") {
+        output = await htmlToImage.toBlob(activePageElement, { ...options, type: 'image/webp' }) as Blob;
+      } else if (format === "pdf") {
+        const dataUrl = await htmlToImage.toPng(activePageElement, options);
+        const pdf = new jsPDF({
+          orientation: activePageElement.clientWidth > activePageElement.clientHeight ? "landscape" : "portrait",
+          unit: "px",
+          format: [activePageElement.clientWidth * 2, activePageElement.clientHeight * 2]
+        });
+        pdf.addImage(dataUrl, "PNG", 0, 0, activePageElement.clientWidth * 2, activePageElement.clientHeight * 2);
+        output = pdf.output('blob');
       } else {
-        throw new Error("Container do canvas não encontrado.");
+        // Fallback para experimentais
+        output = await htmlToImage.toBlob(activePageElement, options) as Blob;
       }
+
+      // Limpeza imediata do estilo de captura
+      document.head.removeChild(style);
+
+      setProgress(90);
+      setExportStatus("Disparando download...");
+
+      // 3. Disparo de download via link nativo (Garante abertura do diálogo Salvar Como se configurado no browser)
+      triggerDownload(output, fileName);
+
+      setProgress(100);
+      setExportStatus("Concluído!");
+      
+      setTimeout(() => {
+        onOpenChange(false);
+        setIsExporting(false);
+        setProgress(0);
+      }, 800);
 
     } catch (error) {
-      console.error("Export Error:", error);
+      console.error("Export failure:", error);
       setIsExporting(false);
       setProgress(0);
-      toast.error("Ocorreu um erro ao exportar o design.");
+      toast.error("Falha na exportação. Verifique o console.");
     }
   };
 
