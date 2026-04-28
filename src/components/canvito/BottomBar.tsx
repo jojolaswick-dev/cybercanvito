@@ -5,17 +5,17 @@ export function BottomBar() {
   const { zoom, setZoom, fitToScreen, pages, undo, redo, canUndo, canRedo } = useEditor();
 
   return (
-    <footer className="relative z-30 flex h-11 shrink-0 items-center justify-between border-t border-white/10 bg-cyber-bar px-3 text-white">
+    <footer className="relative z-30 flex h-12 shrink-0 items-center justify-between gap-2 overflow-hidden border-t border-white/10 bg-cyber-bar px-2 text-white sm:px-3">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--electric-blue)] to-transparent opacity-60" />
 
       {/* Left */}
-      <div className="flex items-center gap-1">
-        <div className="flex items-center gap-1 pr-2 mr-2 border-r border-white/10">
+      <div className="flex min-w-0 shrink-0 items-center gap-1">
+        <div className="mr-1 flex shrink-0 items-center gap-0.5 border-r border-white/10 pr-1 sm:mr-2 sm:gap-1 sm:pr-2">
           <button 
             onClick={undo}
             disabled={!canUndo}
             title="Desfazer (Ctrl+Z)"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <Undo2 className="h-4 w-4" />
           </button>
@@ -23,7 +23,7 @@ export function BottomBar() {
             onClick={redo}
             disabled={!canRedo}
             title="Refazer (Ctrl+Y)"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <Redo2 className="h-4 w-4" />
           </button>
@@ -33,21 +33,21 @@ export function BottomBar() {
         <FootBtn icon={Timer} label="Temporizador" />
         <FootBtn icon={Subtitles} label="Legendas" />
 
-        <div className="ml-2 rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-medium text-white/80">
+        <div className="ml-2 hidden rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-medium text-white/80 lg:block">
           {pages.length} {pages.length === 1 ? "página" : "páginas"}
         </div>
       </div>
 
       {/* Right - zoom + view */}
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2 md:gap-3">
         <button
           onClick={() => setZoom(Math.max(10, zoom - 10))}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white"
         >
           <Minus className="h-3.5 w-3.5" />
         </button>
 
-        <div className="relative flex w-44 items-center">
+        <div className="relative flex w-20 min-w-0 shrink items-center sm:w-28 md:w-32 lg:w-44">
           <input
             type="range"
             min={10}
@@ -60,28 +60,30 @@ export function BottomBar() {
 
         <button
           onClick={() => setZoom(Math.min(400, zoom + 10))}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
 
-        <span className="w-12 text-center text-xs font-medium tabular-nums text-white/80">
+        <span className="w-10 shrink-0 text-center text-xs font-medium tabular-nums text-white/80 sm:w-12">
           {zoom}%
         </span>
 
         <button
           onClick={fitToScreen}
           title="Ajustar à tela"
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+          className="hidden items-center gap-1 rounded-md px-2 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white md:inline-flex"
         >
           <Maximize className="h-3.5 w-3.5" />
           Ajustar
         </button>
 
-        <div className="mx-1 h-5 w-px bg-white/15" />
+        <div className="mx-1 hidden h-5 w-px bg-white/15 md:block" />
 
-        <FootBtn icon={LayoutGrid} />
-        <FootBtn icon={Maximize2} />
+        <div className="hidden items-center gap-1 md:flex">
+          <FootBtn icon={LayoutGrid} />
+          <FootBtn icon={Maximize2} />
+        </div>
       </div>
 
       <style>{`
@@ -132,9 +134,9 @@ function FootBtn({
   label?: string;
 }) {
   return (
-    <button className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white">
+    <button className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-1 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:px-2">
       <Icon className="h-3.5 w-3.5" />
-      {label && <span>{label}</span>}
+      {label && <span className="hidden sm:inline">{label}</span>}
     </button>
   );
 }

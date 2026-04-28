@@ -141,19 +141,19 @@ export const TopBar = memo(function TopBar() {
   }, [activeCanvas, activePageId, deleteActiveObject, deletePage, pages.length]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/10 bg-cyber-bar px-3 text-white">
+    <header className="relative z-30 flex h-14 shrink-0 items-center justify-between border-b border-white/10 bg-cyber-bar px-2 text-white sm:px-3">
       {/* Glow accent line */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[var(--neon-pink)] to-transparent opacity-60" />
 
       {/* Left: Logo + Menus */}
-      <div className="flex flex-shrink-0 items-center gap-4">
+      <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-4">
         <div className="flex items-center gap-1.5 mr-2">
           <div className="h-2.5 w-2.5 rounded-full bg-[var(--neon-pink)] shadow-[0_0_8px_var(--neon-pink)]" />
           <div className="h-2.5 w-2.5 rounded-full bg-[var(--neon-cyan)] shadow-[0_0_8px_var(--neon-cyan)]" />
           <span className="ml-2 hidden lg:inline font-bold tracking-widest text-white/90">CANVITO</span>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2 md:gap-4">
           {/* Arquivo */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -241,8 +241,8 @@ export const TopBar = memo(function TopBar() {
       </div>
 
       {/* Center: Project Name */}
-      <div className="flex flex-1 items-center justify-center px-4">
-        <div className="w-full max-w-[200px] group relative">
+      <div className="flex min-w-0 flex-1 items-center justify-center px-1 sm:px-4">
+        <div className="group relative w-full max-w-[120px] sm:max-w-[200px]">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -252,7 +252,7 @@ export const TopBar = memo(function TopBar() {
       </div>
 
       {/* Right: Formats + Export */}
-      <div className="flex flex-shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         <div className="hidden sm:flex items-center gap-1">
           {(Object.keys(ARTBOARD_PRESETS) as ArtboardPresetId[]).map((id) => {
             const Icon = PRESET_ICONS[id];
@@ -294,7 +294,7 @@ export const TopBar = memo(function TopBar() {
             </button>
           </div>
         ) : (
-          <button className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-1.5 text-xs sm:text-sm font-bold text-[var(--background)] shadow-[0_0_24px_oklch(1_0_0/0.3)] transition-all hover:shadow-[0_0_32px_oklch(1_0_0/0.5)] hover:scale-[1.02] active:scale-95">
+          <button className="inline-flex items-center gap-2 rounded-md bg-white px-2 py-1.5 text-xs font-bold text-[var(--background)] shadow-[0_0_24px_oklch(1_0_0/0.3)] transition-all hover:scale-[1.02] hover:shadow-[0_0_32px_oklch(1_0_0/0.5)] active:scale-95 sm:px-4 sm:text-sm">
             <Download className="h-4 w-4 md:hidden" />
             <span className="hidden md:inline">Exportar</span>
           </button>

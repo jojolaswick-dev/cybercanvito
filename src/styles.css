@@ -95,12 +95,17 @@
     border-color: var(--color-border);
   }
 
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    overflow-x: hidden;
-    min-height: 100dvh;
+    min-height: 100vh;
   }
 }
 
