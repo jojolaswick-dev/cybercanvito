@@ -43,7 +43,7 @@ export const Sidebar = memo(function Sidebar({
   onSelect: (id: ToolId) => void;
 }) {
   return (
-    <aside className="z-20 flex h-full w-14 shrink-0 flex-col items-stretch gap-0.5 overflow-y-auto overscroll-contain border-r border-white/10 bg-cyber-bar py-2 md:w-[88px] md:gap-1 md:py-3">
+    <aside className="z-40 flex h-full w-14 shrink-0 flex-col items-stretch gap-0.5 overflow-y-auto overscroll-contain border-r border-white/10 bg-cyber-bar py-2 md:w-[88px] md:gap-1 md:py-3">
       <div className="pointer-events-none absolute right-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-[var(--electric-blue)] to-transparent opacity-50" />
 
       {TOOLS.map((tool) => (

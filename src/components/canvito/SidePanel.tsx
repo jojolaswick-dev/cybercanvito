@@ -65,7 +65,7 @@ export const SidePanel = memo(function SidePanel({
   const Icon = tool.icon;
 
   return (
-    <div className="absolute inset-y-0 left-14 z-10 flex w-[min(18rem,calc(100vw-56px))] flex-col overflow-hidden border-r border-white/10 bg-[var(--panel)] text-white shadow-panel animate-in slide-in-from-left-4 duration-200 md:relative md:inset-auto md:left-auto md:h-full md:w-80 md:shrink-0">
+    <div className="relative z-40 flex h-full w-[min(16rem,calc(100vw-56px))] shrink-0 flex-col overflow-hidden border-r border-white/10 bg-[var(--panel)] text-white shadow-panel animate-in slide-in-from-left-4 duration-200 md:w-80">
       <div className="flex items-start justify-between gap-2 border-b border-white/10 p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-neon-glow shadow-neon">
