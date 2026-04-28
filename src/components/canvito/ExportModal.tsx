@@ -148,8 +148,8 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
       }, 500);
 
     } catch (error: any) {
-      console.error("Export failure:", error);
-      alert(`EXPORT ERROR: ${error?.message || 'Unknown error'}\nCheck console for trace.`);
+      console.error("[EXPORT] Falha na exportação:", error);
+      toast.error("Erro ao exportar. Verifique o console para mais detalhes.");
       setIsExporting(false);
       setProgress(0);
     }
