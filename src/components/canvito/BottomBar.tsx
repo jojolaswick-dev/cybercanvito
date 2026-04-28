@@ -10,12 +10,12 @@ export function BottomBar() {
 
       {/* Left */}
       <div className="flex min-w-0 shrink-0 items-center gap-1">
-        <div className="mr-1 flex shrink-0 items-center gap-1 border-r border-white/10 pr-1 sm:mr-2 sm:pr-2">
+        <div className="mr-1 flex shrink-0 items-center gap-0.5 border-r border-white/10 pr-1 sm:mr-2 sm:gap-1 sm:pr-2">
           <button 
             onClick={undo}
             disabled={!canUndo}
             title="Desfazer (Ctrl+Z)"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <Undo2 className="h-4 w-4" />
           </button>
@@ -23,7 +23,7 @@ export function BottomBar() {
             onClick={redo}
             disabled={!canRedo}
             title="Refazer (Ctrl+Y)"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <Redo2 className="h-4 w-4" />
           </button>
@@ -42,7 +42,7 @@ export function BottomBar() {
       <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2 md:gap-3">
         <button
           onClick={() => setZoom(Math.max(10, zoom - 10))}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white"
         >
           <Minus className="h-3.5 w-3.5" />
         </button>
@@ -60,7 +60,7 @@ export function BottomBar() {
 
         <button
           onClick={() => setZoom(Math.min(400, zoom + 10))}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
@@ -134,7 +134,7 @@ function FootBtn({
   label?: string;
 }) {
   return (
-    <button className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white">
+    <button className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-1 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:px-2">
       <Icon className="h-3.5 w-3.5" />
       {label && <span className="hidden sm:inline">{label}</span>}
     </button>
