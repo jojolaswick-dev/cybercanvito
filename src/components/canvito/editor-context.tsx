@@ -46,7 +46,9 @@ type EditorCtx = {
   setActivePageId: (id: string) => void;
 
   artboard: { width: number; height: number };
+  setArtboard: (size: { width: number; height: number }) => void;
   setArtboardPreset: (id: ArtboardPresetId) => void;
+
   preset: ArtboardPresetId;
 
   zoom: number;
@@ -971,10 +973,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const contextValue = useMemo<EditorCtx>(() => ({
     activeCanvas,
     registerPageCanvas,
-    setActivePageId,
-    artboard,
-    setArtboardPreset,
-    preset,
+      setActivePageId,
+      artboard,
+      setArtboard,
+      setArtboardPreset,
+      preset,
+
     zoom,
     setZoom,
     fitToScreen,
