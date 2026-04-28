@@ -31,6 +31,8 @@ import {
   Trash2,
   Undo2,
   Zap,
+  Monitor,
+  Video,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -48,6 +50,8 @@ const PRESET_ICONS: Record<ArtboardPresetId, ComponentType<{ className?: string 
   square: Square,
   portrait: RectangleVertical,
   story: Smartphone,
+  widescreen: Monitor,
+  landscape: Video,
 };
 
 type EditFilter = "sepia" | "bandicoot" | "grayscale" | "bw" | "negative";

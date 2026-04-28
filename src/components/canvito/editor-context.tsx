@@ -2,12 +2,14 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, useCal
 import * as fabric from "fabric";
 import { toast } from "sonner";
 
-export type ArtboardPresetId = "square" | "story" | "portrait";
+export type ArtboardPresetId = "square" | "story" | "portrait" | "widescreen" | "landscape";
 
 export const ARTBOARD_PRESETS: Record<ArtboardPresetId, { label: string; width: number; height: number }> = {
   square: { label: "Feed Quadrado", width: 1080, height: 1080 },
   portrait: { label: "Feed Retrato", width: 1080, height: 1350 },
   story: { label: "Story", width: 1080, height: 1920 },
+  widescreen: { label: "Widescreen (16:9)", width: 1920, height: 1080 },
+  landscape: { label: "Paisagem (4:3)", width: 1440, height: 1080 },
 };
 
 /** A page in the vertical stack. Each page owns its own Fabric canvas. */
