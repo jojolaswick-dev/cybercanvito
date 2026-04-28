@@ -931,6 +931,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     }
     
     isInternalUpdateRef.current = false;
+    setHistoryTick(t => t + 1);
   }, [pages, setActivePageId, isCropMode, cancelCrop]);
 
   const redo = useCallback(async () => {
