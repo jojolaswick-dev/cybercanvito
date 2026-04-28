@@ -36,40 +36,33 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
   const { activePageId, getPageCanvas } = useEditor();
 
   const handleExport = async (format: ExportFormat) => {
-    // 1. Limpeza de UI: Desativar seleções no Fabric.js antes da captura
-    const canvas = activePageId ? getPageCanvas(activePageId) : null;
-    if (canvas) {
+    try {
+      console.log(`[EXPORT] Solicitado formato: ${format}`);
+      
+      // 1. Localizar o Canvas e Desativar Seleção
+      const canvas = activePageId ? getPageCanvas(activePageId) : null;
+      if (!canvas) {
+        alert("CRITICAL ERROR: Canvas not found. activePageId: " + activePageId);
+        return;
+      }
+      
       canvas.discardActiveObject();
       canvas.requestRenderAll();
-    }
 
-    const triggerDownload = (content: Blob | string, fileName: string) => {
-      const url = typeof content === 'string' ? content : URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      if (typeof content !== 'string') URL.revokeObjectURL(url);
-      toast.success(`Download iniciado!`);
-    };
-
-    try {
-      console.log(`Iniciando captura estrita: ${format}`);
       setIsExporting(true);
       setProgress(10);
       setExportStatus(`Isolando área do design...`);
 
-      // Alvo Estrito: Focar no container do papel
-      const targetSelector = activePageId ? `[data-page-id="${activePageId}"]` : '[data-page-id]';
+      // 2. Alvo Estrito: Container da página ativa
+      const targetSelector = `[data-page-id="${activePageId}"]`;
       const activePageElement = document.querySelector(targetSelector) as HTMLElement;
       
       if (!activePageElement) {
+        alert("CRITICAL ERROR: DOM element for canvas not found: " + targetSelector);
         throw new Error("Elemento do Canvas não encontrado.");
       }
 
-      // 2. Garantir ocultação total de controles via CSS (molduras roxas, etc)
+      // 3. Garantir ocultação de controles (molduras roxas) via CSS temporário
       const style = document.createElement('style');
       style.innerHTML = `
         ${targetSelector} .upper-canvas { display: none !important; }
@@ -77,14 +70,14 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
       `;
       document.head.appendChild(style);
       
-      // Delay para o browser processar o estilo
-      await new Promise(r => setTimeout(r, 150));
+      // Pequeno delay para renderização
+      await new Promise(r => setTimeout(r, 100));
       
       setProgress(40);
       setExportStatus("Gerando imagem em alta definição...");
 
       const options = {
-        pixelRatio: 2,
+        pixelRatio: 2, // 2x Escala solicitada
         backgroundColor: "#ffffff",
         width: activePageElement.clientWidth,
         height: activePageElement.clientHeight,
@@ -98,7 +91,7 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
       const fileName = `${projectName.trim() || "Design_Canvito"}.${format === 'pdf' ? 'pdf' : format}`;
       let output: Blob | string = "";
       
-      // Captura via html-to-image (estável)
+      // 4. Captura Real
       if (format === "png") {
         output = await htmlToImage.toBlob(activePageElement, options) as Blob;
       } else if (format === "jpg") {
@@ -114,34 +107,41 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
         });
         pdf.addImage(dataUrl, "PNG", 0, 0, activePageElement.clientWidth * 2, activePageElement.clientHeight * 2);
         output = pdf.output('blob');
-      } else {
-        // Fallback para experimentais
-        output = await htmlToImage.toBlob(activePageElement, options) as Blob;
       }
 
-      // Limpeza imediata do estilo de captura
-      document.head.removeChild(style);
+      // Limpeza do estilo
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
 
       setProgress(90);
       setExportStatus("Disparando download...");
 
-      // 3. Disparo de download via link nativo (Garante abertura do diálogo Salvar Como se configurado no browser)
-      triggerDownload(output, fileName);
+      // 5. Download via Blob + Link Nativo (Salvar Como)
+      const url = typeof output === 'string' ? output : URL.createObjectURL(output);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (typeof output !== 'string') URL.revokeObjectURL(url);
 
       setProgress(100);
       setExportStatus("Concluído!");
+      toast.success(`Download de ${format.toUpperCase()} iniciado!`);
       
       setTimeout(() => {
         onOpenChange(false);
         setIsExporting(false);
         setProgress(0);
-      }, 800);
+      }, 500);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Export failure:", error);
+      alert(`EXPORT ERROR: ${error?.message || 'Unknown error'}\nCheck console for trace.`);
       setIsExporting(false);
       setProgress(0);
-      toast.error("Falha na exportação. Verifique o console.");
     }
   };
 
