@@ -36,6 +36,18 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
   const { activePageId } = useEditor();
 
   const handleExport = async (format: ExportFormat) => {
+    const triggerDownload = (content: Blob | string, fileName: string) => {
+      const url = typeof content === 'string' ? content : URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (typeof content !== 'string') URL.revokeObjectURL(url);
+      toast.success(`Download iniciado!`);
+    };
+
     try {
       console.log(`Iniciando exportação: ${format}`);
       const _window = window as any;
@@ -43,8 +55,6 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
       setProgress(5);
       setExportStatus(`Preparando design para exportação...`);
 
-      // 1. Identificar o elemento alvo baseado no activePageId
-      // Se não houver activePageId, tentamos pegar o primeiro que encontrarmos
       const targetSelector = activePageId ? `[data-page-id="${activePageId}"]` : '[data-page-id]';
       const activePageElement = document.querySelector(targetSelector) as HTMLElement;
       
@@ -52,14 +62,8 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
         throw new Error("Não foi possível encontrar o canvas para exportação.");
       }
 
-      // 2. Ocultar seleções e controles antes da captura
-      // Procuramos por elementos que representam controles de seleção do Fabric.js
-      // que ficam dentro do container do canvas
       const fabricCanvasContainer = activePageElement.querySelector('.canvas-container');
       if (fabricCanvasContainer) {
-        // No Fabric.js, a seleção é desenhada num canvas superior ou tem classes específicas
-        // mas o jeito mais seguro é forçar o blur/descarte de seleção via contexto se tivéssemos acesso direto
-        // Como estamos no DOM, podemos tentar ocultar os controles via CSS temporário
         const style = document.createElement('style');
         style.innerHTML = `
           ${targetSelector} .canvas-container > canvas:not(:first-child) { opacity: 0 !important; }
@@ -67,16 +71,14 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
         `;
         document.head.appendChild(style);
         
-        // Pequeno delay para garantir que o render reflita a mudança
         await new Promise(r => setTimeout(r, 100));
         
         setProgress(20);
         setExportStatus("Capturando área do design (2x HQ)...");
 
         const options = {
-          pixelRatio: 2, // Resolução 2x conforme solicitado
+          pixelRatio: 2,
           backgroundColor: "#ffffff",
-          // Garante que capture apenas o conteúdo da div, ignorando o que vaza
           width: activePageElement.clientWidth,
           height: activePageElement.clientHeight,
           style: {
@@ -90,7 +92,6 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
         let blob: Blob | null = null;
         let dataUrl = "";
         
-        // Captura real baseada no formato
         if (format === "png") {
           blob = await htmlToImage.toBlob(activePageElement, options);
         } else if (format === "jpg") {
@@ -98,11 +99,9 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
         } else if (format === "webp") {
           blob = await htmlToImage.toBlob(activePageElement, { ...options, type: 'image/webp' });
         } else {
-          // PDF/MP4/GIF usam imagem PNG como base
           dataUrl = await htmlToImage.toPng(activePageElement, options);
         }
 
-        // Limpar estilo temporário
         document.head.removeChild(style);
 
         setProgress(80);
@@ -118,7 +117,6 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
           blob = pdf.output('blob');
         }
 
-        // 3. Diálogo 'Salvar Como' robusto
         if (_window.showSaveFilePicker) {
           try {
             const mimeTypes: Record<string, string> = {
@@ -138,27 +136,17 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
               }],
             });
             const writable = await handle.createWritable();
-            await writable.write(blob || dataUrl); // showSaveFilePicker aceita blobs ou strings
+            await writable.write(blob || dataUrl);
             await writable.close();
             toast.success(`Design salvo com sucesso!`);
           } catch (e: any) {
-            // Se o usuário cancelar, não fazemos nada. Caso contrário, fallback.
             if (e.name !== 'AbortError') {
               console.error("Save Picker Error:", e);
-              this?.triggerDownload(blob || dataUrl, fileName);
+              triggerDownload(blob || dataUrl, fileName);
             }
           }
         } else {
-          // Fallback para download direto via link temporário
-          const url = blob ? URL.createObjectURL(blob) : dataUrl;
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          if (blob) URL.revokeObjectURL(url);
-          toast.success(`Download iniciado!`);
+          triggerDownload(blob || dataUrl, fileName);
         }
 
         setProgress(100);
@@ -179,19 +167,6 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
       setProgress(0);
       toast.error("Ocorreu um erro ao exportar o design.");
     }
-  };
-
-  // Helper function moved inside handleExport to avoid 'this' issues or defined outside
-  const triggerDownload = (content: Blob | string, fileName: string) => {
-    const url = typeof content === 'string' ? content : URL.createObjectURL(content);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    if (typeof content !== 'string') URL.revokeObjectURL(url);
-    toast.success(`Download iniciado!`);
   };
 
   return (
