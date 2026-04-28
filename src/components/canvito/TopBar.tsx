@@ -139,13 +139,13 @@ export const TopBar = memo(function TopBar() {
   }, [activeCanvas, activePageId, deleteActiveObject, deletePage, pages.length]);
 
   return (
-    <header className="relative z-30 flex h-14 items-center justify-between border-b border-white/10 bg-cyber-bar px-3 text-white">
+    <header className="relative z-30 flex h-14 items-center justify-between border-b border-white/10 bg-cyber-bar px-3 pl-[72px] text-white">
       {/* Glow accent line */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[var(--neon-pink)] to-transparent opacity-60" />
 
       {/* Left */}
-      <div className="flex flex-shrink-0 items-center gap-1">
-        <div className="mr-2 flex items-center gap-1.5 pl-1">
+      <div className="flex flex-shrink-0 items-center gap-4">
+        <div className="flex items-center gap-1.5">
           <div className="h-2.5 w-2.5 rounded-full bg-[var(--neon-pink)] shadow-[0_0_8px_var(--neon-pink)]" />
           <div className="h-2.5 w-2.5 rounded-full bg-[var(--neon-cyan)] shadow-[0_0_8px_var(--neon-cyan)]" />
           <span className="ml-2 font-bold tracking-widest text-white/90">CANVITO</span>
@@ -236,9 +236,9 @@ export const TopBar = memo(function TopBar() {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="max-w-[320px] w-full rounded-md bg-white/5 px-3 py-1 text-sm font-medium text-white outline-none ring-1 ring-transparent transition-all hover:bg-white/10 focus:bg-white/10 focus:ring-[var(--electric-blue)]"
+          className="max-w-[300px] w-full flex-1 shrink mx-auto rounded-md bg-white/5 px-3 py-1 text-sm font-medium text-white outline-none ring-1 ring-transparent transition-all hover:bg-white/10 focus:bg-white/10 focus:ring-[var(--electric-blue)]"
         />
-        <span className="flex-shrink-0 text-xs tabular-nums text-white/60">{artboard.width} × {artboard.height} px</span>
+        <span className="flex-shrink-0 text-xs tabular-nums text-white/60 hidden sm:inline">{artboard.width} × {artboard.height} px</span>
       </div>
 
       {/* Right */}
