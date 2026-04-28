@@ -17,7 +17,6 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import * as htmlToImage from "html-to-image";
-import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
 import { toast } from "sonner";
 
@@ -100,14 +99,22 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
             await writable.write(pdfBlob);
             await writable.close();
           } catch (e) {
-            // User cancelled or not supported
-            if ((e as Error).name !== 'AbortError') saveAs(pdfBlob, fileName);
+            if ((e as Error).name !== 'AbortError') {
+              const link = document.createElement('a');
+              link.href = URL.createObjectURL(pdfBlob);
+              link.download = fileName;
+              link.click();
+              URL.revokeObjectURL(link.href);
+            }
           }
         } else {
-          saveAs(pdfBlob, fileName);
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(pdfBlob);
+          link.download = fileName;
+          link.click();
+          URL.revokeObjectURL(link.href);
         }
       } else {
-        // Para imagens e experimentais (que são exportados como imagem estática por enquanto)
         const response = await fetch(dataUrl);
         const blob = await response.blob();
 
@@ -122,10 +129,18 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
             await writable.write(blob);
             await writable.close();
           } catch (e) {
-            if ((e as Error).name !== 'AbortError') saveAs(blob, fileName);
+            if ((e as Error).name !== 'AbortError') {
+              const link = document.createElement('a');
+              link.href = dataUrl;
+              link.download = fileName;
+              link.click();
+            }
           }
         } else {
-          saveAs(blob, fileName);
+          const link = document.createElement('a');
+          link.href = dataUrl;
+          link.download = fileName;
+          link.click();
         }
       }
 

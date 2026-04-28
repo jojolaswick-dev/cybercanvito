@@ -183,7 +183,13 @@ export const TopBar = memo(function TopBar() {
               <FileMenuItem icon={Settings} label="Configurações" shortcut="Ctrl+," onSelect={() => showSoon("Configurações")} />
               <DropdownMenuSeparator className="bg-white/10" />
               <FileMenuItem icon={Download} label="Exportar" shortcut="Ctrl+E" onSelect={() => setIsExportOpen(true)} />
-              <FileMenuItem icon={Printer} label="Imprimir" shortcut="Ctrl+P" onSelect={() => window.print()} />
+              <FileMenuItem icon={Printer} label="Imprimir" shortcut="Ctrl+P" onSelect={() => {
+                try {
+                  window.print();
+                } catch (error) {
+                  console.error("Print error:", error);
+                }
+              }} />
               <DropdownMenuSeparator className="bg-white/10" />
               <FileMenuItem icon={Trash2} label="Mover para lixeira" shortcut="Del" danger onSelect={moveToTrash} />
             </DropdownMenuContent>
