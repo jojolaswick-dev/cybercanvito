@@ -1026,12 +1026,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const contextValue = useMemo<EditorCtx>(() => ({
     activeCanvas,
     registerPageCanvas,
-      setActivePageId,
-      artboard,
-      setArtboard,
-      setArtboardPreset,
-      preset,
-
+    setActivePageId,
+    artboard,
+    setArtboard,
+    setArtboardPreset,
+    preset,
     zoom,
     setZoom,
     fitToScreen,
@@ -1052,11 +1051,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     redo,
     canUndo: undoStackRef.current.length > 0,
     canRedo: redoStackRef.current.length > 0,
+    resetDesign,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId, undo, redo, historyTick
+    pages, activePageId, undo, redo, historyTick, resetDesign
   ]);
 
   return (
