@@ -43,7 +43,7 @@ export const Sidebar = memo(function Sidebar({
   onSelect: (id: ToolId) => void;
 }) {
   return (
-    <aside className="sticky top-14 z-20 flex w-16 md:w-[88px] h-[calc(100dvh-56px)] flex-col items-stretch gap-1 border-r border-white/10 bg-cyber-bar py-3">
+    <aside className="z-20 flex h-full w-14 shrink-0 flex-col items-stretch gap-0.5 overflow-y-auto overscroll-contain border-r border-white/10 bg-cyber-bar py-2 md:w-[88px] md:gap-1 md:py-3">
       <div className="pointer-events-none absolute right-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-[var(--electric-blue)] to-transparent opacity-50" />
 
       {TOOLS.map((tool) => (
@@ -68,7 +68,7 @@ const SidebarItem = memo(function SidebarItem({
   return (
     <button
       onClick={handleSelect}
-      className={`group relative mx-1.5 flex flex-col items-center gap-1 rounded-lg px-1 py-2.5 transition-all ${
+        className={`group relative mx-1 flex shrink-0 flex-col items-center gap-1 rounded-lg px-1 py-2 transition-all md:mx-1.5 md:py-2.5 ${
         active ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"
       }`}
     >
@@ -81,7 +81,7 @@ const SidebarItem = memo(function SidebarItem({
           <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-[var(--neon-cyan)] shadow-[0_0_6px_var(--neon-cyan)]" />
         )}
       </div>
-      <span className="text-center text-[10px] font-medium leading-tight">{tool.label}</span>
+      <span className="hidden text-center text-[10px] font-medium leading-tight sm:block">{tool.label}</span>
     </button>
   );
 });
