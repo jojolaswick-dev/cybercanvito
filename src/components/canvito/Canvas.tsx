@@ -342,6 +342,7 @@ const PageBoard = memo(function PageBoard({
       {/* The actual paper — fixed dimensions, hidden overflow so nothing leaks
           out of the artboard rectangle. */}
       <div
+        id={isActive ? "canvas-workspace" : undefined}
         data-page-id={pageId}
         onContextMenu={onContextMenu}
         className={
