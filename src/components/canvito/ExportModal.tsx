@@ -35,6 +35,8 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
   const [exportStatus, setExportStatus] = useState<string>("");
 
   const handleExport = async (format: ExportFormat) => {
+    // Cast to any for experimental File System Access API
+    const _window = window as any;
     setIsExporting(true);
     setProgress(5);
     setExportStatus(`Preparando design para exportação...`);
