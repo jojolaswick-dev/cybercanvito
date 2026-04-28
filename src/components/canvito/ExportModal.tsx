@@ -36,7 +36,7 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
 
   const handleExport = async (format: ExportFormat) => {
     setIsExporting(true);
-    setProgress(10);
+    setProgress(0);
     setExportStatus(`Preparando exportação ${format.toUpperCase()}...`);
 
     try {
@@ -46,25 +46,37 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
         throw new Error("Não foi possível encontrar o canvas para exportação.");
       }
 
-      // Special handling for MP4/GIF (Simulation for now as requested)
+      setProgress(20);
+      setExportStatus("Capturando área do design...");
+
+      // Special handling for high quality export
+      const canvas = await html2canvas(activePageElement, {
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        scale: 2, // Higher quality
+        logging: false,
+        onclone: (clonedDoc) => {
+          // Ensure UI elements like labels or buttons inside the canvas area are hidden if any
+          const pageLabel = clonedDoc.querySelector('.page-label');
+          if (pageLabel) (pageLabel as HTMLElement).style.display = 'none';
+        }
+      });
+      
+      setProgress(60);
+      setExportStatus(`Processando arquivo ${format.toUpperCase()}...`);
+
+      const fileName = `${projectName || "design-sem-nome"}.${format === 'pdf' ? 'pdf' : format}`;
+      
+      // Simulate processing for experimental formats to show the loader
       if (format === "mp4" || format === "gif") {
-        setExportStatus(`Renderizando frames para ${format.toUpperCase()}...`);
-        for (let i = 1; i <= 10; i++) {
-          await new Promise(r => setTimeout(r, 300));
-          setProgress(10 + i * 8);
+        for (let i = 1; i <= 5; i++) {
+          await new Promise(r => setTimeout(r, 400));
+          setProgress(60 + i * 6);
         }
       }
 
-      const canvas = await html2canvas(activePageElement, {
-        useCORS: true,
-        backgroundColor: null,
-        scale: 2, // Higher quality
-      });
-      
       setProgress(90);
-      setExportStatus("Finalizando arquivo...");
-
-      const fileName = `${projectName || "design-sem-nome"}.${format === 'pdf' ? 'pdf' : format}`;
+      setExportStatus("Iniciando download...");
 
       if (format === "pdf") {
         const imgData = canvas.toDataURL("image/png");
@@ -75,29 +87,37 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
         });
         pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
         pdf.save(fileName);
-      } else if (format === "mp4" || format === "gif") {
-        // Experimental/Simulation: Download as image for now but with the correct extension
-        // Real MP4 encoding in browser requires libraries like ffmpeg.wasm which is heavy
-        const link = document.createElement("a");
-        link.download = fileName;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
       } else {
+        // Handle all image formats including WebP and experimental placeholders
+        let mimeType = "image/png";
+        if (format === "jpg") mimeType = "image/jpeg";
+        if (format === "webp") mimeType = "image/webp";
+        
+        const dataUrl = canvas.toDataURL(mimeType, format === "jpg" ? 0.9 : 1.0);
+        
         const link = document.createElement("a");
+        link.style.display = 'none';
+        link.href = dataUrl;
         link.download = fileName;
-        link.href = canvas.toDataURL(`image/${format === 'jpg' ? 'jpeg' : format}`);
+        document.body.appendChild(link);
         link.click();
+        
+        // Clean up to avoid memory leaks
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(dataUrl);
+        }, 100);
       }
 
       setProgress(100);
       setExportStatus("Exportação concluída!");
-      toast.success(`Exportado como ${format.toUpperCase()} com sucesso!`);
+      toast.success(`Download de ${format.toUpperCase()} iniciado!`);
       
       setTimeout(() => {
         onOpenChange(false);
         setIsExporting(false);
         setProgress(0);
-      }, 1000);
+      }, 800);
 
     } catch (error) {
       console.error("Export error:", error);
