@@ -999,7 +999,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId, undo, redo
+    pages, activePageId, undo, redo, historyTick
   ]);
 
   return (
