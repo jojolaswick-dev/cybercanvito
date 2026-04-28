@@ -6,6 +6,7 @@ import { SidePanel } from "@/components/canvito/SidePanel";
 import { Canvas } from "@/components/canvito/Canvas";
 import { BottomBar } from "@/components/canvito/BottomBar";
 import { EditorProvider } from "@/components/canvito/editor-context";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,18 +31,28 @@ function CanvitoApp() {
   return (
     <EditorProvider>
       <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
-        <TopBar />
+        <ErrorBoundary>
+          <TopBar />
+        </ErrorBoundary>
         <main className="relative flex min-h-0 flex-1 overflow-hidden">
-          <Sidebar
-            active={activeTool}
-            onSelect={handleToolSelect}
-          />
-          <SidePanel active={activeTool} onClose={handlePanelClose} />
+          <ErrorBoundary>
+            <Sidebar
+              active={activeTool}
+              onSelect={handleToolSelect}
+            />
+          </ErrorBoundary>
+          <ErrorBoundary>
+            <SidePanel active={activeTool} onClose={handlePanelClose} />
+          </ErrorBoundary>
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <Canvas />
+            <ErrorBoundary>
+              <Canvas />
+            </ErrorBoundary>
           </div>
         </main>
-        <BottomBar />
+        <ErrorBoundary>
+          <BottomBar />
+        </ErrorBoundary>
       </div>
     </EditorProvider>
   );
