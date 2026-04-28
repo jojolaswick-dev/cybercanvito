@@ -137,7 +137,7 @@ export const Canvas = memo(function Canvas() {
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        className="relative flex-1 overflow-y-auto overflow-x-hidden"
+        className="relative flex-1"
       >
         <div className="flex flex-col items-center px-4 py-10">
           {pages.map((page, idx) => (
