@@ -19,6 +19,7 @@ import {
 import * as htmlToImage from "html-to-image";
 import { jsPDF } from "jspdf";
 import { toast } from "sonner";
+import { useEditor } from "./editor-context";
 
 interface ExportModalProps {
   open: boolean;
@@ -32,10 +33,9 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [exportStatus, setExportStatus] = useState<string>("");
+  const { activePageId } = useEditor();
 
   const handleExport = async (format: ExportFormat) => {
-    // Cast to any for experimental File System Access API
-    // Hard Fix: Envolvendo lógica de exportação em try/catch global
     try {
       console.log(`Iniciando exportação: ${format}`);
       const _window = window as any;
@@ -43,97 +43,155 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
       setProgress(5);
       setExportStatus(`Preparando design para exportação...`);
 
-      const activePageElement = document.querySelector('[data-page-id]') as HTMLElement;
+      // 1. Identificar o elemento alvo baseado no activePageId
+      // Se não houver activePageId, tentamos pegar o primeiro que encontrarmos
+      const targetSelector = activePageId ? `[data-page-id="${activePageId}"]` : '[data-page-id]';
+      const activePageElement = document.querySelector(targetSelector) as HTMLElement;
+      
       if (!activePageElement) {
         throw new Error("Não foi possível encontrar o canvas para exportação.");
       }
 
-      setProgress(20);
-      setExportStatus("Capturando área do design (2x HQ)...");
-
-      const options = {
-        pixelRatio: 2,
-        backgroundColor: "#ffffff",
-      };
-
-      const fileName = `${projectName || "Design sem nome"}.${format === 'pdf' ? 'pdf' : format}`;
-      
-      let dataUrl = "";
-      
-      // Captura real baseada no formato
-      if (format === "png") {
-        dataUrl = await htmlToImage.toPng(activePageElement, options);
-      } else if (format === "jpg") {
-        dataUrl = await htmlToImage.toJpeg(activePageElement, { ...options, quality: 0.95 });
-      } else if (format === "webp") {
-        dataUrl = await htmlToImage.toPng(activePageElement, options);
-      } else {
-        // PDF/MP4/GIF usam imagem PNG como base
-        dataUrl = await htmlToImage.toPng(activePageElement, options);
-      }
-
-      setProgress(80);
-      setExportStatus("Finalizando arquivo...");
-
-      if (format === "pdf") {
-        const pdf = new jsPDF({
-          orientation: activePageElement.clientWidth > activePageElement.clientHeight ? "landscape" : "portrait",
-          unit: "px",
-          format: [activePageElement.clientWidth * 2, activePageElement.clientHeight * 2]
-        });
-        pdf.addImage(dataUrl, "PNG", 0, 0, activePageElement.clientWidth * 2, activePageElement.clientHeight * 2);
-        const pdfBlob = pdf.output('blob');
+      // 2. Ocultar seleções e controles antes da captura
+      // Procuramos por elementos que representam controles de seleção do Fabric.js
+      // que ficam dentro do container do canvas
+      const fabricCanvasContainer = activePageElement.querySelector('.canvas-container');
+      if (fabricCanvasContainer) {
+        // No Fabric.js, a seleção é desenhada num canvas superior ou tem classes específicas
+        // mas o jeito mais seguro é forçar o blur/descarte de seleção via contexto se tivéssemos acesso direto
+        // Como estamos no DOM, podemos tentar ocultar os controles via CSS temporário
+        const style = document.createElement('style');
+        style.innerHTML = `
+          ${targetSelector} .canvas-container > canvas:not(:first-child) { opacity: 0 !important; }
+          ${targetSelector} .canvas-container > .upper-canvas { opacity: 0 !important; }
+        `;
+        document.head.appendChild(style);
         
+        // Pequeno delay para garantir que o render reflita a mudança
+        await new Promise(r => setTimeout(r, 100));
+        
+        setProgress(20);
+        setExportStatus("Capturando área do design (2x HQ)...");
+
+        const options = {
+          pixelRatio: 2, // Resolução 2x conforme solicitado
+          backgroundColor: "#ffffff",
+          // Garante que capture apenas o conteúdo da div, ignorando o que vaza
+          width: activePageElement.clientWidth,
+          height: activePageElement.clientHeight,
+          style: {
+            transform: 'none',
+            margin: '0',
+          }
+        };
+
+        const fileName = `${projectName || "Design sem nome"}.${format === 'pdf' ? 'pdf' : format}`;
+        
+        let blob: Blob | null = null;
+        let dataUrl = "";
+        
+        // Captura real baseada no formato
+        if (format === "png") {
+          blob = await htmlToImage.toBlob(activePageElement, options);
+        } else if (format === "jpg") {
+          blob = await htmlToImage.toBlob(activePageElement, { ...options, quality: 0.95, type: 'image/jpeg' });
+        } else if (format === "webp") {
+          blob = await htmlToImage.toBlob(activePageElement, { ...options, type: 'image/webp' });
+        } else {
+          // PDF/MP4/GIF usam imagem PNG como base
+          dataUrl = await htmlToImage.toPng(activePageElement, options);
+        }
+
+        // Limpar estilo temporário
+        document.head.removeChild(style);
+
+        setProgress(80);
+        setExportStatus("Finalizando arquivo...");
+
+        if (format === "pdf") {
+          const pdf = new jsPDF({
+            orientation: activePageElement.clientWidth > activePageElement.clientHeight ? "landscape" : "portrait",
+            unit: "px",
+            format: [activePageElement.clientWidth * 2, activePageElement.clientHeight * 2]
+          });
+          pdf.addImage(dataUrl, "PNG", 0, 0, activePageElement.clientWidth * 2, activePageElement.clientHeight * 2);
+          blob = pdf.output('blob');
+        }
+
+        // 3. Diálogo 'Salvar Como' robusto
         if (_window.showSaveFilePicker) {
           try {
+            const mimeTypes: Record<string, string> = {
+              png: 'image/png',
+              jpg: 'image/jpeg',
+              webp: 'image/webp',
+              pdf: 'application/pdf',
+              mp4: 'video/mp4',
+              gif: 'image/gif'
+            };
+            
             const handle = await _window.showSaveFilePicker({
               suggestedName: fileName,
-              types: [{ description: 'PDF Document', accept: { 'application/pdf': ['.pdf'] } }],
+              types: [{ 
+                description: `${format.toUpperCase()} File`, 
+                accept: { [mimeTypes[format] || 'application/octet-stream']: [`.${format}`] } 
+              }],
             });
             const writable = await handle.createWritable();
-            await writable.write(pdfBlob);
+            await writable.write(blob || dataUrl); // showSaveFilePicker aceita blobs ou strings
             await writable.close();
-          } catch (e) {
-            if ((e as Error).name !== 'AbortError') {
-              const link = document.createElement('a');
-              link.href = URL.createObjectURL(pdfBlob);
-              link.download = fileName;
-              link.click();
-              URL.revokeObjectURL(link.href);
+            toast.success(`Design salvo com sucesso!`);
+          } catch (e: any) {
+            // Se o usuário cancelar, não fazemos nada. Caso contrário, fallback.
+            if (e.name !== 'AbortError') {
+              console.error("Save Picker Error:", e);
+              this?.triggerDownload(blob || dataUrl, fileName);
             }
           }
         } else {
+          // Fallback para download direto via link temporário
+          const url = blob ? URL.createObjectURL(blob) : dataUrl;
           const link = document.createElement('a');
-          link.href = URL.createObjectURL(pdfBlob);
+          link.href = url;
           link.download = fileName;
+          document.body.appendChild(link);
           link.click();
-          URL.revokeObjectURL(link.href);
+          document.body.removeChild(link);
+          if (blob) URL.revokeObjectURL(url);
+          toast.success(`Download iniciado!`);
         }
+
+        setProgress(100);
+        setExportStatus("Concluído!");
+        
+        setTimeout(() => {
+          onOpenChange(false);
+          setIsExporting(false);
+          setProgress(0);
+        }, 1000);
       } else {
-        // Para imagens e experimentais
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = fileName;
-        link.click();
+        throw new Error("Container do canvas não encontrado.");
       }
 
-      setProgress(100);
-      setExportStatus("Download iniciado!");
-      toast.success(`Design exportado com sucesso!`);
-      
-      setTimeout(() => {
-        onOpenChange(false);
-        setIsExporting(false);
-        setProgress(0);
-      }, 1000);
-
     } catch (error) {
-      // Silenciando erro visual conforme solicitado (Hard Fix)
-      console.error("Critical Export Error:", error);
+      console.error("Export Error:", error);
       setIsExporting(false);
       setProgress(0);
-      onOpenChange(false);
+      toast.error("Ocorreu um erro ao exportar o design.");
     }
+  };
+
+  // Helper function moved inside handleExport to avoid 'this' issues or defined outside
+  const triggerDownload = (content: Blob | string, fileName: string) => {
+    const url = typeof content === 'string' ? content : URL.createObjectURL(content);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    if (typeof content !== 'string') URL.revokeObjectURL(url);
+    toast.success(`Download iniciado!`);
   };
 
   return (
