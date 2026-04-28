@@ -29,21 +29,19 @@ function CanvitoApp() {
 
   return (
     <EditorProvider>
-      <div className="flex min-h-[100dvh] w-full flex-col bg-background overflow-x-hidden">
+      <div className="flex h-screen max-h-screen w-full flex-col overflow-hidden bg-background">
         <TopBar />
-        <main className="flex flex-1 relative min-h-0">
+        <main className="relative flex min-h-0 flex-1 overflow-hidden">
           <Sidebar
             active={activeTool}
             onSelect={handleToolSelect}
           />
           <SidePanel active={activeTool} onClose={handlePanelClose} />
-          <div className="flex-1 flex flex-col pb-[120px]">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <Canvas />
           </div>
         </main>
-        <div className="fixed bottom-0 left-0 right-0 z-50">
-          <BottomBar />
-        </div>
+        <BottomBar />
       </div>
     </EditorProvider>
   );
