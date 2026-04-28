@@ -79,6 +79,7 @@ type EditorCtx = {
 
   pages: PageState[];
   activePageId: string | null;
+  resetDesign: () => void;
 };
 
 type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
@@ -497,6 +498,56 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
+
+  const resetDesign = useCallback(() => {
+    if (!window.confirm("Deseja criar um novo design? Isso apagará todo o trabalho atual.")) return;
+
+    // Save history before clearing (security/undo)
+    saveHistory();
+
+    isInternalUpdateRef.current = true;
+    try {
+      // Clear all canvases
+      canvasesRef.current.forEach((c) => {
+        // Keep only the artboard
+        const artRect = c.getObjects().find((o) => (o as any).isArtboard);
+        c.getObjects().forEach((obj) => {
+          if (obj !== artRect) {
+            c.remove(obj);
+          }
+        });
+        c.discardActiveObject();
+        c.requestRenderAll();
+      });
+
+      // Reset to 1 page if more than 1
+      if (pages.length > 1) {
+        const firstPageId = pages[0].id;
+        setPages([{ id: firstPageId }]);
+        
+        // Dispose other canvases
+        canvasesRef.current.forEach((fab, pageId) => {
+          if (pageId !== firstPageId) {
+            fab.dispose();
+            canvasesRef.current.delete(pageId);
+          }
+        });
+
+        activePageIdRef.current = firstPageId;
+        setActivePageIdState(firstPageId);
+        setActiveCanvas(canvasesRef.current.get(firstPageId) || null);
+      }
+
+      // Reset artboard to standard 1080x1080
+      setArtboardPreset("square");
+      
+    } finally {
+      isInternalUpdateRef.current = false;
+      // Save history after clear so they can undo back to empty if they want (though undoing to "before clear" is more useful)
+      saveHistory();
+    }
+  }, [pages, saveHistory, setArtboardPreset]);
+
 
   const getPageCanvas = useCallback(
     (pageId: string) => canvasesRef.current.get(pageId) ?? null,
@@ -975,12 +1026,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const contextValue = useMemo<EditorCtx>(() => ({
     activeCanvas,
     registerPageCanvas,
-      setActivePageId,
-      artboard,
-      setArtboard,
-      setArtboardPreset,
-      preset,
-
+    setActivePageId,
+    artboard,
+    setArtboard,
+    setArtboardPreset,
+    preset,
     zoom,
     setZoom,
     fitToScreen,
@@ -1001,11 +1051,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     redo,
     canUndo: undoStackRef.current.length > 0,
     canRedo: redoStackRef.current.length > 0,
+    resetDesign,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId, undo, redo, historyTick
+    pages, activePageId, undo, redo, historyTick, resetDesign
   ]);
 
   return (
