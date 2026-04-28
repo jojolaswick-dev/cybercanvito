@@ -302,7 +302,6 @@ export const TopBar = memo(function TopBar() {
       </div>
     </header>
   );
-  );
 });
 
 function NavButton({ label, hasChevron }: { label: string; hasChevron?: boolean }) {
