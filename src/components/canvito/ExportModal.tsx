@@ -90,9 +90,9 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
         pdf.addImage(dataUrl, "PNG", 0, 0, activePageElement.clientWidth * 2, activePageElement.clientHeight * 2);
         const pdfBlob = pdf.output('blob');
         
-        if (window.showSaveFilePicker) {
+        if (_window.showSaveFilePicker) {
           try {
-            const handle = await window.showSaveFilePicker({
+            const handle = await _window.showSaveFilePicker({
               suggestedName: fileName,
               types: [{ description: 'PDF Document', accept: { 'application/pdf': ['.pdf'] } }],
             });
@@ -111,10 +111,10 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
         const response = await fetch(dataUrl);
         const blob = await response.blob();
 
-        if (window.showSaveFilePicker) {
+        if (_window.showSaveFilePicker) {
           try {
             const mimeType = format === "jpg" ? "image/jpeg" : format === "webp" ? "image/webp" : "image/png";
-            const handle = await window.showSaveFilePicker({
+            const handle = await _window.showSaveFilePicker({
               suggestedName: fileName,
               types: [{ description: `${format.toUpperCase()} Image`, accept: { [mimeType]: [`.${format}`] } }],
             });
