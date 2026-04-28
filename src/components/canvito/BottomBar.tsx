@@ -117,9 +117,21 @@ export function BottomBar() {
 
         <div className="mx-1 hidden h-5 w-px bg-white/15 md:block" />
 
-        <div className="hidden items-center gap-1 md:flex">
-          <FootBtn icon={LayoutGrid} />
-          <FootBtn icon={Maximize2} />
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="hidden md:block">
+            <FootBtn icon={LayoutGrid} />
+          </div>
+          <button
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-1 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:px-2"
+          >
+            {isFullscreen ? (
+              <Minimize2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+            ) : (
+              <Maximize2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+            )}
+          </button>
         </div>
       </div>
 
