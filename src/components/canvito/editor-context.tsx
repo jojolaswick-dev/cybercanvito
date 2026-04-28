@@ -121,6 +121,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const undoStackRef = useRef<HistoryState[]>([]);
   const redoStackRef = useRef<HistoryState[]>([]);
   const isInternalUpdateRef = useRef(false);
+  const [historyTick, setHistoryTick] = useState(0);
   const originalImageStateRef = useRef<{ 
     pageId: string;
     json: string; // The specific image object JSON
@@ -234,6 +235,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     undoStackRef.current.push(currentState);
     if (undoStackRef.current.length > 50) undoStackRef.current.shift();
     redoStackRef.current = [];
+    setHistoryTick(t => t + 1);
   }, [pages, isCropMode]);
 
   /** Setup a freshly created Fabric canvas: artboard + clipPath + activation hooks. */
@@ -929,6 +931,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     }
     
     isInternalUpdateRef.current = false;
+    setHistoryTick(t => t + 1);
   }, [pages, setActivePageId, isCropMode, cancelCrop]);
 
   const redo = useCallback(async () => {
@@ -962,6 +965,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     }
     
     isInternalUpdateRef.current = false;
+    setHistoryTick(t => t + 1);
   }, [pages, setActivePageId]);
 
   const contextValue = useMemo<EditorCtx>(() => ({
@@ -995,7 +999,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId, undo, redo
+    pages, activePageId, undo, redo, historyTick
   ]);
 
   return (
