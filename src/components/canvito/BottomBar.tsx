@@ -1,5 +1,6 @@
-import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize, Undo2, Redo2 } from "lucide-react";
+import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize, Undo2, Redo2, Minimize2 } from "lucide-react";
 import { useEditor } from "./editor-context";
+import { useState, useEffect } from "react";
 
 export function BottomBar() {
   const { zoom, setZoom, fitToScreen, pages, undo, redo, canUndo, canRedo } = useEditor();
