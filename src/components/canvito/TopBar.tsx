@@ -82,6 +82,7 @@ export const TopBar = memo(function TopBar() {
     isCropMode,
     applyCrop,
     cancelCrop,
+    resetDesign,
   } = useEditor();
 
   const showSoon = useCallback((label: string) => {
@@ -172,7 +173,10 @@ export const TopBar = memo(function TopBar() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="z-[100] w-72 border-white/10 bg-[var(--panel)] p-1.5 text-white shadow-[0_18px_60px_oklch(0_0_0/0.45)]">
-              <FileMenuItem icon={FileText} label="Criar novo design" shortcut="Ctrl+N" onSelect={() => showSoon("Criar novo design")} />
+              <FileMenuItem icon={FileText} label="Criar novo design" shortcut="Ctrl+N" onSelect={() => {
+                resetDesign();
+                setName("Design sem nome");
+              }} />
               <FileMenuItem icon={CloudUpload} label="Fazer upload de arquivos" shortcut="Ctrl+U" onSelect={() => openImagePicker()} />
               <FileMenuItem icon={Settings} label="Configurações" shortcut="Ctrl+," onSelect={() => showSoon("Configurações")} />
               <DropdownMenuSeparator className="bg-white/10" />
