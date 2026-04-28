@@ -121,6 +121,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const undoStackRef = useRef<HistoryState[]>([]);
   const redoStackRef = useRef<HistoryState[]>([]);
   const isInternalUpdateRef = useRef(false);
+  const [historyTick, setHistoryTick] = useState(0);
   const originalImageStateRef = useRef<{ 
     pageId: string;
     json: string; // The specific image object JSON
