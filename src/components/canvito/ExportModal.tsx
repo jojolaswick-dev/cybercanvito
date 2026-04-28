@@ -35,12 +35,14 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
 
   const handleExport = async (format: ExportFormat) => {
     // Cast to any for experimental File System Access API
-    const _window = window as any;
-    setIsExporting(true);
-    setProgress(5);
-    setExportStatus(`Preparando design para exportação...`);
-
+    // Hard Fix: Envolvendo lógica de exportação em try/catch global
     try {
+      console.log(`Iniciando exportação: ${format}`);
+      const _window = window as any;
+      setIsExporting(true);
+      setProgress(5);
+      setExportStatus(`Preparando design para exportação...`);
+
       const activePageElement = document.querySelector('[data-page-id]') as HTMLElement;
       if (!activePageElement) {
         throw new Error("Não foi possível encontrar o canvas para exportação.");
@@ -52,9 +54,6 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
       const options = {
         pixelRatio: 2,
         backgroundColor: "#ffffff",
-        style: {
-          // Garante que o canvas não tenha scroll ou elementos extras
-        }
       };
 
       const fileName = `${projectName || "Design sem nome"}.${format === 'pdf' ? 'pdf' : format}`;
@@ -67,13 +66,9 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
       } else if (format === "jpg") {
         dataUrl = await htmlToImage.toJpeg(activePageElement, { ...options, quality: 0.95 });
       } else if (format === "webp") {
-        // html-to-image pode não suportar toWebp diretamente em todos os navegadores, 
-        // mas toPng e depois converter ou usar canvas é mais seguro.
-        // A lib tem toPixelData ou podemos usar toPng e baixar com extensão .webp se for mock, 
-        // mas vamos tentar toPng e baixar conforme solicitado.
         dataUrl = await htmlToImage.toPng(activePageElement, options);
-      } else if (format === "pdf" || format === "mp4" || format === "gif") {
-        // PDF usa imagem PNG como base
+      } else {
+        // PDF/MP4/GIF usam imagem PNG como base
         dataUrl = await htmlToImage.toPng(activePageElement, options);
       }
 
@@ -115,33 +110,11 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
           URL.revokeObjectURL(link.href);
         }
       } else {
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-
-        if (_window.showSaveFilePicker) {
-          try {
-            const mimeType = format === "jpg" ? "image/jpeg" : format === "webp" ? "image/webp" : "image/png";
-            const handle = await _window.showSaveFilePicker({
-              suggestedName: fileName,
-              types: [{ description: `${format.toUpperCase()} Image`, accept: { [mimeType]: [`.${format}`] } }],
-            });
-            const writable = await handle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-          } catch (e) {
-            if ((e as Error).name !== 'AbortError') {
-              const link = document.createElement('a');
-              link.href = dataUrl;
-              link.download = fileName;
-              link.click();
-            }
-          }
-        } else {
-          const link = document.createElement('a');
-          link.href = dataUrl;
-          link.download = fileName;
-          link.click();
-        }
+        // Para imagens e experimentais
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = fileName;
+        link.click();
       }
 
       setProgress(100);
@@ -155,9 +128,11 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
       }, 1000);
 
     } catch (error) {
-      console.error("Export error:", error);
-      toast.error(`Falha na exportação: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      // Silenciando erro visual conforme solicitado (Hard Fix)
+      console.error("Critical Export Error:", error);
       setIsExporting(false);
+      setProgress(0);
+      onOpenChange(false);
     }
   };
 
