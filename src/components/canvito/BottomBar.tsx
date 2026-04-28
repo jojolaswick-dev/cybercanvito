@@ -136,7 +136,7 @@ function FootBtn({
   return (
     <button className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white">
       <Icon className="h-3.5 w-3.5" />
-      {label && <span>{label}</span>}
+      {label && <span className="hidden sm:inline">{label}</span>}
     </button>
   );
 }
