@@ -139,7 +139,7 @@ export const Canvas = memo(function Canvas() {
         onDrop={onDrop}
         className="relative min-h-0 flex-1 overflow-auto overscroll-contain"
       >
-        <div className="flex min-h-full flex-col items-center px-3 py-4 sm:px-4 sm:py-6">
+        <div className="flex min-h-full flex-col items-center px-3 pb-16 pt-4 sm:px-4 sm:pb-20 sm:pt-6">
           {pages.map((page, idx) => (
             <PageBoard
               key={page.id}
