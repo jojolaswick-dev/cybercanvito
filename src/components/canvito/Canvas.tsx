@@ -121,7 +121,7 @@ export const Canvas = memo(function Canvas() {
   }, [activeCanvas, deleteActiveObject, activePageId, pages.length, deletePage, undo, redo]);
 
   return (
-    <div className="relative flex flex-1 flex-col bg-[var(--canvas-bg)]">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--canvas-bg)]">
       {/* Subtle dot grid */}
       <div
         className="pointer-events-none absolute inset-0 opacity-40"
@@ -137,9 +137,9 @@ export const Canvas = memo(function Canvas() {
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        className="relative flex-1"
+        className="relative min-h-0 flex-1 overflow-auto overscroll-contain"
       >
-        <div className="flex flex-col items-center px-4 py-10">
+        <div className="flex min-h-full flex-col items-center px-3 py-4 sm:px-4 sm:py-6">
           {pages.map((page, idx) => (
             <PageBoard
               key={page.id}
@@ -149,7 +149,7 @@ export const Canvas = memo(function Canvas() {
           ))}
 
           {/* "+ Adicionar página" — directly below the last sheet */}
-          <div className="mt-2 mb-10 flex justify-center">
+          <div className="mt-2 mb-6 flex justify-center">
             <button
               type="button"
               onClick={addPage}
