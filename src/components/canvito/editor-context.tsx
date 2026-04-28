@@ -235,6 +235,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     undoStackRef.current.push(currentState);
     if (undoStackRef.current.length > 50) undoStackRef.current.shift();
     redoStackRef.current = [];
+    setHistoryTick(t => t + 1);
   }, [pages, isCropMode]);
 
   /** Setup a freshly created Fabric canvas: artboard + clipPath + activation hooks. */
