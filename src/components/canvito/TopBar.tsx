@@ -10,7 +10,9 @@ import {
   CloudUpload,
   Download,
   FileText,
+  Menu,
   MessageSquare,
+  Pencil,
   Printer,
   Redo2,
   RefreshCw,
@@ -232,67 +234,77 @@ export const TopBar = memo(function TopBar() {
       </div>
 
       {/* Center */}
-      <div className="flex flex-1 items-center justify-center gap-3 px-4 min-w-0">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="max-w-[300px] w-full flex-1 shrink mx-auto rounded-md bg-white/5 px-3 py-1 text-sm font-medium text-white outline-none ring-1 ring-transparent transition-all hover:bg-white/10 focus:bg-white/10 focus:ring-[var(--electric-blue)]"
-        />
-        <span className="flex-shrink-0 text-xs tabular-nums text-white/60 hidden sm:inline">{artboard.width} × {artboard.height} px</span>
+      <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3 px-2 sm:px-4 min-w-0">
+        <div className="relative flex-1 max-w-[250px] min-w-[80px] sm:min-w-[120px] group">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full rounded-md bg-white/5 pl-2 pr-8 sm:px-3 py-1 text-xs sm:text-sm font-medium text-white outline-none ring-1 ring-transparent transition-all hover:bg-white/10 focus:bg-white/10 focus:ring-[var(--electric-blue)] truncate"
+          />
+          <Pencil className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-white/40 sm:hidden" />
+        </div>
+        <span className="flex-shrink-0 text-[10px] sm:text-xs tabular-nums text-white/60 hidden min-[500px]:inline">
+          {artboard.width} × {artboard.height} px
+        </span>
       </div>
 
       {/* Right */}
-      <div className="flex flex-shrink-0 items-center gap-2">
-        <div className="mx-1 h-6 w-px bg-white/15" />
-        
-        {/* Quick preset shortcuts */}
-        <div className="flex items-center gap-0.5">
-          {(Object.keys(ARTBOARD_PRESETS) as ArtboardPresetId[]).map((id) => {
-            const Icon = PRESET_ICONS[id];
-            const active = preset === id;
-            return (
-              <button
-                key={id}
-                onClick={() => setArtboardPreset(id)}
-                title={ARTBOARD_PRESETS[id].label}
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition-all ${
-                  active
-                    ? "bg-white/15 text-white shadow-[inset_0_0_0_1px_var(--electric-blue)]"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-              </button>
-            );
-          })}
+      <div className="flex flex-shrink-0 items-center gap-1 sm:gap-2">
+        <div className="hidden min-[450px]:flex items-center gap-0.5 sm:gap-1">
+          <div className="mx-1 h-6 w-px bg-white/15" />
+          {/* Quick preset shortcuts */}
+          <div className="flex items-center gap-0.5">
+            {(Object.keys(ARTBOARD_PRESETS) as ArtboardPresetId[]).map((id) => {
+              const Icon = PRESET_ICONS[id];
+              const active = preset === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setArtboardPreset(id)}
+                  title={ARTBOARD_PRESETS[id].label}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition-all ${
+                    active
+                      ? "bg-white/15 text-white shadow-[inset_0_0_0_1px_var(--electric-blue)]"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
+              );
+            })}
+          </div>
+          <div className="mx-1 h-6 w-px bg-white/15" />
         </div>
 
-        <div className="mx-1 h-6 w-px bg-white/15" />
-
         {isCropMode ? (
-          <div className="flex items-center gap-2 pr-2">
+          <div className="flex items-center gap-1 sm:gap-2 pr-1 sm:pr-2">
             <button 
               onClick={cancelCrop}
-              className="inline-flex items-center justify-center rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white transition-all hover:bg-white/20 active:scale-95"
+              className="inline-flex items-center justify-center rounded-md border border-white/20 bg-white/10 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-white transition-all hover:bg-white/20 active:scale-95"
             >
-              Cancelar
+              <span className="hidden min-[400px]:inline">Cancelar</span>
+              <RotateCcw className="h-4 w-4 min-[400px]:hidden" />
             </button>
             <button 
               onClick={applyCrop}
-              className="inline-flex items-center justify-center rounded-md bg-[oklch(0.65_0.15_180)] px-4 py-2 text-sm font-bold text-[var(--background)] shadow-[0_0_20px_oklch(0.65_0.15_180/0.3)] transition-all hover:shadow-[0_0_30px_oklch(0.65_0.15_180/0.5)] hover:scale-[1.02] active:scale-95"
+              className="inline-flex items-center justify-center rounded-md bg-[oklch(0.65_0.15_180)] px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-[var(--background)] shadow-[0_0_20px_oklch(0.65_0.15_180/0.3)] transition-all hover:shadow-[0_0_30px_oklch(0.65_0.15_180/0.5)] hover:scale-[1.02] active:scale-95"
             >
-              Confirmar
+              <span className="hidden min-[400px]:inline">Confirmar</span>
+              <Check className="h-4 w-4 min-[400px]:hidden" />
             </button>
           </div>
         ) : (
-          <>
-            <IconBtn><MessageSquare className="h-4 w-4" /></IconBtn>
-            <IconBtn><Share2 className="h-4 w-4" /></IconBtn>
-          </>
+          <div className="flex items-center gap-1">
+            <div className="hidden md:flex items-center gap-1">
+              <IconBtn><MessageSquare className="h-4 w-4" /></IconBtn>
+              <IconBtn><Share2 className="h-4 w-4" /></IconBtn>
+            </div>
+            <button className="inline-flex items-center gap-2 rounded-md bg-white px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-[var(--background)] shadow-[0_0_24px_oklch(1_0_0/0.3)] transition-all hover:shadow-[0_0_32px_oklch(1_0_0/0.5)] hover:scale-[1.02] active:scale-95">
+              <Download className="h-4 w-4 md:hidden" />
+              <span className="hidden md:inline">Exportar</span>
+            </button>
+          </div>
         )}
-        <button className="ml-1 inline-flex items-center gap-2 rounded-md bg-white px-5 py-2 text-sm font-bold text-[var(--background)] shadow-[0_0_24px_oklch(1_0_0/0.3)] transition-all hover:shadow-[0_0_32px_oklch(1_0_0/0.5)] hover:scale-[1.02] active:scale-95">
-          Exportar
-        </button>
       </div>
     </header>
   );
