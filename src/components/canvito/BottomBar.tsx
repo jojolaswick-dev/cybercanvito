@@ -1,8 +1,45 @@
-import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize, Undo2, Redo2 } from "lucide-react";
+import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize, Undo2, Redo2, Minimize2 } from "lucide-react";
 import { useEditor } from "./editor-context";
+import { useState, useEffect } from "react";
 
 export function BottomBar() {
   const { zoom, setZoom, fitToScreen, pages, undo, redo, canUndo, canRedo } = useEditor();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenEnabled) {
+      console.warn("Fullscreen is not supported by this browser");
+      return;
+    }
+
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
 
   return (
     <footer className="fixed bottom-0 left-0 z-50 flex h-12 w-full shrink-0 items-center justify-between gap-2 overflow-hidden border-t border-white/10 bg-cyber-bar px-2 text-white sm:px-3">
@@ -80,9 +117,21 @@ export function BottomBar() {
 
         <div className="mx-1 hidden h-5 w-px bg-white/15 md:block" />
 
-        <div className="hidden items-center gap-1 md:flex">
-          <FootBtn icon={LayoutGrid} />
-          <FootBtn icon={Maximize2} />
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="hidden md:block">
+            <FootBtn icon={LayoutGrid} />
+          </div>
+          <button
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-1 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:px-2"
+          >
+            {isFullscreen ? (
+              <Minimize2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+            ) : (
+              <Maximize2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+            )}
+          </button>
         </div>
       </div>
 
