@@ -1,4 +1,6 @@
 import { memo, useCallback, useState, type ComponentType, type ReactNode } from "react";
+import { ResizeModal } from "./ResizeModal";
+
 import * as fabric from "fabric";
 import {
   ArrowLeftRight,
@@ -60,6 +62,8 @@ const CSS_FILTERS: Record<EditFilter, string> = {
 
 export const TopBar = memo(function TopBar() {
   const [name, setName] = useState("Design sem nome");
+  const [isResizeOpen, setIsResizeOpen] = useState(false);
+
   const {
     activeCanvas,
     activePageId,
@@ -234,7 +238,7 @@ export const TopBar = memo(function TopBar() {
               <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuLabel className="px-2.5 text-xs text-white/50">Dimensionamento</DropdownMenuLabel>
               <EditMenuItem icon={Scissors} label="Recortar" onSelect={startCropMode} />
-              <EditMenuItem icon={Scaling} label="Redimensionar" disabled onSelect={showDevelopmentToast} />
+              <EditMenuItem icon={Scaling} label="Redimensionar" onSelect={() => setIsResizeOpen(true)} />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -300,7 +304,9 @@ export const TopBar = memo(function TopBar() {
           </button>
         )}
       </div>
+      <ResizeModal open={isResizeOpen} onOpenChange={setIsResizeOpen} />
     </header>
+
   );
 });
 
