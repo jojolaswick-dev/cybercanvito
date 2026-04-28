@@ -43,7 +43,7 @@ export const Sidebar = memo(function Sidebar({
   onSelect: (id: ToolId) => void;
 }) {
   return (
-    <aside className="relative z-20 flex w-[88px] flex-col items-stretch gap-1 border-r border-white/10 bg-cyber-bar py-3">
+    <aside className="sticky top-14 z-20 flex w-[88px] h-[calc(100dvh-56px)] flex-col items-stretch gap-1 border-r border-white/10 bg-cyber-bar py-3">
       <div className="pointer-events-none absolute right-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-[var(--electric-blue)] to-transparent opacity-50" />
 
       {TOOLS.map((tool) => (
