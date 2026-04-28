@@ -965,6 +965,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     }
     
     isInternalUpdateRef.current = false;
+    setHistoryTick(t => t + 1);
   }, [pages, setActivePageId]);
 
   const contextValue = useMemo<EditorCtx>(() => ({
