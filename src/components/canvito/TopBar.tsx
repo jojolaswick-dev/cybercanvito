@@ -141,7 +141,7 @@ export const TopBar = memo(function TopBar() {
   }, [activeCanvas, activePageId, deleteActiveObject, deletePage, pages.length]);
 
   return (
-    <header className="relative z-30 flex h-14 shrink-0 items-center justify-between border-b border-white/10 bg-cyber-bar px-2 text-white sm:px-3">
+    <header className="relative z-50 flex h-14 shrink-0 items-center justify-between border-b border-white/10 bg-cyber-bar px-2 text-white sm:px-3">
       {/* Glow accent line */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[var(--neon-pink)] to-transparent opacity-60" />
 
