@@ -5,7 +5,7 @@ export function BottomBar() {
   const { zoom, setZoom, fitToScreen, pages, undo, redo, canUndo, canRedo } = useEditor();
 
   return (
-    <footer className="relative z-30 flex h-11 items-center justify-between border-t border-white/10 bg-cyber-bar px-3 text-white">
+    <footer className="relative z-30 flex h-11 shrink-0 items-center justify-between border-t border-white/10 bg-cyber-bar px-3 text-white">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--electric-blue)] to-transparent opacity-60" />
 
       {/* Left */}
