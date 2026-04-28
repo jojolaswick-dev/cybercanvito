@@ -1,5 +1,6 @@
 import { memo, useCallback, useState, type ComponentType, type ReactNode } from "react";
 import { ResizeModal } from "./ResizeModal";
+import { ExportModal } from "./ExportModal";
 
 import * as fabric from "fabric";
 import {
@@ -67,6 +68,7 @@ const CSS_FILTERS: Record<EditFilter, string> = {
 export const TopBar = memo(function TopBar() {
   const [name, setName] = useState("Design sem nome");
   const [isResizeOpen, setIsResizeOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   const {
     activeCanvas,
@@ -180,7 +182,7 @@ export const TopBar = memo(function TopBar() {
               <FileMenuItem icon={CloudUpload} label="Fazer upload de arquivos" shortcut="Ctrl+U" onSelect={() => openImagePicker()} />
               <FileMenuItem icon={Settings} label="Configurações" shortcut="Ctrl+," onSelect={() => showSoon("Configurações")} />
               <DropdownMenuSeparator className="bg-white/10" />
-              <FileMenuItem icon={Download} label="Exportar" shortcut="Ctrl+E" onSelect={() => showSoon("Exportar")} />
+              <FileMenuItem icon={Download} label="Exportar" shortcut="Ctrl+E" onSelect={() => setIsExportOpen(true)} />
               <FileMenuItem icon={Printer} label="Imprimir" shortcut="Ctrl+P" onSelect={() => showSoon("Imprimir")} />
               <DropdownMenuSeparator className="bg-white/10" />
               <FileMenuItem icon={Trash2} label="Mover para lixeira" shortcut="Del" danger onSelect={moveToTrash} />
@@ -306,13 +308,17 @@ export const TopBar = memo(function TopBar() {
             </button>
           </div>
         ) : (
-          <button className="inline-flex items-center gap-2 rounded-md bg-white px-2 py-1.5 text-xs font-bold text-[var(--background)] shadow-[0_0_24px_oklch(1_0_0/0.3)] transition-all hover:scale-[1.02] hover:shadow-[0_0_32px_oklch(1_0_0/0.5)] active:scale-95 sm:px-4 sm:text-sm">
+          <button 
+            onClick={() => setIsExportOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md bg-white px-2 py-1.5 text-xs font-bold text-[var(--background)] shadow-[0_0_24px_oklch(1_0_0/0.3)] transition-all hover:scale-[1.02] hover:shadow-[0_0_32px_oklch(1_0_0/0.5)] active:scale-95 sm:px-4 sm:text-sm"
+          >
             <Download className="h-4 w-4 md:hidden" />
             <span className="hidden md:inline">Exportar</span>
           </button>
         )}
       </div>
       <ResizeModal open={isResizeOpen} onOpenChange={setIsResizeOpen} />
+      <ExportModal open={isExportOpen} onOpenChange={setIsExportOpen} projectName={name} />
     </header>
 
   );
