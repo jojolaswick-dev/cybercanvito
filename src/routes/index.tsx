@@ -31,14 +31,14 @@ function CanvitoApp() {
     <EditorProvider>
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
         <TopBar />
-        <div className="flex flex-1 overflow-hidden">
+        <main className="flex flex-1 min-h-0 overflow-hidden relative">
           <Sidebar
             active={activeTool}
             onSelect={handleToolSelect}
           />
           <SidePanel active={activeTool} onClose={handlePanelClose} />
           <Canvas />
-        </div>
+        </main>
         <BottomBar />
       </div>
     </EditorProvider>
