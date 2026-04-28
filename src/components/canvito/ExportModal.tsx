@@ -42,7 +42,8 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
       // 1. Localizar o Canvas e Desativar Seleção
       const canvas = activePageId ? getPageCanvas(activePageId) : null;
       if (!canvas) {
-        alert("CRITICAL ERROR: Canvas not found. activePageId: " + activePageId);
+        console.warn("[EXPORT] Canvas fabric instance not found for ID:", activePageId);
+        toast.error("Ocorreu um problema ao acessar o design.");
         return;
       }
       
@@ -53,25 +54,34 @@ export const ExportModal = memo(function ExportModal({ open, onOpenChange, proje
       setProgress(10);
       setExportStatus(`Isolando área do design...`);
 
-      // 2. Alvo Estrito: Container da página ativa
-      const targetSelector = `[data-page-id="${activePageId}"]`;
-      const activePageElement = document.querySelector(targetSelector) as HTMLElement;
+      // 2. Alvo Estrito: Elemento com ID estável 'canvas-workspace'
+      let activePageElement = document.getElementById('canvas-workspace');
+      
+      // Fallback para o data-page-id caso o ID não esteja no DOM ainda
+      if (!activePageElement && activePageId) {
+        activePageElement = document.querySelector(`[data-page-id="${activePageId}"]`) as HTMLElement;
+      }
       
       if (!activePageElement) {
-        alert("CRITICAL ERROR: DOM element for canvas not found: " + targetSelector);
-        throw new Error("Elemento do Canvas não encontrado.");
+        console.error("[EXPORT] DOM element for canvas not found ('canvas-workspace')");
+        toast.error("Erro técnico: Elemento do Canvas não encontrado.");
+        setIsExporting(false);
+        return;
       }
 
       // 3. Garantir ocultação de controles (molduras roxas) via CSS temporário
+      const targetId = activePageElement.id || `temp-export-${activePageId}`;
+      if (!activePageElement.id) activePageElement.id = targetId;
+
       const style = document.createElement('style');
       style.innerHTML = `
-        ${targetSelector} .upper-canvas { display: none !important; }
-        ${targetSelector} { border: none !important; outline: none !important; box-shadow: none !important; }
+        #${targetId} .upper-canvas { display: none !important; }
+        #${targetId} { border: none !important; outline: none !important; box-shadow: none !important; ring: 0 !important; }
       `;
       document.head.appendChild(style);
       
-      // Pequeno delay para renderização
-      await new Promise(r => setTimeout(r, 100));
+      // Pequeno delay para renderização e garantir que o CSS acima foi aplicado
+      await new Promise(r => setTimeout(r, 150));
       
       setProgress(40);
       setExportStatus("Gerando imagem em alta definição...");
