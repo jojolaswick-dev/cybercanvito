@@ -457,15 +457,35 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
     };
   }, [canvas]);
 
+  const { openImagePicker } = useEditor();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    onAddImage();
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await onAddImage();
+      // Since onAddImage calls setActivePageId, the next line will add it to the correct canvas
+      // But we can be more explicit by using the context's addImageFromFile directly if needed.
+    }
+    e.target.value = "";
   }, [onAddImage]);
 
   if (hasObjects) return null;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
       <button
         type="button"
         onClick={handleClick}
