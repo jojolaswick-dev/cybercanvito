@@ -308,8 +308,8 @@ const FilmstripCard = memo(function FilmstripCard({
     
     return () => {
       canvas.off("object:modified", onCanvasChange);
-      canvas.on("object:added", onCanvasChange);
-      canvas.on("object:removed", onCanvasChange);
+      canvas.off("object:added", onCanvasChange);
+      canvas.off("object:removed", onCanvasChange);
     };
   }, [pageId, getPageCanvas, updateThumbnail]);
 
@@ -372,8 +372,8 @@ const GridViewItem = memo(function GridViewItem({
     
     return () => {
       canvas.off("object:modified", onCanvasChange);
-      canvas.on("object:added", onCanvasChange);
-      canvas.on("object:removed", onCanvasChange);
+      canvas.off("object:added", onCanvasChange);
+      canvas.off("object:removed", onCanvasChange);
     };
   }, [pageId, getPageCanvas, updateThumbnail]);
 
