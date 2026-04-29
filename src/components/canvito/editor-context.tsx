@@ -143,23 +143,31 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     canvasesRef.current.forEach(c => {
       (c as any)._editorCtx = { ...((c as any)._editorCtx || {}), isMagicBrushActive: active };
       
+      // Force deselect everything
+      c.discardActiveObject();
+
       // Lock or unlock all image/text objects
       c.getObjects().forEach(obj => {
-        if ((obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask) return;
+        const isSupportObject = (obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask;
         obj.set({
-          selectable: !active,
-          evented: !active,
+          selectable: !active && !isSupportObject,
+          evented: !active || isSupportObject, // Support objects always need events if active, but images should NOT have events when brush is active
           hasControls: !active,
           lockMovementX: active,
           lockMovementY: active,
           lockRotation: active,
           lockScalingX: active,
-          lockScalingY: active
+          lockScalingY: active,
+          hoverCursor: active ? "none" : "move"
         });
+
+        // Crucial: for images and other elements, disable evented so clicks pass through to the canvas
+        if (!isSupportObject) {
+          obj.set('evented', !active);
+        }
       });
 
       if (active) {
-        c.discardActiveObject();
         c.defaultCursor = "none";
         c.hoverCursor = "none";
         c.moveCursor = "none";
