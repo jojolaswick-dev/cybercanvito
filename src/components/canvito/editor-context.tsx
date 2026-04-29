@@ -307,7 +307,56 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         if (obj && (obj as any).isCropOverlay) return;
         if (obj && (obj as any).isCropControl) return;
         if (obj && (obj as any).isGuideLine) return;
+        if (obj && (obj as any).isMagicBrushMask) return;
         saveHistory();
+      });
+
+      // Magic Brush logic
+      let isDrawingMask = false;
+      let maskPoints: { x: number, y: number }[] = [];
+      let maskOverlay: fabric.Path | null = null;
+
+      c.on("mouse:down", (opt) => {
+        const ctx = (c as any)._editorCtx; // We'll inject this
+        if (!ctx?.isMagicBrushActive || !ctx?.brushSize) return;
+
+        isDrawingMask = true;
+        maskPoints = [];
+        const pointer = c.getScenePoint(opt.e);
+        maskPoints.push(pointer);
+        
+        maskOverlay = new fabric.Path(`M ${pointer.x} ${pointer.y}`, {
+          stroke: "oklch(0.55 0.28 295)", // Neon Purple
+          strokeWidth: ctx.brushSize,
+          fill: "transparent",
+          opacity: 0.3, // 30% transparency constant
+          selectable: false,
+          evented: false,
+          strokeLineCap: 'round',
+          strokeLineJoin: 'round',
+        });
+        (maskOverlay as any).isMagicBrushMask = true;
+        c.add(maskOverlay);
+      });
+
+      c.on("mouse:move", (opt) => {
+        if (!isDrawingMask || !maskOverlay) return;
+        const pointer = c.getScenePoint(opt.e);
+        maskPoints.push(pointer);
+        
+        // Update path data
+        const pathData = maskPoints.reduce((acc, point, i) => {
+          return acc + (i === 0 ? `M ${point.x} ${point.y}` : ` L ${point.x} ${point.y}`);
+        }, "");
+        
+        maskOverlay.set({ path: new fabric.Path(pathData).path });
+        c.requestRenderAll();
+      });
+
+      c.on("mouse:up", () => {
+        isDrawingMask = false;
+        maskOverlay = null;
+        maskPoints = [];
       });
 
       c.requestRenderAll();
@@ -345,6 +394,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         preserveObjectStacking: true,
         selection: true,
       });
+      (fab as any)._editorCtx = { isMagicBrushActive, brushSize };
       map.set(pageId, fab);
       initFabricCanvas(pageId, fab, w, h);
 
@@ -1072,11 +1122,15 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     canRedo: redoStackRef.current.length > 0,
     resetDesign,
     reorderPage,
+    brushSize,
+    setBrushSize,
+    isMagicBrushActive,
+    setIsMagicBrushActive,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage
+    pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage, brushSize, isMagicBrushActive
   ]);
 
   return (
