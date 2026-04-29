@@ -201,6 +201,24 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const clearMagicBrush = useCallback(() => {
+    // This will be handled by a global signal or by re-rendering the overlay
+    window.dispatchEvent(new CustomEvent("magic-brush:clear"));
+  }, []);
+
+  const applyMagicRemoval = useCallback(async () => {
+    toast.info("Removendo objetos selecionados...", {
+      icon: <Sparkles className="h-4 w-4 text-[var(--neon-violet)]" />,
+    });
+    
+    // Simulate AI processing
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    clearMagicBrush();
+    setIsMagicBrushActive(false);
+    toast.success("Objetos removidos com sucesso!");
+  }, [clearMagicBrush]);
+
   // Undo/Redo Stacks
   const undoStackRef = useRef<HistoryState[]>([]);
   const redoStackRef = useRef<HistoryState[]>([]);
