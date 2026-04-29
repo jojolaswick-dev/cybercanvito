@@ -371,6 +371,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         }
 
         c.defaultCursor = "none";
+        c.hoverCursor = "none";
+        c.moveCursor = "none";
         if (!brushCursor) {
           brushCursor = new fabric.Circle({
             radius: ctx.brushSize / 2,
