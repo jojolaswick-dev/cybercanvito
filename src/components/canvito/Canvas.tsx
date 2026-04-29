@@ -374,7 +374,7 @@ const PageBoard = memo(function PageBoard({
       >
         <canvas ref={canvasElRef} />
         {/* Superior Overlay Canvas for Magic Brush */}
-        {isActive && (
+        {isActive && isMagicBrushActive && (
           <OverlayPaintCanvas pageId={pageId} width={w} height={h} />
         )}
         <PageEmptyCTA pageId={pageId} onAddImage={onAddImage} />
