@@ -161,6 +161,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           hoverCursor: active ? "none" : "move"
         });
 
+        // Ensure the mask is always at the top when adding new strokes
+        if ((obj as any).isMagicBrushMask) {
+          c.bringObjectToFront(obj);
+        }
+
         // Crucial: for images and other elements, disable evented so clicks pass through to the canvas
         if (!isSupportObject) {
           obj.set('evented', !active);
@@ -446,7 +451,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         });
         (maskOverlay as any).isMagicBrushMask = true;
         c.add(maskOverlay);
-        c.bringObjectToFront(maskOverlay); // Ensure it's on top of images
+        c.bringObjectToFront(maskOverlay); // Force to the top of the stack
         updateCursor(pointer);
       });
 
@@ -462,8 +467,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         }, "");
 
         maskOverlay.set({ path: new fabric.Path(pathData).path });
-        c.bringObjectToFront(maskOverlay); // Ensure it's always on top during drawing
-        if (brushCursor) c.bringObjectToFront(brushCursor); // Cursor on top of mask
+        
+        // Use bringObjectToFront to ensure the mask and cursor are always on top
+        c.bringObjectToFront(maskOverlay);
+        if (brushCursor) c.bringObjectToFront(brushCursor);
+        
         c.requestRenderAll();
       });
 
@@ -515,6 +523,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         backgroundColor: "transparent",
         preserveObjectStacking: true,
         selection: true,
+        renderOnAddRemove: true
       });
       (fab as any)._editorCtx = { isMagicBrushActive, brushSize };
       
