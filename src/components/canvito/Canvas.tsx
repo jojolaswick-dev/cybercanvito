@@ -191,27 +191,27 @@ export const Canvas = memo(function Canvas() {
         </div>
       ) : (
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-          {/* Workspace = vertically scrollable stack */}
+          {/* Workspace - Centered View */}
           <div
             ref={scrollRef}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
-            className="relative flex-1 overflow-auto overscroll-contain bg-[var(--canvas-bg)]"
+            className="relative flex-1 overflow-auto overscroll-contain bg-[var(--canvas-bg)] flex items-center justify-center p-8"
           >
             {/* Subtle dot grid */}
             <div
-              className="pointer-events-none absolute inset-0 opacity-40"
+              className="pointer-events-none absolute inset-0 opacity-40 z-0"
               style={{
                 backgroundImage: "radial-gradient(oklch(0.75 0.02 250) 1px, transparent 1px)",
                 backgroundSize: "20px 20px",
               }}
             />
 
-            <div className="flex min-h-full flex-col items-center justify-center px-4 py-32">
+            <div className="relative z-10 flex items-center justify-center">
               {pages.map((page, idx) => (
                 activePageId === page.id && (
-                  <div key={page.id} className="relative z-10 flex flex-col items-center">
+                  <div key={page.id} className="relative flex flex-col items-center">
                     <PageBoard
                       pageId={page.id}
                       index={idx}
@@ -232,7 +232,7 @@ export const Canvas = memo(function Canvas() {
           </div>
 
           {/* Filmstrip - Barra de Miniaturas Inferior */}
-          <div className="relative z-30 h-[120px] shrink-0 w-full border-t border-white/10 bg-cyber-bar px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-hide">
+          <div className="relative z-30 h-[120px] shrink-0 w-full border-t border-white/10 bg-[#000d1a] px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-hide">
             {pages.map((page, idx) => (
               <FilmstripCard 
                 key={page.id}
