@@ -202,6 +202,7 @@ const PageBoard = memo(function PageBoard({
     getPageCanvas,
     pages,
     reorderPage,
+    isMagicBrushActive,
   } = useEditor();
   const canDelete = pages.length > 1;
   const [contextMenu, setContextMenu] = useState<CtxMenuState | null>(null);
