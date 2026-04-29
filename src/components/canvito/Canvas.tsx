@@ -142,13 +142,13 @@ export const Canvas = memo(function Canvas() {
             <h2 className="text-xl font-bold text-[#a855f7] drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]">Visualização de Páginas</h2>
             <button
               onClick={() => setIsGridView(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#a855f7]/10 text-[#00f2ff] transition-all hover:bg-[#a855f7]/20 hover:scale-110 drop-shadow-[0_0_8px_rgba(0,242,255,0.4)]"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-[#a855f7]/20 text-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all hover:bg-[#a855f7]/30 hover:scale-110 hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]"
             >
-              <X className="h-6 w-6" />
+              <X className="h-8 w-8 stroke-[3]" />
             </button>
           </div>
           
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-8">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-10">
             {pages.map((page, idx) => (
               <GridViewItem
                 key={page.id}
@@ -163,12 +163,12 @@ export const Canvas = memo(function Canvas() {
             
             <button
               onClick={addPage}
-              className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-[#a855f7]/30 bg-black/40 transition-all hover:border-[#a855f7] hover:bg-black/60 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] group"
+              className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-[#00f2ff]/50 bg-[#a855f7]/5 transition-all hover:border-[#00f2ff] hover:bg-[#a855f7]/10 hover:shadow-[0_0_30px_rgba(0,242,255,0.3)] group"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#a855f7]/10 group-hover:bg-[#a855f7]/20 transition-all drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]">
-                <Plus className="h-6 w-6 text-[#00f2ff] transition-transform group-hover:scale-110" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a855f7]/20 group-hover:bg-[#a855f7]/30 transition-all shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                <Plus className="h-8 w-8 text-[#a855f7] transition-transform group-hover:scale-110 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
               </div>
-              <span className="text-sm font-bold text-[#a855f7] drop-shadow-[0_0_5px_rgba(168,85,247,0.3)] group-hover:text-white transition-colors">Adicionar Página</span>
+              <span className="text-sm font-black uppercase tracking-widest text-[#a855f7] drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]">Adicionar Página</span>
             </button>
           </div>
         </div>
@@ -345,8 +345,9 @@ const GridViewItem = memo(function GridViewItem({
   index: number;
   onSelect: (id: string) => void;
 }) {
-  const { getPageCanvas, artboard } = useEditor();
+  const { getPageCanvas, artboard, pages, deletePage } = useEditor();
   const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const canDelete = pages.length > 1;
 
   const updateThumbnail = useCallback(() => {
     const canvas = getPageCanvas(pageId);
@@ -378,10 +379,10 @@ const GridViewItem = memo(function GridViewItem({
   }, [pageId, getPageCanvas, updateThumbnail]);
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="group relative flex flex-col items-center gap-4">
       <button
         onClick={() => onSelect(pageId)}
-        className="group relative aspect-square w-full overflow-hidden rounded-lg border-2 border-[#a855f7] bg-white transition-all hover:shadow-[0_0_25px_rgba(168,85,247,0.8)] hover:scale-[1.02]"
+        className="relative aspect-square w-full overflow-hidden rounded-xl border-2 border-[#a855f7] bg-white shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all hover:scale-[1.05] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] active:scale-95"
         style={{
           aspectRatio: `${artboard.width} / ${artboard.height}`,
         }}
@@ -389,11 +390,30 @@ const GridViewItem = memo(function GridViewItem({
         {thumbnail ? (
           <img src={thumbnail} alt={`Página ${index + 1}`} className="h-full w-full object-contain" />
         ) : (
-          <div className="h-full w-full bg-white" />
+          <div className="h-full w-full animate-pulse bg-white" />
         )}
         <div className="absolute inset-0 bg-[#a855f7]/0 transition-colors group-hover:bg-[#a855f7]/5" />
       </button>
-      <span className="text-xs font-bold text-[#a855f7] drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]">Página {index + 1}</span>
+
+      {/* Mini Trash Icon for Grid Items */}
+      <button
+        disabled={!canDelete}
+        onClick={(e) => {
+          e.stopPropagation();
+          deletePage(pageId);
+        }}
+        className={`absolute -top-3 -right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 shadow-xl transition-all ${
+          canDelete 
+            ? "bg-[#000d1a] text-[#a855f7] hover:scale-110 hover:text-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)]" 
+            : "cursor-not-allowed bg-gray-800 text-gray-600"
+        }`}
+      >
+        <Trash2 className="h-5 w-5" />
+      </button>
+
+      <span className="text-sm font-black uppercase tracking-wider text-[#a855f7] drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]">
+        Página {index + 1}
+      </span>
     </div>
   );
 });
