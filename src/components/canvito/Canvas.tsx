@@ -138,10 +138,10 @@ export const Canvas = memo(function Canvas() {
       {isGridView ? (
         <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-auto p-8">
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Visualização de Páginas</h2>
+            <h2 className="text-xl font-bold text-[#a855f7] drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]">Visualização de Páginas</h2>
             <button
               onClick={() => setIsGridView(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20 hover:text-[var(--neon-violet)]"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#a855f7]/10 text-[#00f2ff] transition-all hover:bg-[#a855f7]/20 hover:scale-110 drop-shadow-[0_0_8px_rgba(0,242,255,0.4)]"
             >
               <X className="h-6 w-6" />
             </button>
@@ -162,12 +162,12 @@ export const Canvas = memo(function Canvas() {
             
             <button
               onClick={addPage}
-              className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-white/20 bg-white/5 transition-all hover:border-[var(--neon-violet)] hover:bg-white/10 group"
+              className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-[#a855f7]/30 bg-black/40 transition-all hover:border-[#a855f7] hover:bg-black/60 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] group"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 group-hover:bg-[var(--neon-violet)]/20 transition-all">
-                <Plus className="h-6 w-6 text-white group-hover:text-[var(--neon-violet)]" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#a855f7]/10 group-hover:bg-[#a855f7]/20 transition-all drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]">
+                <Plus className="h-6 w-6 text-[#00f2ff] transition-transform group-hover:scale-110" />
               </div>
-              <span className="text-sm font-medium text-white/60 group-hover:text-white">Adicionar Página</span>
+              <span className="text-sm font-bold text-[#a855f7] drop-shadow-[0_0_5px_rgba(168,85,247,0.3)] group-hover:text-white transition-colors">Adicionar Página</span>
             </button>
           </div>
         </div>
@@ -245,7 +245,7 @@ const GridViewItem = memo(function GridViewItem({
     <div className="flex flex-col items-center gap-3">
       <button
         onClick={() => onSelect(pageId)}
-        className="group relative aspect-square w-full overflow-hidden rounded-lg border border-[var(--neon-violet)]/30 bg-white transition-all hover:border-[var(--neon-violet)] hover:shadow-[0_0_20px_oklch(0.55_0.28_295/0.5)] hover:ring-2 hover:ring-[var(--neon-violet)]"
+        className="group relative aspect-square w-full overflow-hidden rounded-lg border-2 border-[#a855f7] bg-white transition-all hover:shadow-[0_0_25px_rgba(168,85,247,0.8)] hover:scale-[1.02]"
         style={{
           aspectRatio: `${artboard.width} / ${artboard.height}`,
         }}
@@ -255,9 +255,9 @@ const GridViewItem = memo(function GridViewItem({
         ) : (
           <div className="h-full w-full bg-white" />
         )}
-        <div className="absolute inset-0 bg-[var(--neon-violet)]/0 transition-colors group-hover:bg-[var(--neon-violet)]/5" />
+        <div className="absolute inset-0 bg-[#a855f7]/0 transition-colors group-hover:bg-[#a855f7]/5" />
       </button>
-      <span className="text-xs font-semibold text-white/60">Página {index + 1}</span>
+      <span className="text-xs font-bold text-[#a855f7] drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]">Página {index + 1}</span>
     </div>
   );
 });
