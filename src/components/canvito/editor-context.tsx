@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from "react";
 import * as fabric from "fabric";
+// @ts-ignore
+import { Path } from "fabric";
 import { toast } from "sonner";
 
 export type ArtboardPresetId = "square" | "story" | "portrait" | "widescreen" | "landscape";
@@ -361,7 +363,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
       c.requestRenderAll();
     },
-    [saveHistory],
+    [saveHistory, isMagicBrushActive, brushSize],
   );
 
   /** Register (or unregister with `el = null`) a page's <canvas>. Idempotent. */
@@ -405,7 +407,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         setActiveCanvas(fab);
       }
     },
-    [initFabricCanvas],
+    [initFabricCanvas, isMagicBrushActive, brushSize],
   );
 
   /** Manually mark a page as active (e.g. from a click handler). */
