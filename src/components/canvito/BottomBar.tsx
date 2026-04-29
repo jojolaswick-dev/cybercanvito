@@ -3,7 +3,7 @@ import { useEditor } from "./editor-context";
 import { useState, useEffect } from "react";
 
 export function BottomBar() {
-  const { zoom, setZoom, fitToScreen, pages, undo, redo, canUndo, canRedo } = useEditor();
+  const { zoom, setZoom, fitToScreen, pages, undo, redo, canUndo, canRedo, isGridView, setIsGridView } = useEditor();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -119,7 +119,12 @@ export function BottomBar() {
 
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="hidden md:block">
-            <FootBtn icon={LayoutGrid} />
+            <FootBtn 
+              icon={LayoutGrid} 
+              active={isGridView} 
+              onClick={() => setIsGridView(!isGridView)} 
+              title="Grade de Miniaturas"
+            />
           </div>
           <button
             onClick={toggleFullscreen}
@@ -178,12 +183,26 @@ export function BottomBar() {
 function FootBtn({
   icon: Icon,
   label,
+  active,
+  onClick,
+  title,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label?: string;
+  active?: boolean;
+  onClick?: () => void;
+  title?: string;
 }) {
   return (
-    <button className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-1 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:px-2">
+    <button 
+      onClick={onClick}
+      title={title}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-1 py-1 text-xs transition-colors sm:px-2 ${
+        active 
+          ? "bg-[var(--neon-violet)]/20 text-[var(--neon-violet)] shadow-[0_0_10px_oklch(0.55_0.28_295/0.2)]" 
+          : "text-white/80 hover:bg-white/10 hover:text-white"
+      }`}
+    >
       <Icon className="h-3.5 w-3.5" />
       {label && <span className="hidden sm:inline">{label}</span>}
     </button>
