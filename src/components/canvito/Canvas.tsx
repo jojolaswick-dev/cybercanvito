@@ -146,7 +146,18 @@ export const Canvas = memo(function Canvas() {
 
           {/* Add Page Button at the end of the vertical flow */}
           <button
-            onClick={addPage}
+            onClick={() => {
+              addPage();
+              setTimeout(() => {
+                const scrollContainer = scrollRef.current;
+                if (scrollContainer) {
+                  scrollContainer.scrollTo({
+                    top: scrollContainer.scrollHeight,
+                    behavior: "smooth"
+                  });
+                }
+              }, 100);
+            }}
             className="group mt-12 mb-24 flex h-14 items-center gap-3 rounded-2xl bg-white px-8 font-bold text-[oklch(0.45_0.02_270)] shadow-lg shadow-black/5 ring-1 ring-black/5 transition-all hover:scale-105 hover:bg-[oklch(0.55_0.28_295)] hover:text-white active:scale-95"
           >
             <Plus className="h-5 w-5 transition-transform group-hover:rotate-90" />
