@@ -143,23 +143,31 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     canvasesRef.current.forEach(c => {
       (c as any)._editorCtx = { ...((c as any)._editorCtx || {}), isMagicBrushActive: active };
       
+      // Force deselect everything
+      c.discardActiveObject();
+
       // Lock or unlock all image/text objects
       c.getObjects().forEach(obj => {
-        if ((obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask) return;
+        const isSupportObject = (obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask;
         obj.set({
-          selectable: !active,
-          evented: !active,
+          selectable: !active && !isSupportObject,
+          evented: !active || isSupportObject, // Support objects always need events if active, but images should NOT have events when brush is active
           hasControls: !active,
           lockMovementX: active,
           lockMovementY: active,
           lockRotation: active,
           lockScalingX: active,
-          lockScalingY: active
+          lockScalingY: active,
+          hoverCursor: active ? "none" : "move"
         });
+
+        // Crucial: for images and other elements, disable evented so clicks pass through to the canvas
+        if (!isSupportObject) {
+          obj.set('evented', !active);
+        }
       });
 
       if (active) {
-        c.discardActiveObject();
         c.defaultCursor = "none";
         c.hoverCursor = "none";
         c.moveCursor = "none";
@@ -338,10 +346,23 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       c.on("object:added", (e) => {
         const obj = e.target;
         if (!obj) return;
-        if ((obj as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
-        
-        // Skip history save for support objects to avoid "ghost states" or fragmented undo
         const o = obj as any;
+        if (o.isArtboard) return;
+        
+        // If magic brush is active, new objects (except support ones) should be locked
+        const ctx = (c as any)._editorCtx;
+        if (ctx?.isMagicBrushActive && !o.isBrushCursor && !o.isMagicBrushMask) {
+          obj.set({
+            selectable: false,
+            evented: false,
+            hasControls: false,
+            lockMovementX: true,
+            lockMovementY: true,
+            hoverCursor: "none"
+          });
+        }
+
+        // Skip history save for support objects to avoid "ghost states" or fragmented undo
         if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction || o.isBrushCursor) return;
         
         // Keep the deletion handle wired on every newly added object
@@ -425,7 +446,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         });
         (maskOverlay as any).isMagicBrushMask = true;
         c.add(maskOverlay);
-        c.bringObjectToFront(maskOverlay);
+        c.bringObjectToFront(maskOverlay); // Ensure it's on top of images
         updateCursor(pointer);
       });
 
