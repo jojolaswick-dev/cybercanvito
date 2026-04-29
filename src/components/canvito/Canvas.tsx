@@ -576,8 +576,7 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.globalAlpha = 0.4;
-    ctx.shadowBlur = 5;
-    ctx.shadowColor = "#0000FF";
+    ctx.shadowBlur = 0; // Remove blur for clean selection
     
     ctx.beginPath();
     ctx.moveTo(x * z, y * z);
