@@ -3,7 +3,7 @@ import { useEditor } from "./editor-context";
 import { useState, useEffect } from "react";
 
 export function BottomBar() {
-  const { zoom, setZoom, fitToScreen, pages, undo, redo, canUndo, canRedo, isGridView, setIsGridView } = useEditor();
+  const { zoom, setZoom, fitToScreen, pages, undo, redo, canUndo, canRedo } = useEditor();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
