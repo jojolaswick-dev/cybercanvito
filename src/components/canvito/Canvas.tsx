@@ -126,17 +126,15 @@ export const Canvas = memo(function Canvas() {
   }, [activeCanvas, deleteActiveObject, activePageId, pages.length, deletePage, undo, redo]);
 
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--canvas-bg)]">
-      {/* Subtle dot grid */}
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[oklch(0.92_0.01_240)]">
+      {/* Subtle dot grid - Background of EVERYTHING */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-40"
+        className="pointer-events-none absolute inset-0 opacity-40 z-0"
         style={{
           backgroundImage: "radial-gradient(oklch(0.75 0.02 250) 1px, transparent 1px)",
           backgroundSize: "20px 20px",
         }}
       />
-
-      {/* Global Floating Toolbar removed from here as it's now per-page centered */}
 
       {isGridView ? (
         <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-auto p-8">
@@ -175,25 +173,16 @@ export const Canvas = memo(function Canvas() {
           </div>
         </div>
       ) : (
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Workspace - Centered View */}
           <div
             ref={scrollRef}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
-            className="relative flex-1 overflow-auto overscroll-contain bg-[oklch(0.92_0.01_240)] flex items-center justify-center p-12"
+            className="relative flex-1 overflow-auto overscroll-contain flex items-center justify-center p-12"
           >
-            {/* Subtle dot grid */}
-            <div
-              className="pointer-events-none absolute inset-0 opacity-40 z-0"
-              style={{
-                backgroundImage: "radial-gradient(oklch(0.75 0.02 250) 1px, transparent 1px)",
-                backgroundSize: "20px 20px",
-              }}
-            />
-
-            <div className="relative z-10 flex items-center justify-center">
+            <div className="relative flex items-center justify-center">
               {pages.map((page, idx) => (
                 activePageId === page.id && (
                   <div key={page.id} className="relative flex flex-col items-center">
@@ -212,7 +201,8 @@ export const Canvas = memo(function Canvas() {
                       </button>
                     </div>
 
-                    <div className="bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] ring-1 ring-black/5">
+                    {/* THE PAPER - Visible, centered, and with shadow */}
+                    <div className="bg-white shadow-[0_20px_50px_rgba(0,0,0,0.25)] ring-1 ring-black/5 rounded-sm overflow-hidden">
                       <PageBoard
                         pageId={page.id}
                         index={idx}
@@ -257,6 +247,9 @@ export const Canvas = memo(function Canvas() {
     </div>
   );
 });
+    </div>
+  );
+});
 
 
 /** Floating Toolbar Button */
@@ -294,15 +287,32 @@ const FilmstripCard = memo(function FilmstripCard({
   const { getPageCanvas, artboard } = useEditor();
   const [thumbnail, setThumbnail] = useState<string | null>(null);
 
-  useEffect(() => {
+  const updateThumbnail = useCallback(() => {
     const canvas = getPageCanvas(pageId);
     if (!canvas) return;
+    
+    // Hide grid and artboard boundaries if necessary, though they should be white
     const dataUrl = canvas.toDataURL({
       format: 'png',
-      multiplier: 120 / artboard.width,
+      multiplier: 160 / artboard.width,
+      quality: 0.8
     });
     setThumbnail(dataUrl);
   }, [pageId, getPageCanvas, artboard.width]);
+
+  useEffect(() => {
+    updateThumbnail();
+    // Listen for changes on this specific canvas to update the thumbnail live
+    const canvas = getPageCanvas(pageId);
+    if (!canvas) return;
+    
+    const events = ["object:modified", "object:added", "object:removed"];
+    events.forEach(ev => canvas.on(ev, updateThumbnail));
+    
+    return () => {
+      events.forEach(ev => canvas.off(ev, updateThumbnail));
+    };
+  }, [pageId, getPageCanvas, updateThumbnail]);
 
   return (
     <button
@@ -339,18 +349,30 @@ const GridViewItem = memo(function GridViewItem({
   const { getPageCanvas, artboard } = useEditor();
   const [thumbnail, setThumbnail] = useState<string | null>(null);
 
-  useEffect(() => {
+  const updateThumbnail = useCallback(() => {
     const canvas = getPageCanvas(pageId);
     if (!canvas) return;
 
-    // Generate a thumbnail from the Fabric canvas
-    // We use a small multiplier since it's just a preview
     const dataUrl = canvas.toDataURL({
       format: 'png',
-      multiplier: 200 / artboard.width,
+      multiplier: 400 / artboard.width,
+      quality: 0.9
     });
     setThumbnail(dataUrl);
   }, [pageId, getPageCanvas, artboard.width]);
+
+  useEffect(() => {
+    updateThumbnail();
+    const canvas = getPageCanvas(pageId);
+    if (!canvas) return;
+    
+    const events = ["object:modified", "object:added", "object:removed"];
+    events.forEach(ev => canvas.on(ev, updateThumbnail));
+    
+    return () => {
+      events.forEach(ev => canvas.off(ev, updateThumbnail));
+    };
+  }, [pageId, getPageCanvas, updateThumbnail]);
 
   return (
     <div className="flex flex-col items-center gap-3">
