@@ -138,7 +138,7 @@ export const Canvas = memo(function Canvas() {
 
       {/* Floating Toolbar */}
       {!isGridView && activePageId && (
-        <div className="absolute top-6 left-1/2 z-30 -translate-x-1/2 flex items-center gap-1 rounded-full border border-white/10 bg-[oklch(0.18_0.03_280)]/80 p-1.5 shadow-2xl backdrop-blur-md">
+        <div className="absolute top-6 left-1/2 z-40 -translate-x-1/2 flex items-center gap-1 rounded-full border border-white/10 bg-[oklch(0.22_0.06_285)]/90 p-1.5 shadow-[0_0_20px_rgba(168,85,247,0.3)] backdrop-blur-md">
           <FloatingBtn icon="edit" label="Editar" />
           <FloatingBtn icon="clock" label="Tempo" />
           <FloatingBtn icon="palette" label="Círculo" />
@@ -221,7 +221,7 @@ export const Canvas = memo(function Canvas() {
           </div>
 
           {/* Filmstrip - Barra de Miniaturas Inferior */}
-          <div className="h-28 w-full border-t border-white/5 bg-black/40 backdrop-blur-xl px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-hide">
+          <div className="relative z-30 h-28 w-full border-t border-white/10 bg-cyber-bar px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-hide">
             {pages.map((page, idx) => (
               <FilmstripCard 
                 key={page.id}
