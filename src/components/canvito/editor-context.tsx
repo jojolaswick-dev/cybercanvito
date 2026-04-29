@@ -3,6 +3,7 @@ import * as fabric from "fabric";
 // @ts-ignore
 import { Path } from "fabric";
 import { toast } from "sonner";
+import { Sparkles } from "lucide-react";
 
 export type ArtboardPresetId = "square" | "story" | "portrait" | "widescreen" | "landscape";
 
@@ -1319,7 +1320,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage, brushSize, isMagicBrushActive
+    pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage, brushSize, isMagicBrushActive,
+    clearMagicBrush, applyMagicRemoval
   ]);
 
   return (
