@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ImagePlus, Plus, Trash2, X } from "lucide-react";
+import { ImagePlus, Plus, Trash2, X, Edit2, Clock, Palette, Move, ChevronDown } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
 
@@ -246,7 +246,7 @@ export const Canvas = memo(function Canvas() {
     </div>
   );
 });
-import { Edit2, Clock, Palette, Move, ChevronDown } from "lucide-react";
+
 
 /** Floating Toolbar Button */
 function FloatingBtn({ icon, label, onClick }: { icon: string, label: string, onClick?: () => void }) {
