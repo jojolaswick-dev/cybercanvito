@@ -161,8 +161,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       if (active) {
         c.discardActiveObject();
         c.defaultCursor = "none";
+        c.hoverCursor = "none";
+        c.moveCursor = "none";
+        c.selection = false;
       } else {
         c.defaultCursor = "default";
+        c.hoverCursor = "move";
+        c.moveCursor = "move";
+        c.selection = true;
         const cursorObj = c.getObjects().find(obj => (obj as any).isBrushCursor);
         if (cursorObj) c.remove(cursorObj);
       }
