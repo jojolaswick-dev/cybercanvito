@@ -138,9 +138,9 @@ export function BottomBar() {
             className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-1 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:px-2"
           >
             {isFullscreen ? (
-              <Minimize2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              <ScreenShareOff className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
             ) : (
-              <Maximize2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              <ScreenShare className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
             )}
           </button>
         </div>
