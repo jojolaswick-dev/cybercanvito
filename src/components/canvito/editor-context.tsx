@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from "react";
 import * as fabric from "fabric";
+// @ts-ignore
+import { Path } from "fabric";
 import { toast } from "sonner";
 
 export type ArtboardPresetId = "square" | "story" | "portrait" | "widescreen" | "landscape";
@@ -81,6 +83,10 @@ type EditorCtx = {
   activePageId: string | null;
   resetDesign: () => void;
   reorderPage: (id: string, dir: "up" | "down") => void;
+  brushSize: number;
+  setBrushSize: (size: number) => void;
+  isMagicBrushActive: boolean;
+  setIsMagicBrushActive: (active: boolean) => void;
 };
 
 type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
@@ -122,6 +128,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [pages, setPages] = useState<PageState[]>([{ id: makePageId() }]);
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
+  const [brushSize, setBrushSize] = useState(30);
+  const [isMagicBrushActive, setIsMagicBrushActive] = useState(false);
 
   // Undo/Redo Stacks
   const undoStackRef = useRef<HistoryState[]>([]);
@@ -301,12 +309,61 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         if (obj && (obj as any).isCropOverlay) return;
         if (obj && (obj as any).isCropControl) return;
         if (obj && (obj as any).isGuideLine) return;
+        if (obj && (obj as any).isMagicBrushMask) return;
         saveHistory();
+      });
+
+      // Magic Brush logic
+      let isDrawingMask = false;
+      let maskPoints: { x: number, y: number }[] = [];
+      let maskOverlay: fabric.Path | null = null;
+
+      c.on("mouse:down", (opt) => {
+        const ctx = (c as any)._editorCtx; // We'll inject this
+        if (!ctx?.isMagicBrushActive || !ctx?.brushSize) return;
+
+        isDrawingMask = true;
+        maskPoints = [];
+        const pointer = c.getScenePoint(opt.e);
+        maskPoints.push(pointer);
+        
+        maskOverlay = new fabric.Path(`M ${pointer.x} ${pointer.y}`, {
+          stroke: "oklch(0.55 0.28 295)", // Neon Purple
+          strokeWidth: ctx.brushSize,
+          fill: "transparent",
+          opacity: 0.3, // 30% transparency constant
+          selectable: false,
+          evented: false,
+          strokeLineCap: 'round',
+          strokeLineJoin: 'round',
+        });
+        (maskOverlay as any).isMagicBrushMask = true;
+        c.add(maskOverlay);
+      });
+
+      c.on("mouse:move", (opt) => {
+        if (!isDrawingMask || !maskOverlay) return;
+        const pointer = c.getScenePoint(opt.e);
+        maskPoints.push(pointer);
+        
+        // Update path data
+        const pathData = maskPoints.reduce((acc, point, i) => {
+          return acc + (i === 0 ? `M ${point.x} ${point.y}` : ` L ${point.x} ${point.y}`);
+        }, "");
+        
+        maskOverlay.set({ path: new fabric.Path(pathData).path });
+        c.requestRenderAll();
+      });
+
+      c.on("mouse:up", () => {
+        isDrawingMask = false;
+        maskOverlay = null;
+        maskPoints = [];
       });
 
       c.requestRenderAll();
     },
-    [saveHistory],
+    [saveHistory, isMagicBrushActive, brushSize],
   );
 
   /** Register (or unregister with `el = null`) a page's <canvas>. Idempotent. */
@@ -339,6 +396,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         preserveObjectStacking: true,
         selection: true,
       });
+      (fab as any)._editorCtx = { isMagicBrushActive, brushSize };
       map.set(pageId, fab);
       initFabricCanvas(pageId, fab, w, h);
 
@@ -349,7 +407,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         setActiveCanvas(fab);
       }
     },
-    [initFabricCanvas],
+    [initFabricCanvas, isMagicBrushActive, brushSize],
   );
 
   /** Manually mark a page as active (e.g. from a click handler). */
@@ -438,12 +496,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       setZoomState(safe);
       const scale = safe / 100;
       canvasesRef.current.forEach((c) => {
+        (c as any)._editorCtx = { ...((c as any)._editorCtx || {}), isMagicBrushActive, brushSize };
         c.setDimensions({ width: artboard.width * scale, height: artboard.height * scale });
         c.setZoom(scale);
         c.requestRenderAll();
       });
     },
-    [artboard.width, artboard.height],
+    [artboard.width, artboard.height, isMagicBrushActive, brushSize],
   );
 
   /** Fit a single page comfortably in the workspace. */
@@ -1066,11 +1125,15 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     canRedo: redoStackRef.current.length > 0,
     resetDesign,
     reorderPage,
+    brushSize,
+    setBrushSize,
+    isMagicBrushActive,
+    setIsMagicBrushActive,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage
+    pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage, brushSize, isMagicBrushActive
   ]);
 
   return (
