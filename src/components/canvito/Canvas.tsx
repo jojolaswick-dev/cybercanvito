@@ -539,6 +539,16 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
+    const handleClear = () => {
+      if (!canvasRef.current) return;
+      const ctx = canvasRef.current.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, width, height);
+    };
+    window.addEventListener("magic-brush:clear", handleClear);
+    return () => window.removeEventListener("magic-brush:clear", handleClear);
+  }, [width, height]);
+
+  useEffect(() => {
     if (!canvasRef.current || !isMagicBrushActive) return;
     
     const canvas = canvasRef.current;
