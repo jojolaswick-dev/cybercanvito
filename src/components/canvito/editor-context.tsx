@@ -149,6 +149,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       // Lock or unlock all image/text objects
       c.getObjects().forEach(obj => {
         const isSupportObject = (obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask;
+        
         obj.set({
           selectable: !active && !isSupportObject,
           evented: !active || isSupportObject,
@@ -177,11 +178,16 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         c.hoverCursor = "none";
         c.moveCursor = "none";
         c.selection = false;
+        // In Fabric 6, perPixelTargetFind can help pass events through transparency
+        // but here we want to pass events through EVERYTHING.
+        // We ensure the canvas background handles events.
+        (c as any).skipTargetFind = true;
       } else {
         c.defaultCursor = "default";
         c.hoverCursor = "move";
         c.moveCursor = "move";
         c.selection = true;
+        (c as any).skipTargetFind = false;
         const cursorObj = c.getObjects().find(obj => (obj as any).isBrushCursor);
         if (cursorObj) c.remove(cursorObj);
       }
@@ -368,7 +374,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         }
 
         // Skip history save for support objects to avoid "ghost states" or fragmented undo
-        if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction || o.isBrushCursor) return;
+        if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction || o.isBrushCursor || o.isMagicBrushMask) return;
         
         // Keep the deletion handle wired on every newly added object
         if (trashControlRef.current) {
@@ -462,13 +468,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         if (!isDrawingMask || !maskOverlay) return;
         maskPoints.push(pointer);
 
+        // Create path data manually to avoid overhead
         const pathData = maskPoints.reduce((acc, point, i) => {
           return acc + (i === 0 ? `M ${point.x} ${point.y}` : ` L ${point.x} ${point.y}`);
         }, "");
 
         maskOverlay.set({ path: new fabric.Path(pathData).path });
         
-        // Use bringObjectToFront and requestRenderAll for immediate visual update
+        // Ensure the mask is always the top-most object (except for the cursor)
         c.bringObjectToFront(maskOverlay);
         if (brushCursor) c.bringObjectToFront(brushCursor);
         
