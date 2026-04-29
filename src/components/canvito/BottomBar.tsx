@@ -31,8 +31,8 @@ export function BottomBar() {
     }
 
     if (!document.fullscreenElement) {
-      // Tenta entrar em tela cheia no elemento raiz para cobrir tudo
-      const element = document.documentElement;
+      // Tenta entrar em tela cheia no elemento que contém o canvas e fundo
+      const element = document.getElementById("canvas-root") || document.documentElement;
       const requestMethod = element.requestFullscreen || 
                           (element as any).webkitRequestFullscreen || 
                           (element as any).mozRequestFullScreen || 
