@@ -346,10 +346,23 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       c.on("object:added", (e) => {
         const obj = e.target;
         if (!obj) return;
-        if ((obj as fabric.Object & { isArtboard?: boolean }).isArtboard) return;
-        
-        // Skip history save for support objects to avoid "ghost states" or fragmented undo
         const o = obj as any;
+        if (o.isArtboard) return;
+        
+        // If magic brush is active, new objects (except support ones) should be locked
+        const ctx = (c as any)._editorCtx;
+        if (ctx?.isMagicBrushActive && !o.isBrushCursor && !o.isMagicBrushMask) {
+          obj.set({
+            selectable: false,
+            evented: false,
+            hasControls: false,
+            lockMovementX: true,
+            lockMovementY: true,
+            hoverCursor: "none"
+          });
+        }
+
+        // Skip history save for support objects to avoid "ghost states" or fragmented undo
         if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction || o.isBrushCursor) return;
         
         // Keep the deletion handle wired on every newly added object
