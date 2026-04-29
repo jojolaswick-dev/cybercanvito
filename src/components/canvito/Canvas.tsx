@@ -288,7 +288,6 @@ const FilmstripCard = memo(function FilmstripCard({
     const canvas = getPageCanvas(pageId);
     if (!canvas) return;
     
-    // Hide grid and artboard boundaries if necessary, though they should be white
     const dataUrl = canvas.toDataURL({
       format: 'png',
       multiplier: 160 / artboard.width,
@@ -299,15 +298,18 @@ const FilmstripCard = memo(function FilmstripCard({
 
   useEffect(() => {
     updateThumbnail();
-    // Listen for changes on this specific canvas to update the thumbnail live
     const canvas = getPageCanvas(pageId);
     if (!canvas) return;
     
-    const events = ["object:modified", "object:added", "object:removed"];
-    events.forEach(ev => canvas.on(ev, updateThumbnail));
+    const onCanvasChange = () => updateThumbnail();
+    canvas.on("object:modified", onCanvasChange);
+    canvas.on("object:added", onCanvasChange);
+    canvas.on("object:removed", onCanvasChange);
     
     return () => {
-      events.forEach(ev => canvas.off(ev, updateThumbnail));
+      canvas.off("object:modified", onCanvasChange);
+      canvas.on("object:added", onCanvasChange);
+      canvas.on("object:removed", onCanvasChange);
     };
   }, [pageId, getPageCanvas, updateThumbnail]);
 
@@ -363,11 +365,15 @@ const GridViewItem = memo(function GridViewItem({
     const canvas = getPageCanvas(pageId);
     if (!canvas) return;
     
-    const events = ["object:modified", "object:added", "object:removed"];
-    events.forEach(ev => canvas.on(ev, updateThumbnail));
+    const onCanvasChange = () => updateThumbnail();
+    canvas.on("object:modified", onCanvasChange);
+    canvas.on("object:added", onCanvasChange);
+    canvas.on("object:removed", onCanvasChange);
     
     return () => {
-      events.forEach(ev => canvas.off(ev, updateThumbnail));
+      canvas.off("object:modified", onCanvasChange);
+      canvas.on("object:added", onCanvasChange);
+      canvas.on("object:removed", onCanvasChange);
     };
   }, [pageId, getPageCanvas, updateThumbnail]);
 
