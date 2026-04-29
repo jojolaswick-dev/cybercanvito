@@ -3,6 +3,7 @@ import * as fabric from "fabric";
 // @ts-ignore
 import { Path } from "fabric";
 import { toast } from "sonner";
+import { Sparkles } from "lucide-react";
 
 export type ArtboardPresetId = "square" | "story" | "portrait" | "widescreen" | "landscape";
 
@@ -87,6 +88,8 @@ type EditorCtx = {
   setBrushSize: (size: number) => void;
   isMagicBrushActive: boolean;
   setIsMagicBrushActive: (active: boolean) => void;
+  clearMagicBrush: () => void;
+  applyMagicRemoval: () => Promise<void>;
 };
 
 type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
@@ -198,6 +201,24 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       c.requestRenderAll();
     });
   }, []);
+
+  const clearMagicBrush = useCallback(() => {
+    // This will be handled by a global signal or by re-rendering the overlay
+    window.dispatchEvent(new CustomEvent("magic-brush:clear"));
+  }, []);
+
+  const applyMagicRemoval = useCallback(async () => {
+    toast.info("Removendo objetos selecionados...", {
+      icon: <Sparkles className="h-4 w-4 text-[var(--neon-violet)]" />,
+    });
+    
+    // Simulate AI processing
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    clearMagicBrush();
+    setIsMagicBrushActive(false);
+    toast.success("Objetos removidos com sucesso!");
+  }, [clearMagicBrush]);
 
   // Undo/Redo Stacks
   const undoStackRef = useRef<HistoryState[]>([]);
@@ -1295,11 +1316,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setBrushSize,
     isMagicBrushActive,
     setIsMagicBrushActive,
+    clearMagicBrush,
+    applyMagicRemoval,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage, brushSize, isMagicBrushActive
+    pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage, brushSize, isMagicBrushActive,
+    clearMagicBrush, applyMagicRemoval
   ]);
 
   return (

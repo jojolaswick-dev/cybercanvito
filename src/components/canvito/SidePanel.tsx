@@ -1,4 +1,4 @@
-import { X, Search, Sparkles, Scissors, Scan } from "lucide-react";
+import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2 } from "lucide-react";
 import { memo, useCallback } from "react";
 import { TOOLS, type ToolId } from "./Sidebar";
 import { useEditor } from "./editor-context";
@@ -150,24 +150,54 @@ const PanelItem = memo(function PanelItem({
 });
 
 const MagicBrushSettings = () => {
-  const { brushSize, setBrushSize } = useEditor();
+  const { brushSize, setBrushSize, clearMagicBrush, applyMagicRemoval, setIsMagicBrushActive } = useEditor();
   
   return (
-    <div className="mt-1 rounded-lg bg-white/5 p-3 border border-white/5">
-      <div className="flex items-center justify-between mb-2">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Tamanho</label>
-        <span className="text-[10px] font-mono text-[var(--neon-pink)]">
-          {brushSize}px
-        </span>
+    <div className="mt-1 flex flex-col gap-4 rounded-lg bg-white/5 p-4 border border-white/10">
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Tamanho do Pincel</label>
+          <span className="text-[10px] font-mono text-[var(--neon-pink)]">
+            {brushSize}px
+          </span>
+        </div>
+        <input
+          type="range"
+          min="1"
+          max="100"
+          value={brushSize}
+          onChange={(e) => setBrushSize(parseInt(e.target.value))}
+          className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--neon-pink)]"
+        />
       </div>
-      <input
-        type="range"
-        min="1"
-        max="100"
-        value={brushSize}
-        onChange={(e) => setBrushSize(parseInt(e.target.value))}
-        className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--neon-pink)]"
-      />
+
+      <div className="flex flex-col gap-2">
+        <button
+          onClick={() => applyMagicRemoval()}
+          className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-md bg-gradient-to-r from-[var(--neon-violet)] to-[var(--neon-pink)] py-2.5 text-xs font-bold text-white shadow-[0_0_15px_oklch(0.55_0.28_295/0.4)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <Wand2 className="h-3.5 w-3.5" />
+          <span>REMOVER OBJETOS</span>
+          <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+        </button>
+
+        <div className="flex gap-2">
+          <button
+            onClick={clearMagicBrush}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/5 py-2 text-[10px] font-bold uppercase tracking-wider text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <Trash2 className="h-3 w-3" />
+            Limpar
+          </button>
+          <button
+            onClick={() => setIsMagicBrushActive(false)}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/5 py-2 text-[10px] font-bold uppercase tracking-wider text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Voltar
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
