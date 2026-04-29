@@ -468,13 +468,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         if (!isDrawingMask || !maskOverlay) return;
         maskPoints.push(pointer);
 
+        // Create path data manually to avoid overhead
         const pathData = maskPoints.reduce((acc, point, i) => {
           return acc + (i === 0 ? `M ${point.x} ${point.y}` : ` L ${point.x} ${point.y}`);
         }, "");
 
         maskOverlay.set({ path: new fabric.Path(pathData).path });
         
-        // Use bringObjectToFront and requestRenderAll for immediate visual update
+        // Ensure the mask is always the top-most object (except for the cursor)
         c.bringObjectToFront(maskOverlay);
         if (brushCursor) c.bringObjectToFront(brushCursor);
         
