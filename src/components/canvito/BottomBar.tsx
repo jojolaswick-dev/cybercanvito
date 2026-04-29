@@ -3,7 +3,7 @@ import { useEditor } from "./editor-context";
 import { useState, useEffect } from "react";
 
 export function BottomBar() {
-  const { zoom, setZoom, fitToScreen, pages, undo, redo, canUndo, canRedo, isGridView, setIsGridView } = useEditor();
+  const { zoom, setZoom, fitToScreen, pages, undo, redo, canUndo, canRedo } = useEditor();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -118,14 +118,6 @@ export function BottomBar() {
         <div className="mx-1 hidden h-5 w-px bg-white/15 md:block" />
 
         <div className="flex items-center gap-1 sm:gap-2">
-          <div className="hidden md:block">
-            <FootBtn 
-              icon={LayoutGrid} 
-              active={isGridView} 
-              onClick={() => setIsGridView(!isGridView)} 
-              title="Grade de Miniaturas"
-            />
-          </div>
           <button
             onClick={toggleFullscreen}
             title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
