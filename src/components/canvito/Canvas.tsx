@@ -197,22 +197,33 @@ export const Canvas = memo(function Canvas() {
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
-            className="relative min-h-0 flex-1 overflow-auto overscroll-contain"
+            className="relative flex-1 overflow-auto overscroll-contain bg-[var(--canvas-bg)]"
           >
-            <div className="flex min-h-full flex-col items-center px-3 pb-16 pt-20 sm:px-4 sm:pb-20 sm:pt-24">
+            {/* Subtle dot grid */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-40"
+              style={{
+                backgroundImage: "radial-gradient(oklch(0.75 0.02 250) 1px, transparent 1px)",
+                backgroundSize: "20px 20px",
+              }}
+            />
+
+            <div className="flex min-h-full flex-col items-center justify-center px-4 py-32">
               {pages.map((page, idx) => (
                 activePageId === page.id && (
-                  <PageBoard
-                    key={page.id}
-                    pageId={page.id}
-                    index={idx}
-                  />
+                  <div key={page.id} className="relative z-10 flex flex-col items-center">
+                    <PageBoard
+                      pageId={page.id}
+                      index={idx}
+                    />
+                  </div>
                 )
               ))}
             </div>
+
             {/* Drag overlay */}
             {isDragging && (
-              <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-[oklch(0.55_0.28_295/0.08)] ring-2 ring-inset ring-[var(--neon-violet)]">
+              <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-[oklch(0.55_0.28_295/0.08)] ring-2 ring-inset ring-[var(--neon-violet)]">
                 <div className="rounded-xl bg-white/90 px-5 py-3 text-sm font-semibold text-[var(--neon-violet)] shadow-[0_0_24px_oklch(0.55_0.28_295/0.4)]">
                   Solte a imagem para inserir no papel ativo
                 </div>
@@ -221,7 +232,7 @@ export const Canvas = memo(function Canvas() {
           </div>
 
           {/* Filmstrip - Barra de Miniaturas Inferior */}
-          <div className="relative z-30 h-28 w-full border-t border-white/10 bg-cyber-bar px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-hide">
+          <div className="relative z-30 h-[120px] shrink-0 w-full border-t border-white/10 bg-cyber-bar px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-hide">
             {pages.map((page, idx) => (
               <FilmstripCard 
                 key={page.id}
