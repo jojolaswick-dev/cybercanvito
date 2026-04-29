@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ImagePlus, Plus, Trash2, X } from "lucide-react";
+import { ImagePlus, Plus, Trash2, X, Edit2, Clock, Palette, Move, ChevronDown } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
 
@@ -37,6 +37,7 @@ export const Canvas = memo(function Canvas() {
     setIsGridView,
     setActivePageId,
     getPageCanvas,
+    artboard,
   } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
 
@@ -135,6 +136,23 @@ export const Canvas = memo(function Canvas() {
         }}
       />
 
+      {/* Floating Toolbar */}
+      {!isGridView && activePageId && (
+        <div className="absolute top-6 left-1/2 z-30 -translate-x-1/2 flex items-center gap-1 rounded-full border border-white/10 bg-[oklch(0.18_0.03_280)]/80 p-1.5 shadow-2xl backdrop-blur-md">
+          <FloatingBtn icon="edit" label="Editar" />
+          <FloatingBtn icon="clock" label="Tempo" />
+          <FloatingBtn icon="palette" label="Círculo" />
+          <FloatingBtn icon="move" label="Posição" />
+          <div className="mx-1 h-6 w-px bg-white/10" />
+          <button 
+            onClick={() => activePageId && pages.length > 1 && deletePage(activePageId)}
+            className="flex items-center justify-center p-2 rounded-full text-red-400 hover:bg-red-400/10 transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {isGridView ? (
         <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-auto p-8">
           <div className="mb-6 flex items-center justify-between">
@@ -172,48 +190,130 @@ export const Canvas = memo(function Canvas() {
           </div>
         </div>
       ) : (
-        /* Workspace = vertically scrollable stack */
-        <div
-          ref={scrollRef}
-          onDragOver={onDragOver}
-          onDragLeave={onDragLeave}
-          onDrop={onDrop}
-          className="relative min-h-0 flex-1 overflow-auto overscroll-contain"
-        >
-          <div className="flex min-h-full flex-col items-center px-3 pb-16 pt-4 sm:px-4 sm:pb-20 sm:pt-6">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/* Workspace = vertically scrollable stack */}
+          <div
+            ref={scrollRef}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            className="relative min-h-0 flex-1 overflow-auto overscroll-contain"
+          >
+            <div className="flex min-h-full flex-col items-center px-3 pb-16 pt-20 sm:px-4 sm:pb-20 sm:pt-24">
+              {pages.map((page, idx) => (
+                activePageId === page.id && (
+                  <PageBoard
+                    key={page.id}
+                    pageId={page.id}
+                    index={idx}
+                  />
+                )
+              ))}
+            </div>
+            {/* Drag overlay */}
+            {isDragging && (
+              <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-[oklch(0.55_0.28_295/0.08)] ring-2 ring-inset ring-[var(--neon-violet)]">
+                <div className="rounded-xl bg-white/90 px-5 py-3 text-sm font-semibold text-[var(--neon-violet)] shadow-[0_0_24px_oklch(0.55_0.28_295/0.4)]">
+                  Solte a imagem para inserir no papel ativo
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Filmstrip - Barra de Miniaturas Inferior */}
+          <div className="h-28 w-full border-t border-white/5 bg-black/40 backdrop-blur-xl px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-hide">
             {pages.map((page, idx) => (
-              <PageBoard
+              <FilmstripCard 
                 key={page.id}
                 pageId={page.id}
                 index={idx}
+                isActive={activePageId === page.id}
+                onClick={() => setActivePageId(page.id)}
               />
             ))}
-
-            {/* "+ Adicionar página" — directly below the last sheet */}
-            <div className="mt-2 mb-6 flex justify-center">
-              <button
-                type="button"
-                onClick={addPage}
-                className="inline-flex items-center gap-2 rounded-full border border-[oklch(0.85_0.01_270)] bg-white px-4 py-2 text-sm font-medium text-[var(--background)] shadow-sm transition-all hover:border-[var(--neon-violet)] hover:text-[var(--neon-violet)] hover:shadow-[0_0_16px_oklch(0.55_0.28_295/0.25)]"
-              >
-                <Plus className="h-4 w-4" />
-                Adicionar página
-              </button>
-            </div>
-          </div>
-          {/* Drag overlay */}
-          {isDragging && (
-            <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-[oklch(0.55_0.28_295/0.08)] ring-2 ring-inset ring-[var(--neon-violet)]">
-              <div className="rounded-xl bg-white/90 px-5 py-3 text-sm font-semibold text-[var(--neon-violet)] shadow-[0_0_24px_oklch(0.55_0.28_295/0.4)]">
-                Solte a imagem para inserir no papel ativo
+            <button
+              onClick={addPage}
+              className="flex-shrink-0 w-32 h-20 rounded-lg border-2 border-dashed border-white/10 bg-white/5 hover:border-[#a855f7]/50 hover:bg-white/10 transition-all flex flex-col items-center justify-center gap-1 group"
+            >
+              <div className="flex items-center gap-1">
+                <Plus className="h-4 w-4 text-white/40 group-hover:text-[#a855f7]" />
+                <ChevronDown className="h-3 w-3 text-white/20" />
               </div>
-            </div>
-          )}
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 });
+
+
+/** Floating Toolbar Button */
+function FloatingBtn({ icon, label, onClick }: { icon: string, label: string, onClick?: () => void }) {
+  const Icon = {
+    edit: Edit2,
+    clock: Clock,
+    palette: Palette,
+    move: Move
+  }[icon as 'edit' | 'clock' | 'palette' | 'move'] || Edit2;
+
+  return (
+    <button 
+      onClick={onClick}
+      className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-all group"
+    >
+      <Icon className="h-4 w-4 transition-transform group-hover:scale-110" />
+      <span className="text-[10px] font-medium uppercase tracking-wider opacity-60 group-hover:opacity-100">{label}</span>
+    </button>
+  );
+}
+
+/** A card in the Filmstrip horizontal bar */
+const FilmstripCard = memo(function FilmstripCard({ 
+  pageId, 
+  index, 
+  isActive, 
+  onClick 
+}: { 
+  pageId: string; 
+  index: number; 
+  isActive: boolean; 
+  onClick: () => void; 
+}) {
+  const { getPageCanvas, artboard } = useEditor();
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const canvas = getPageCanvas(pageId);
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL({
+      format: 'png',
+      multiplier: 120 / artboard.width,
+    });
+    setThumbnail(dataUrl);
+  }, [pageId, getPageCanvas, artboard.width]);
+
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-shrink-0 relative w-32 h-20 rounded-lg overflow-hidden bg-white transition-all ${
+        isActive 
+          ? "ring-4 ring-[#a855f7] shadow-[0_0_20px_rgba(168,85,247,0.4)]" 
+          : "hover:ring-2 hover:ring-white/30"
+      }`}
+    >
+      {thumbnail ? (
+        <img src={thumbnail} alt={`Pág ${index + 1}`} className="h-full w-full object-cover" />
+      ) : (
+        <div className="h-full w-full bg-white" />
+      )}
+      <div className="absolute bottom-1 left-1.5 px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-md">
+        <span className="text-[10px] font-bold text-white leading-none">{index + 1}</span>
+      </div>
+    </button>
+  );
+});
+
 
 /** A single item in the Grid View */
 const GridViewItem = memo(function GridViewItem({

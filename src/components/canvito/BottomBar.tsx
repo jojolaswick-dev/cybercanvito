@@ -42,7 +42,7 @@ export function BottomBar() {
   };
 
   return (
-    <footer className="fixed bottom-0 left-0 z-50 flex h-12 w-full shrink-0 items-center justify-between gap-2 overflow-hidden border-t border-white/10 bg-cyber-bar px-2 text-white sm:px-3">
+    <footer className="fixed bottom-0 left-0 z-50 flex h-12 w-full shrink-0 items-center justify-between gap-2 overflow-hidden border-t border-white/10 bg-[#000d1a] px-2 text-white sm:px-3">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--electric-blue)] to-transparent opacity-60" />
 
       {/* Left */}
