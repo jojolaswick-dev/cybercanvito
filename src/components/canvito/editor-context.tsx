@@ -154,8 +154,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         const isSupportObject = (obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask;
         
         obj.set({
-          selectable: !active && !isSupportObject,
-          evented: !active || isSupportObject,
+          selectable: false,
+          evented: false, // BLOQUEIO TOTAL DE INTERAÇÃO COM OBJETOS
           hasControls: !active,
           lockMovementX: active,
           lockMovementY: active,
@@ -167,9 +167,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
         if (!isSupportObject) {
           obj.set({
-            evented: !active,
-            selectable: !active,
-            // Force pointer-events: none equivalent in Fabric
+            evented: false,
+            selectable: false,
             perPixelTargetFind: active, 
           });
         }
