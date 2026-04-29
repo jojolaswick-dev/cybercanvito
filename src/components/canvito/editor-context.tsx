@@ -151,24 +151,24 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         const isSupportObject = (obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask;
         obj.set({
           selectable: !active && !isSupportObject,
-          evented: !active || isSupportObject, // Support objects always need events if active, but images should NOT have events when brush is active
+          evented: !active || isSupportObject,
           hasControls: !active,
           lockMovementX: active,
           lockMovementY: active,
           lockRotation: active,
           lockScalingX: active,
           lockScalingY: active,
-          hoverCursor: active ? "none" : "move"
+          hoverCursor: active ? "none" : (isSupportObject ? "default" : "move")
         });
-
-        // Ensure the mask is always at the top when adding new strokes
-        if ((obj as any).isMagicBrushMask) {
-          c.bringObjectToFront(obj);
-        }
 
         // Crucial: for images and other elements, disable evented so clicks pass through to the canvas
         if (!isSupportObject) {
           obj.set('evented', !active);
+        }
+
+        // When activating brush, bring all existing masks to front
+        if (active && (obj as any).isMagicBrushMask) {
+          c.bringObjectToFront(obj);
         }
       });
 
@@ -468,7 +468,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
         maskOverlay.set({ path: new fabric.Path(pathData).path });
         
-        // Use bringObjectToFront to ensure the mask and cursor are always on top
+        // Use bringObjectToFront and requestRenderAll for immediate visual update
         c.bringObjectToFront(maskOverlay);
         if (brushCursor) c.bringObjectToFront(brushCursor);
         
