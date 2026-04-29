@@ -374,7 +374,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         }
 
         // Skip history save for support objects to avoid "ghost states" or fragmented undo
-        if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction || o.isBrushCursor) return;
+        if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction || o.isBrushCursor || o.isMagicBrushMask) return;
         
         // Keep the deletion handle wired on every newly added object
         if (trashControlRef.current) {
