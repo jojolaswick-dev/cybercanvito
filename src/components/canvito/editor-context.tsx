@@ -128,8 +128,28 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [pages, setPages] = useState<PageState[]>([{ id: makePageId() }]);
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
-  const [brushSize, setBrushSize] = useState(30);
-  const [isMagicBrushActive, setIsMagicBrushActive] = useState(false);
+  const [brushSize, setBrushSizeState] = useState(30);
+  const [isMagicBrushActive, setIsMagicBrushActiveState] = useState(false);
+
+  const setBrushSize = useCallback((size: number) => {
+    setBrushSizeState(size);
+    canvasesRef.current.forEach(c => {
+      (c as any)._editorCtx = { ...((c as any)._editorCtx || {}), brushSize: size };
+    });
+  }, []);
+
+  const setIsMagicBrushActive = useCallback((active: boolean) => {
+    setIsMagicBrushActiveState(active);
+    canvasesRef.current.forEach(c => {
+      (c as any)._editorCtx = { ...((c as any)._editorCtx || {}), isMagicBrushActive: active };
+      if (!active) {
+        c.defaultCursor = "default";
+        const cursorObj = c.getObjects().find(obj => (obj as any).isBrushCursor);
+        if (cursorObj) c.remove(cursorObj);
+        c.requestRenderAll();
+      }
+    });
+  }, []);
 
   // Undo/Redo Stacks
   const undoStackRef = useRef<HistoryState[]>([]);
@@ -221,7 +241,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         // Filter out any crop-related support objects from the snapshot
         const filteredObjects = c.getObjects().filter(obj => {
           const o = obj as any;
-          return !o.isCropOverlay && !o.isCropControl && !o.isGuideLine && !o.isCropAction;
+          return !o.isCropOverlay && !o.isCropControl && !o.isGuideLine && !o.isCropAction && !o.isBrushCursor;
         });
         
         // Use a temporary cloned view if possible, or just stringify filtering
@@ -230,7 +250,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         const hiddenObjects: fabric.Object[] = [];
         c.getObjects().forEach(obj => {
           const o = obj as any;
-          if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction) {
+          if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction || o.isBrushCursor) {
             obj.set('excludeFromExport', true);
             hiddenObjects.push(obj);
           }
@@ -296,7 +316,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         
         // Skip history save for support objects to avoid "ghost states" or fragmented undo
         const o = obj as any;
-        if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction) return;
+        if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction || o.isBrushCursor) return;
         
         // Keep the deletion handle wired on every newly added object
         if (trashControlRef.current) {
@@ -317,9 +337,45 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       let isDrawingMask = false;
       let maskPoints: { x: number, y: number }[] = [];
       let maskOverlay: fabric.Path | null = null;
+      let brushCursor: fabric.Circle | null = null;
+
+      const updateCursor = (pointer: { x: number, y: number }) => {
+        const ctx = (c as any)._editorCtx;
+        if (!ctx?.isMagicBrushActive) {
+          if (brushCursor) {
+            c.remove(brushCursor);
+            brushCursor = null;
+            c.defaultCursor = "default";
+          }
+          return;
+        }
+
+        c.defaultCursor = "none";
+        if (!brushCursor) {
+          brushCursor = new fabric.Circle({
+            radius: ctx.brushSize / 2,
+            fill: "transparent",
+            stroke: "oklch(0.55 0.28 295)",
+            strokeWidth: 1.5,
+            selectable: false,
+            evented: false,
+            originX: "center",
+            originY: "center",
+          });
+          (brushCursor as any).isBrushCursor = true;
+          c.add(brushCursor);
+        }
+        brushCursor.set({ 
+          left: pointer.x, 
+          top: pointer.y, 
+          radius: ctx.brushSize / 2 
+        });
+        c.bringObjectToFront(brushCursor);
+        c.requestRenderAll();
+      };
 
       c.on("mouse:down", (opt) => {
-        const ctx = (c as any)._editorCtx; // We'll inject this
+        const ctx = (c as any)._editorCtx;
         if (!ctx?.isMagicBrushActive || !ctx?.brushSize) return;
 
         isDrawingMask = true;
@@ -328,10 +384,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         maskPoints.push(pointer);
         
         maskOverlay = new fabric.Path(`M ${pointer.x} ${pointer.y}`, {
-          stroke: "oklch(0.55 0.28 295)", // Neon Purple
+          stroke: "oklch(0.55 0.28 295)",
           strokeWidth: ctx.brushSize,
           fill: "transparent",
-          opacity: 0.3, // 30% transparency constant
+          opacity: 0.3,
           selectable: false,
           evented: false,
           strokeLineCap: 'round',
@@ -339,14 +395,16 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         });
         (maskOverlay as any).isMagicBrushMask = true;
         c.add(maskOverlay);
+        updateCursor(pointer);
       });
 
       c.on("mouse:move", (opt) => {
-        if (!isDrawingMask || !maskOverlay) return;
         const pointer = c.getScenePoint(opt.e);
+        updateCursor(pointer);
+
+        if (!isDrawingMask || !maskOverlay) return;
         maskPoints.push(pointer);
         
-        // Update path data
         const pathData = maskPoints.reduce((acc, point, i) => {
           return acc + (i === 0 ? `M ${point.x} ${point.y}` : ` L ${point.x} ${point.y}`);
         }, "");
@@ -359,6 +417,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         isDrawingMask = false;
         maskOverlay = null;
         maskPoints = [];
+      });
+
+      c.on("mouse:out", () => {
+        if (brushCursor) {
+          c.remove(brushCursor);
+          brushCursor = null;
+        }
+        c.requestRenderAll();
       });
 
       c.requestRenderAll();
@@ -427,12 +493,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     session.canvas.off("object:scaling", session.refresh);
     session.canvas.remove(session.cropBox, ...session.overlays, ...session.actions);
     // Remove any support objects
-    session.canvas.getObjects().forEach(obj => {
-      const o = obj as any;
-      if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction) {
-        session.canvas.remove(obj);
-      }
-    });
+      session.canvas.getObjects().forEach(obj => {
+        const o = obj as any;
+        if (o.isCropOverlay || o.isCropControl || o.isGuideLine || o.isCropAction || o.isBrushCursor) {
+          session.canvas.remove(obj);
+        }
+      });
     session.image.set({ selectable: session.original.selectable, evented: session.original.evented, opacity: session.original.opacity });
     session.image.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false, mtr: true, tl: true, tr: true, bl: true, br: true });
     session.canvas.setActiveObject(session.image);
