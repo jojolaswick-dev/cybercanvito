@@ -457,7 +457,7 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
     };
   }, [canvas]);
 
-  const { openImagePicker } = useEditor();
+  const { addImageFromFile, setActivePageId } = useEditor();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
@@ -468,12 +468,11 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      await onAddImage();
-      // Since onAddImage calls setActivePageId, the next line will add it to the correct canvas
-      // But we can be more explicit by using the context's addImageFromFile directly if needed.
+      setActivePageId(pageId);
+      await addImageFromFile(file, { pageId });
     }
     e.target.value = "";
-  }, [onAddImage]);
+  }, [pageId, setActivePageId, addImageFromFile]);
 
   if (hasObjects) return null;
 
