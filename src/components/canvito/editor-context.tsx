@@ -1024,6 +1024,18 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setHistoryTick(t => t + 1);
   }, [pages, setActivePageId]);
 
+  const reorderPage = useCallback((id: string, dir: "up" | "down") => {
+    setPages((prev) => {
+      const idx = prev.findIndex((p) => p.id === id);
+      if (idx === -1) return prev;
+      const nextIdx = dir === "up" ? idx - 1 : idx + 1;
+      if (nextIdx < 0 || nextIdx >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[nextIdx]] = [next[nextIdx], next[idx]];
+      return next;
+    });
+  }, []);
+
   const contextValue = useMemo<EditorCtx>(() => ({
     activeCanvas,
     registerPageCanvas,
@@ -1053,13 +1065,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     canUndo: undoStackRef.current.length > 0,
     canRedo: redoStackRef.current.length > 0,
     resetDesign,
-    isGridView,
-    setIsGridView,
+    reorderPage,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId, undo, redo, historyTick, resetDesign, isGridView
+    pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage
   ]);
 
   return (
