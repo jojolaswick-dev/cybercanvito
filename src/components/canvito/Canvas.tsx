@@ -118,7 +118,10 @@ export const Canvas = memo(function Canvas() {
   }, [activeCanvas, deleteActiveObject, activePageId, pages.length, deletePage, undo, redo]);
 
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[oklch(0.95_0.01_240)]">
+    <div 
+      id="canvas-root"
+      className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[oklch(0.95_0.01_240)]"
+    >
       {/* Subtle dot grid */}
       <div
         className="pointer-events-none absolute inset-0 opacity-40 z-0"

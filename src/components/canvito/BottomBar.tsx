@@ -1,4 +1,4 @@
-import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize, Undo2, Redo2, Minimize2 } from "lucide-react";
+import { StickyNote, Timer, Subtitles, Minus, Plus, LayoutGrid, Maximize2, Maximize, Undo2, Redo2, Minimize2, ScreenShare, ScreenShareOff } from "lucide-react";
 import { useEditor } from "./editor-context";
 import { useState, useEffect } from "react";
 
@@ -31,12 +31,26 @@ export function BottomBar() {
     }
 
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((err) => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
+      // Tenta entrar em tela cheia no elemento que contém o canvas e fundo
+      const element = document.getElementById("canvas-root") || document.documentElement;
+      const requestMethod = element.requestFullscreen || 
+                          (element as any).webkitRequestFullscreen || 
+                          (element as any).mozRequestFullScreen || 
+                          (element as any).msRequestFullscreen;
+
+      if (requestMethod) {
+        requestMethod.call(element).catch((err: any) => {
+          console.error(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+      }
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
+      const exitMethod = document.exitFullscreen || 
+                       (document as any).webkitExitFullscreen || 
+                       (document as any).mozCancelFullScreen || 
+                       (document as any).msExitFullscreen;
+      
+      if (exitMethod) {
+        exitMethod.call(document);
       }
     }
   };
@@ -124,9 +138,9 @@ export function BottomBar() {
             className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-1 py-1 text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:px-2"
           >
             {isFullscreen ? (
-              <Minimize2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              <ScreenShareOff className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
             ) : (
-              <Maximize2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              <ScreenShare className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
             )}
           </button>
         </div>
