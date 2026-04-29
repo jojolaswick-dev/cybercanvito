@@ -187,6 +187,7 @@ const PageBoard = memo(function PageBoard({
     deleteActiveObject,
     getPageCanvas,
     pages,
+    reorderPage,
   } = useEditor();
   const canDelete = pages.length > 1;
   const [contextMenu, setContextMenu] = useState<CtxMenuState | null>(null);
