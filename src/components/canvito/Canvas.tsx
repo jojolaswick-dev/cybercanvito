@@ -517,3 +517,110 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
     </div>
   );
 });
+
+/**
+ * OverlayPaintCanvas: A physical canvas that sits on top of everything
+ * (z-index 50) and handles the "Magic Brush" drawing logic.
+ */
+const OverlayPaintCanvas = memo(function OverlayPaintCanvas({ 
+  pageId, 
+  width, 
+  height 
+}: { 
+  pageId: string; 
+  width: number; 
+  height: number; 
+}) {
+  const { isMagicBrushActive, brushSize, getPageCanvas } = useEditor();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current || !isMagicBrushActive) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
+    contextRef.current = ctx;
+  }, [isMagicBrushActive]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!isMagicBrushActive || !contextRef.current) return;
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setIsDrawing(true);
+    
+    const ctx = contextRef.current;
+    ctx.strokeStyle = "#0000FF";
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.globalAlpha = 0.4;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }, [isMagicBrushActive, brushSize]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setMousePos({ x, y });
+
+    if (!isDrawing || !contextRef.current) return;
+    
+    const ctx = contextRef.current;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    
+    // Also sync to Fabric if needed for export, but the visual priority 
+    // is this physical overlay.
+  }, [isDrawing]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDrawing(false);
+    if (contextRef.current) {
+      contextRef.current.closePath();
+    }
+  }, []);
+
+  if (!isMagicBrushActive) return null;
+
+  return (
+    <div className="absolute inset-0 z-[50] pointer-events-auto overflow-hidden">
+      <canvas
+        ref={canvasRef}
+        width={width}
+        height={height}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        className="cursor-none"
+        style={{ width, height }}
+      />
+      {mousePos && (
+        <div 
+          className="pointer-events-none absolute border-2 border-[#0000FF] rounded-full"
+          style={{
+            left: mousePos.x,
+            top: mousePos.y,
+            width: brushSize,
+            height: brushSize,
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
+      )}
+    </div>
+  );
+});
