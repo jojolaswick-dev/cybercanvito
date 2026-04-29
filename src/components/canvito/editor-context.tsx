@@ -184,10 +184,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         c.hoverCursor = "none";
         c.moveCursor = "none";
         c.selection = false;
-        // In Fabric 6, perPixelTargetFind can help pass events through transparency
-        // but here we want to pass events through EVERYTHING.
-        // We ensure the canvas background handles events.
         (c as any).skipTargetFind = true;
+        c.discardActiveObject(); // Garantir que nada esteja selecionado
       } else {
         c.defaultCursor = "default";
         c.hoverCursor = "move";
