@@ -142,13 +142,13 @@ export const Canvas = memo(function Canvas() {
             <h2 className="text-xl font-bold text-[#a855f7] drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]">Visualização de Páginas</h2>
             <button
               onClick={() => setIsGridView(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#a855f7]/10 text-[#00f2ff] transition-all hover:bg-[#a855f7]/20 hover:scale-110 drop-shadow-[0_0_8px_rgba(0,242,255,0.4)]"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-[#a855f7]/20 text-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all hover:bg-[#a855f7]/30 hover:scale-110 hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]"
             >
-              <X className="h-6 w-6" />
+              <X className="h-8 w-8 stroke-[3]" />
             </button>
           </div>
           
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-8">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-10">
             {pages.map((page, idx) => (
               <GridViewItem
                 key={page.id}
@@ -163,12 +163,12 @@ export const Canvas = memo(function Canvas() {
             
             <button
               onClick={addPage}
-              className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-[#a855f7]/30 bg-black/40 transition-all hover:border-[#a855f7] hover:bg-black/60 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] group"
+              className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-[#00f2ff]/50 bg-[#a855f7]/5 transition-all hover:border-[#00f2ff] hover:bg-[#a855f7]/10 hover:shadow-[0_0_30px_rgba(0,242,255,0.3)] group"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#a855f7]/10 group-hover:bg-[#a855f7]/20 transition-all drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]">
-                <Plus className="h-6 w-6 text-[#00f2ff] transition-transform group-hover:scale-110" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a855f7]/20 group-hover:bg-[#a855f7]/30 transition-all shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                <Plus className="h-8 w-8 text-[#a855f7] transition-transform group-hover:scale-110 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
               </div>
-              <span className="text-sm font-bold text-[#a855f7] drop-shadow-[0_0_5px_rgba(168,85,247,0.3)] group-hover:text-white transition-colors">Adicionar Página</span>
+              <span className="text-sm font-black uppercase tracking-widest text-[#a855f7] drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]">Adicionar Página</span>
             </button>
           </div>
         </div>
