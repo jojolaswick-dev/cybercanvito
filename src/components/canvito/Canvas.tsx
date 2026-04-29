@@ -554,8 +554,9 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
     
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const z = (getPageCanvas(pageId)?.getZoom() ?? 100) / 100;
+    const x = (e.clientX - rect.left) / z;
+    const y = (e.clientY - rect.top) / z;
     
     setIsDrawing(true);
     
@@ -567,26 +568,24 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
     ctx.globalAlpha = 0.4;
     
     ctx.beginPath();
-    ctx.moveTo(x, y);
-  }, [isMagicBrushActive, brushSize]);
+    ctx.moveTo(x * z, y * z);
+  }, [isMagicBrushActive, brushSize, pageId, getPageCanvas]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
     
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setMousePos({ x, y });
+    const z = (getPageCanvas(pageId)?.getZoom() ?? 100) / 100;
+    const x = (e.clientX - rect.left) / z;
+    const y = (e.clientY - rect.top) / z;
+    setMousePos({ x: x * z, y: y * z });
 
     if (!isDrawing || !contextRef.current) return;
     
     const ctx = contextRef.current;
-    ctx.lineTo(x, y);
+    ctx.lineTo(x * z, y * z);
     ctx.stroke();
-    
-    // Also sync to Fabric if needed for export, but the visual priority 
-    // is this physical overlay.
-  }, [isDrawing]);
+  }, [isDrawing, pageId, getPageCanvas]);
 
   const handleMouseUp = useCallback(() => {
     setIsDrawing(false);
