@@ -335,11 +335,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
       // Magic Brush logic
       let isDrawingMask = false;
-      let maskPoints: { x: number, y: number }[] = [];
+      let maskPoints: { x: number; y: number }[] = [];
       let maskOverlay: fabric.Path | null = null;
       let brushCursor: fabric.Circle | null = null;
 
-      const updateCursor = (pointer: { x: number, y: number }) => {
+      const updateCursor = (pointer: { x: number; y: number }) => {
         const ctx = (c as any)._editorCtx;
         if (!ctx?.isMagicBrushActive) {
           if (brushCursor) {
@@ -355,20 +355,21 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           brushCursor = new fabric.Circle({
             radius: ctx.brushSize / 2,
             fill: "transparent",
-            stroke: "oklch(0.55 0.28 295)",
-            strokeWidth: 1.5,
+            stroke: "#00E5FF", // Electric Blue
+            strokeWidth: 2,
             selectable: false,
             evented: false,
             originX: "center",
             originY: "center",
+            // @ts-ignore
+            isBrushCursor: true,
           });
-          (brushCursor as any).isBrushCursor = true;
           c.add(brushCursor);
         }
-        brushCursor.set({ 
-          left: pointer.x, 
-          top: pointer.y, 
-          radius: ctx.brushSize / 2 
+        brushCursor.set({
+          left: pointer.x,
+          top: pointer.y,
+          radius: ctx.brushSize / 2,
         });
         c.bringObjectToFront(brushCursor);
         c.requestRenderAll();
@@ -382,19 +383,21 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         maskPoints = [];
         const pointer = c.getScenePoint(opt.e);
         maskPoints.push(pointer);
-        
+
         maskOverlay = new fabric.Path(`M ${pointer.x} ${pointer.y}`, {
-          stroke: "oklch(0.55 0.28 295)",
+          stroke: "#00E5FF", // Electric Blue
           strokeWidth: ctx.brushSize,
           fill: "transparent",
           opacity: 0.3,
           selectable: false,
           evented: false,
-          strokeLineCap: 'round',
-          strokeLineJoin: 'round',
+          strokeLineCap: "round",
+          strokeLineJoin: "round",
+          globalCompositeOperation: "source-over", // Standard layering
         });
         (maskOverlay as any).isMagicBrushMask = true;
         c.add(maskOverlay);
+        c.bringObjectToFront(maskOverlay);
         updateCursor(pointer);
       });
 
@@ -404,12 +407,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
         if (!isDrawingMask || !maskOverlay) return;
         maskPoints.push(pointer);
-        
+
         const pathData = maskPoints.reduce((acc, point, i) => {
           return acc + (i === 0 ? `M ${point.x} ${point.y}` : ` L ${point.x} ${point.y}`);
         }, "");
-        
+
         maskOverlay.set({ path: new fabric.Path(pathData).path });
+        c.bringObjectToFront(maskOverlay); // Ensure it's always on top during drawing
+        if (brushCursor) c.bringObjectToFront(brushCursor); // Cursor on top of mask
         c.requestRenderAll();
       });
 
