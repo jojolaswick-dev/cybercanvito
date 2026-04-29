@@ -87,6 +87,8 @@ type EditorCtx = {
   setBrushSize: (size: number) => void;
   isMagicBrushActive: boolean;
   setIsMagicBrushActive: (active: boolean) => void;
+  clearMagicBrush: () => void;
+  applyMagicRemoval: () => Promise<void>;
 };
 
 type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
