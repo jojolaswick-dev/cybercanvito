@@ -497,7 +497,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       });
       (fab as any)._editorCtx = { isMagicBrushActive, brushSize };
       
-      // Lock/Unlock objects based on Magic Brush state
+      fab.selection = !isMagicBrushActive;
+      fab.hoverCursor = isMagicBrushActive ? "none" : "move";
+      fab.moveCursor = isMagicBrushActive ? "none" : "move";
+      
       const updateObjectsLock = (canvas: fabric.Canvas, isLocked: boolean) => {
         canvas.getObjects().forEach(obj => {
           if ((obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask) return;
