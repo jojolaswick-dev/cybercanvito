@@ -457,15 +457,34 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
     };
   }, [canvas]);
 
+  const { addImageFromFile, setActivePageId } = useEditor();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    onAddImage();
-  }, [onAddImage]);
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setActivePageId(pageId);
+      await addImageFromFile(file, { pageId });
+    }
+    e.target.value = "";
+  }, [pageId, setActivePageId, addImageFromFile]);
 
   if (hasObjects) return null;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
       <button
         type="button"
         onClick={handleClick}
