@@ -561,48 +561,48 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!isMagicBrushActive || !contextRef.current) return;
     
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
     const z = (getPageCanvas(pageId)?.getZoom() ?? 100) / 100;
-    const x = (e.clientX - rect.left) / z;
-    const y = (e.clientY - rect.top) / z;
+    
+    // Exact relative coordinates within the overlay canvas
+    const x = (e.clientX - rect.left);
+    const y = (e.clientY - rect.top);
     
     setIsDrawing(true);
     
     const ctx = contextRef.current;
     ctx.strokeStyle = "#0000FF";
-    ctx.lineWidth = brushSize;
+    ctx.lineWidth = brushSize * z; // Scale brush to zoom level
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.globalAlpha = 0.4;
-    ctx.shadowBlur = 0; // Remove blur for clean selection
+    ctx.globalAlpha = 0.4; // FORCED 40% REAL TRANSPARENCY
+    ctx.shadowBlur = 0;    // NO BLUR - HARD EDGES
     
     ctx.beginPath();
-    ctx.moveTo(x * z, y * z);
+    ctx.moveTo(x, y);
   }, [isMagicBrushActive, brushSize, pageId, getPageCanvas]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
     const z = (getPageCanvas(pageId)?.getZoom() ?? 100) / 100;
-    const x = (e.clientX - rect.left) / z;
-    const y = (e.clientY - rect.top) / z;
-    setMousePos({ x: x * z, y: y * z });
+    
+    const x = (e.clientX - rect.left);
+    const y = (e.clientY - rect.top);
+    setMousePos({ x, y });
 
     if (!isDrawing || !contextRef.current) return;
     
     const ctx = contextRef.current;
-    ctx.lineTo(x * z, y * z);
+    ctx.lineTo(x, y);
     ctx.stroke();
   }, [isDrawing, pageId, getPageCanvas]);
 
   const handleMouseUp = useCallback(() => {
     setIsDrawing(false);
-    if (contextRef.current) {
-      contextRef.current.closePath();
-    }
   }, []);
 
   if (!isMagicBrushActive) return null;
@@ -622,12 +622,12 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
       />
       {mousePos && (
         <div 
-          className="pointer-events-none absolute border-2 border-[#0000FF] rounded-full"
+          className="pointer-events-none absolute border-2 border-white rounded-full shadow-[0_0_0_1px_rgba(0,0,255,0.5)]"
           style={{
             left: mousePos.x,
             top: mousePos.y,
-            width: brushSize,
-            height: brushSize,
+            width: brushSize * ((getPageCanvas(pageId)?.getZoom() ?? 100) / 100),
+            height: brushSize * ((getPageCanvas(pageId)?.getZoom() ?? 100) / 100),
             transform: 'translate(-50%, -50%)',
           }}
         />

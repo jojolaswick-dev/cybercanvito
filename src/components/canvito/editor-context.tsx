@@ -154,8 +154,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         const isSupportObject = (obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask;
         
         obj.set({
-          selectable: !active && !isSupportObject,
-          evented: !active || isSupportObject,
+          selectable: false,
+          evented: false, // BLOQUEIO TOTAL DE INTERAÇÃO COM OBJETOS
           hasControls: !active,
           lockMovementX: active,
           lockMovementY: active,
@@ -167,9 +167,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
         if (!isSupportObject) {
           obj.set({
-            evented: !active,
-            selectable: !active,
-            // Force pointer-events: none equivalent in Fabric
+            evented: false,
+            selectable: false,
             perPixelTargetFind: active, 
           });
         }
@@ -185,10 +184,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         c.hoverCursor = "none";
         c.moveCursor = "none";
         c.selection = false;
-        // In Fabric 6, perPixelTargetFind can help pass events through transparency
-        // but here we want to pass events through EVERYTHING.
-        // We ensure the canvas background handles events.
         (c as any).skipTargetFind = true;
+        c.discardActiveObject(); // Garantir que nada esteja selecionado
       } else {
         c.defaultCursor = "default";
         c.hoverCursor = "move";
@@ -209,17 +206,58 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
   const applyMagicRemoval = useCallback(async () => {
     const activeId = activePageIdRef.current;
-    const overlayCanvas = activeId ? document.querySelector(`[data-page-id="${activeId}"] canvas:nth-of-type(2)`) as HTMLCanvasElement : null;
+    if (!activeId) return;
+
+    // CAPTURA REAL DA MÁSCARA BINÁRIA
+    const overlayCanvas = document.querySelector(`[data-page-id="${activeId}"] canvas:nth-of-type(2)`) as HTMLCanvasElement;
     
-    // Captura as coordenadas/máscara imediatamente do canvas de overlay se existir
-    const maskData = overlayCanvas ? overlayCanvas.toDataURL() : null;
+    if (!overlayCanvas) {
+      toast.error("Nenhuma área selecionada!");
+      return;
+    }
+
+    // Criar um canvas temporário para gerar a máscara binária (preto e branco)
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = overlayCanvas.width;
+    maskCanvas.height = overlayCanvas.height;
+    const maskCtx = maskCanvas.getContext('2d');
     
-    toast.info("Removendo objetos selecionados...", {
+    if (maskCtx) {
+      // O rastro azul tem globalAlpha 0.4. Capturamos os pixels preenchidos.
+      maskCtx.fillStyle = 'black';
+      maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+      maskCtx.drawImage(overlayCanvas, 0, 0);
+      
+      const imageData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+      const data = imageData.data;
+      
+      for (let i = 0; i < data.length; i += 4) {
+        // Se houver qualquer componente azul (ou opacidade > 0), torna branco na máscara
+        if (data[i+2] > 0 || data[i+3] > 0) {
+          data[i] = 255;   // R
+          data[i+1] = 255; // G
+          data[i+2] = 255; // B
+          data[i+3] = 255; // A
+        } else {
+          data[i] = 0;
+          data[i+1] = 0;
+          data[i+2] = 0;
+          data[i+3] = 255;
+        }
+      }
+      maskCtx.putImageData(imageData, 0, 0);
+    }
+
+    const binaryMaskBase64 = maskCanvas.toDataURL('image/png');
+    
+    toast.info("Processando máscara de remoção...", {
       icon: <Sparkles className="h-4 w-4 text-[var(--neon-violet)]" />,
     });
     
-    // Simulate AI processing using captured maskData
-    await new Promise(resolve => setTimeout(resolve, 800)); // Otimizado: latência reduzida
+    // ENVIAR PARA IA (Simulado com log da máscara capturada)
+    console.log("Máscara binária capturada:", binaryMaskBase64.substring(0, 100) + "...");
+    
+    await new Promise(resolve => setTimeout(resolve, 1200)); 
     
     clearMagicBrush();
     setIsMagicBrushActive(false);
