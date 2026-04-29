@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ImagePlus, Plus, Trash2, X, Edit2, Clock, Palette, Move, ChevronDown } from "lucide-react";
+import { ImagePlus, Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
 
@@ -33,11 +33,7 @@ export const Canvas = memo(function Canvas() {
     fitToScreen,
     undo,
     redo,
-    isGridView,
-    setIsGridView,
-    setActivePageId,
-    getPageCanvas,
-    artboard,
+    reorderPage,
   } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
 
@@ -77,7 +73,6 @@ export const Canvas = memo(function Canvas() {
   useEffect(() => {
     if (didAutoFitRef.current) return;
     if (!activeCanvas) return;
-    // Defer one frame so the workspace has its final measured size
     const id = requestAnimationFrame(() => {
       fitToScreen();
       didAutoFitRef.current = true;
@@ -91,7 +86,6 @@ export const Canvas = memo(function Canvas() {
       const target = e.target as HTMLElement | null;
       const isInput = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
       
-      // Undo/Redo (Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z)
       if ((e.ctrlKey || e.metaKey) && !isInput) {
         if (e.key.toLowerCase() === "z") {
           e.preventDefault();
@@ -109,13 +103,11 @@ export const Canvas = memo(function Canvas() {
       if (e.key !== "Delete" && e.key !== "Backspace") return;
       if (isInput) return;
 
-      // Object selected? -> delete the object (existing behavior).
       if (activeCanvas?.getActiveObject()) {
         e.preventDefault();
         deleteActiveObject();
         return;
       }
-      // No selection? -> delete the active page (only if more than one exists).
       if (activePageId && pages.length > 1) {
         e.preventDefault();
         deletePage(activePageId);
@@ -126,8 +118,8 @@ export const Canvas = memo(function Canvas() {
   }, [activeCanvas, deleteActiveObject, activePageId, pages.length, deletePage, undo, redo]);
 
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[oklch(0.92_0.01_240)]">
-      {/* Subtle dot grid - Background of EVERYTHING */}
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[oklch(0.95_0.01_240)]">
+      {/* Subtle dot grid */}
       <div
         className="pointer-events-none absolute inset-0 opacity-40 z-0"
         style={{
@@ -136,284 +128,41 @@ export const Canvas = memo(function Canvas() {
         }}
       />
 
-      {isGridView ? (
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-auto p-8">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#a855f7] drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]">Visualização de Páginas</h2>
-            <button
-              onClick={() => setIsGridView(false)}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-[#a855f7]/20 text-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all hover:bg-[#a855f7]/30 hover:scale-110 hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]"
-            >
-              <X className="h-8 w-8 stroke-[3]" />
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-10">
-            {pages.map((page, idx) => (
-              <GridViewItem
-                key={page.id}
-                pageId={page.id}
-                index={idx}
-                onSelect={(id) => {
-                  setActivePageId(id);
-                  setIsGridView(false);
-                }}
-              />
-            ))}
-            
-            <button
-              onClick={addPage}
-              className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-[#00f2ff]/50 bg-[#a855f7]/5 transition-all hover:border-[#00f2ff] hover:bg-[#a855f7]/10 hover:shadow-[0_0_30px_rgba(0,242,255,0.3)] group"
-            >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a855f7]/20 group-hover:bg-[#a855f7]/30 transition-all shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-                <Plus className="h-8 w-8 text-[#a855f7] transition-transform group-hover:scale-110 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
-              </div>
-              <span className="text-sm font-black uppercase tracking-widest text-[#a855f7] drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]">Adicionar Página</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
-          {/* Workspace - Centered View */}
-          <div
-            ref={scrollRef}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            className="relative flex-1 overflow-auto overscroll-contain flex items-center justify-center p-12"
+      <div
+        ref={scrollRef}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className="relative z-10 flex-1 overflow-auto overscroll-contain px-4 py-12 lg:px-12"
+      >
+        <div className="mx-auto flex w-full flex-col items-center">
+          {pages.map((page, idx) => (
+            <PageBoard
+              key={page.id}
+              pageId={page.id}
+              index={idx}
+            />
+          ))}
+
+          {/* Add Page Button at the end of the vertical flow */}
+          <button
+            onClick={addPage}
+            className="group mt-12 mb-24 flex h-14 items-center gap-3 rounded-2xl bg-white px-8 font-bold text-[oklch(0.45_0.02_270)] shadow-lg shadow-black/5 ring-1 ring-black/5 transition-all hover:scale-105 hover:bg-[oklch(0.55_0.28_295)] hover:text-white active:scale-95"
           >
-            <div className="relative flex items-center justify-center">
-              {pages.map((page, idx) => (
-                activePageId === page.id && (
-                  <div key={page.id} className="relative flex flex-col items-center">
-                    {/* Floating Toolbar - Positioned above the paper */}
-                    <div className="absolute -top-16 left-1/2 z-40 -translate-x-1/2 flex items-center gap-1 rounded-full border border-white/10 bg-[oklch(0.22_0.06_285)]/90 p-1.5 shadow-[0_0_20px_rgba(168,85,247,0.3)] backdrop-blur-md whitespace-nowrap">
-                      <FloatingBtn icon="edit" label="Editar" />
-                      <FloatingBtn icon="clock" label="Tempo" />
-                      <FloatingBtn icon="palette" label="Círculo" />
-                      <FloatingBtn icon="move" label="Posição" />
-                      <div className="mx-1 h-6 w-px bg-white/10" />
-                      <button 
-                        onClick={() => activePageId && pages.length > 1 && deletePage(activePageId)}
-                        className="flex items-center justify-center p-2 rounded-full text-red-400 hover:bg-red-400/10 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    {/* THE PAPER - Visible, centered, and with shadow */}
-                    <div className="bg-white shadow-[0_20px_50px_rgba(0,0,0,0.25)] ring-1 ring-black/5 rounded-sm overflow-hidden">
-                      <PageBoard
-                        pageId={page.id}
-                        index={idx}
-                      />
-                    </div>
-                  </div>
-                )
-              ))}
-            </div>
-
-            {/* Drag overlay */}
-            {isDragging && (
-              <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-[oklch(0.55_0.28_295/0.08)] ring-2 ring-inset ring-[var(--neon-violet)]">
-                <div className="rounded-xl bg-white/90 px-5 py-3 text-sm font-semibold text-[var(--neon-violet)] shadow-[0_0_24px_oklch(0.55_0.28_295/0.4)]">
-                  Solte a imagem para inserir no papel ativo
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Filmstrip - Barra de Miniaturas Inferior */}
-          <div className="relative z-30 h-[120px] shrink-0 w-full border-t border-white/10 bg-[#000d1a] px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-hide">
-            {pages.map((page, idx) => (
-              <FilmstripCard 
-                key={page.id}
-                pageId={page.id}
-                index={idx}
-                isActive={activePageId === page.id}
-                onClick={() => setActivePageId(page.id)}
-              />
-            ))}
-            <button
-              onClick={addPage}
-              className="flex-shrink-0 w-32 h-20 rounded-lg border-2 border-dashed border-white/10 bg-white/5 hover:border-[#a855f7]/50 hover:bg-white/10 transition-all flex flex-col items-center justify-center gap-1 group"
-            >
-              <Plus className="h-4 w-4 text-white/40 group-hover:text-[#a855f7]" />
-              <span className="text-[10px] text-white/40 group-hover:text-white/60">Nova Página</span>
-            </button>
-          </div>
+            <Plus className="h-5 w-5 transition-transform group-hover:rotate-90" />
+            <span>Adicionar Página</span>
+          </button>
         </div>
-      )}
-    </div>
-  );
-});
 
-
-/** Floating Toolbar Button */
-function FloatingBtn({ icon, label, onClick }: { icon: string, label: string, onClick?: () => void }) {
-  const Icon = {
-    edit: Edit2,
-    clock: Clock,
-    palette: Palette,
-    move: Move
-  }[icon as 'edit' | 'clock' | 'palette' | 'move'] || Edit2;
-
-  return (
-    <button 
-      onClick={onClick}
-      className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-all group"
-    >
-      <Icon className="h-4 w-4 transition-transform group-hover:scale-110" />
-      <span className="text-[10px] font-medium uppercase tracking-wider opacity-60 group-hover:opacity-100">{label}</span>
-    </button>
-  );
-}
-
-/** A card in the Filmstrip horizontal bar */
-const FilmstripCard = memo(function FilmstripCard({ 
-  pageId, 
-  index, 
-  isActive, 
-  onClick 
-}: { 
-  pageId: string; 
-  index: number; 
-  isActive: boolean; 
-  onClick: () => void; 
-}) {
-  const { getPageCanvas, artboard } = useEditor();
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
-
-  const updateThumbnail = useCallback(() => {
-    const canvas = getPageCanvas(pageId);
-    if (!canvas) return;
-    
-    const dataUrl = canvas.toDataURL({
-      format: 'png',
-      multiplier: 160 / artboard.width,
-      quality: 0.8
-    });
-    setThumbnail(dataUrl);
-  }, [pageId, getPageCanvas, artboard.width]);
-
-  useEffect(() => {
-    updateThumbnail();
-    const canvas = getPageCanvas(pageId);
-    if (!canvas) return;
-    
-    const onCanvasChange = () => updateThumbnail();
-    canvas.on("object:modified", onCanvasChange);
-    canvas.on("object:added", onCanvasChange);
-    canvas.on("object:removed", onCanvasChange);
-    
-    return () => {
-      canvas.off("object:modified", onCanvasChange);
-      canvas.off("object:added", onCanvasChange);
-      canvas.off("object:removed", onCanvasChange);
-    };
-  }, [pageId, getPageCanvas, updateThumbnail]);
-
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-shrink-0 relative w-32 h-20 rounded-lg overflow-hidden bg-white transition-all ${
-        isActive 
-          ? "ring-4 ring-[#a855f7] shadow-[0_0_20px_rgba(168,85,247,0.4)]" 
-          : "hover:ring-2 hover:ring-white/30"
-      }`}
-    >
-      {thumbnail ? (
-        <img src={thumbnail} alt={`Pág ${index + 1}`} className="h-full w-full object-cover" />
-      ) : (
-        <div className="h-full w-full bg-white" />
-      )}
-      <div className="absolute bottom-1 left-1.5 px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-md">
-        <span className="text-[10px] font-bold text-white leading-none">{index + 1}</span>
-      </div>
-    </button>
-  );
-});
-
-
-/** A single item in the Grid View */
-const GridViewItem = memo(function GridViewItem({
-  pageId,
-  index,
-  onSelect,
-}: {
-  pageId: string;
-  index: number;
-  onSelect: (id: string) => void;
-}) {
-  const { getPageCanvas, artboard, pages, deletePage } = useEditor();
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
-  const canDelete = pages.length > 1;
-
-  const updateThumbnail = useCallback(() => {
-    const canvas = getPageCanvas(pageId);
-    if (!canvas) return;
-
-    const dataUrl = canvas.toDataURL({
-      format: 'png',
-      multiplier: 400 / artboard.width,
-      quality: 0.9
-    });
-    setThumbnail(dataUrl);
-  }, [pageId, getPageCanvas, artboard.width]);
-
-  useEffect(() => {
-    updateThumbnail();
-    const canvas = getPageCanvas(pageId);
-    if (!canvas) return;
-    
-    const onCanvasChange = () => updateThumbnail();
-    canvas.on("object:modified", onCanvasChange);
-    canvas.on("object:added", onCanvasChange);
-    canvas.on("object:removed", onCanvasChange);
-    
-    return () => {
-      canvas.off("object:modified", onCanvasChange);
-      canvas.off("object:added", onCanvasChange);
-      canvas.off("object:removed", onCanvasChange);
-    };
-  }, [pageId, getPageCanvas, updateThumbnail]);
-
-  return (
-    <div className="group relative flex flex-col items-center gap-4">
-      <button
-        onClick={() => onSelect(pageId)}
-        className="relative aspect-square w-full overflow-hidden rounded-xl border-2 border-[#a855f7] bg-white shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all hover:scale-[1.05] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] active:scale-95"
-        style={{
-          aspectRatio: `${artboard.width} / ${artboard.height}`,
-        }}
-      >
-        {thumbnail ? (
-          <img src={thumbnail} alt={`Página ${index + 1}`} className="h-full w-full object-contain" />
-        ) : (
-          <div className="h-full w-full animate-pulse bg-white" />
+        {/* Drag overlay */}
+        {isDragging && (
+          <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-[oklch(0.55_0.28_295/0.08)] ring-2 ring-inset ring-[oklch(0.55_0.28_295)]">
+            <div className="rounded-xl bg-white/90 px-5 py-3 text-sm font-semibold text-[oklch(0.55_0.28_295)] shadow-xl shadow-black/10">
+              Solte a imagem para inserir no papel ativo
+            </div>
+          </div>
         )}
-        <div className="absolute inset-0 bg-[#a855f7]/0 transition-colors group-hover:bg-[#a855f7]/5" />
-      </button>
-
-      {/* Mini Trash Icon for Grid Items */}
-      <button
-        disabled={!canDelete}
-        onClick={(e) => {
-          e.stopPropagation();
-          deletePage(pageId);
-        }}
-        className={`absolute -top-3 -right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 shadow-xl transition-all ${
-          canDelete 
-            ? "bg-[#000d1a] text-[#a855f7] hover:scale-110 hover:text-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)]" 
-            : "cursor-not-allowed bg-gray-800 text-gray-600"
-        }`}
-      >
-        <Trash2 className="h-5 w-5" />
-      </button>
-
-      <span className="text-sm font-black uppercase tracking-wider text-[#a855f7] drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]">
-        Página {index + 1}
-      </span>
+      </div>
     </div>
   );
 });
