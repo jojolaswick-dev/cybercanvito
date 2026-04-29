@@ -247,9 +247,6 @@ export const Canvas = memo(function Canvas() {
     </div>
   );
 });
-    </div>
-  );
-});
 
 
 /** Floating Toolbar Button */
