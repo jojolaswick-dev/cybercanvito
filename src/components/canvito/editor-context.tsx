@@ -161,6 +161,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           hoverCursor: active ? "none" : "move"
         });
 
+        // Ensure the mask is always at the top when adding new strokes
+        if ((obj as any).isMagicBrushMask) {
+          c.bringObjectToFront(obj);
+        }
+
         // Crucial: for images and other elements, disable evented so clicks pass through to the canvas
         if (!isSupportObject) {
           obj.set('evented', !active);
