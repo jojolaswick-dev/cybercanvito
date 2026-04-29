@@ -415,7 +415,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           brushCursor = new fabric.Circle({
             radius: ctx.brushSize / 2,
             fill: "transparent",
-            stroke: "#00E5FF", // Electric Blue
+            stroke: "#0000FF", // Vibrant Blue
             strokeWidth: 2,
             selectable: false,
             evented: false,
@@ -445,10 +445,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         maskPoints.push(pointer);
 
         maskOverlay = new fabric.Path(`M ${pointer.x} ${pointer.y}`, {
-          stroke: "#00E5FF", // Electric Blue
+          stroke: "#0000FF", // Vibrant Blue
           strokeWidth: ctx.brushSize,
           fill: "transparent",
-          opacity: 0.3,
+          opacity: 0.4, // 40% fixed transparency
           selectable: false,
           evented: false,
           strokeLineCap: "round",
