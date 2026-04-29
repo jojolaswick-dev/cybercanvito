@@ -163,11 +163,15 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         });
 
         // Crucial: for images and other elements, disable evented so clicks pass through to the canvas
+        // and force pointer-events: none logic at the Fabric object level
         if (!isSupportObject) {
-          obj.set('evented', !active);
+          obj.set({
+            evented: !active,
+            selectable: !active
+          });
         }
 
-        // When activating brush, bring all existing masks to front
+        // When activating brush, bring all existing masks and the brush cursor to the absolute front
         if (active && (obj as any).isMagicBrushMask) {
           c.bringObjectToFront(obj);
         }
