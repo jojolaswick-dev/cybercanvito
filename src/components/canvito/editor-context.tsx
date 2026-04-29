@@ -1316,6 +1316,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setBrushSize,
     isMagicBrushActive,
     setIsMagicBrushActive,
+    clearMagicBrush,
+    applyMagicRemoval,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
