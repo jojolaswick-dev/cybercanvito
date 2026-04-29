@@ -370,7 +370,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           top: pointer.y, 
           radius: ctx.brushSize / 2 
         });
-        brushCursor.bringToFront();
+        c.bringObjectToFront(brushCursor);
         c.requestRenderAll();
       };
 
