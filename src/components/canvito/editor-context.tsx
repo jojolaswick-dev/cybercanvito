@@ -80,6 +80,8 @@ type EditorCtx = {
   pages: PageState[];
   activePageId: string | null;
   resetDesign: () => void;
+  isGridView: boolean;
+  setIsGridView: (v: boolean) => void;
 };
 
 type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
@@ -121,6 +123,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [pages, setPages] = useState<PageState[]>([{ id: makePageId() }]);
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
+  const [isGridView, setIsGridView] = useState(false);
 
   // Undo/Redo Stacks
   const undoStackRef = useRef<HistoryState[]>([]);
@@ -1052,11 +1055,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     canUndo: undoStackRef.current.length > 0,
     canRedo: redoStackRef.current.length > 0,
     resetDesign,
+    isGridView,
+    setIsGridView,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
-    pages, activePageId, undo, redo, historyTick, resetDesign
+    pages, activePageId, undo, redo, historyTick, resetDesign, isGridView
   ]);
 
   return (
