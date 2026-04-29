@@ -139,10 +139,10 @@ export const Canvas = memo(function Canvas() {
       {/* Floating Toolbar */}
       {!isGridView && activePageId && (
         <div className="absolute top-6 left-1/2 z-30 -translate-x-1/2 flex items-center gap-1 rounded-full border border-white/10 bg-[oklch(0.18_0.03_280)]/80 p-1.5 shadow-2xl backdrop-blur-md">
-          <FloatingBtn icon={import("lucide-react").then(m => m.Edit2)} label="Editar" />
-          <FloatingBtn icon={import("lucide-react").then(m => m.Clock)} label="Tempo" />
-          <FloatingBtn icon={import("lucide-react").then(m => m.Palette)} label="Círculo" />
-          <FloatingBtn icon={import("lucide-react").then(m => m.Move)} label="Posição" />
+          <FloatingBtn icon="edit" label="Editar" />
+          <FloatingBtn icon="clock" label="Tempo" />
+          <FloatingBtn icon="palette" label="Círculo" />
+          <FloatingBtn icon="move" label="Posição" />
           <div className="mx-1 h-6 w-px bg-white/10" />
           <button 
             onClick={() => activePageId && pages.length > 1 && deletePage(activePageId)}
@@ -237,7 +237,7 @@ export const Canvas = memo(function Canvas() {
             >
               <div className="flex items-center gap-1">
                 <Plus className="h-4 w-4 text-white/40 group-hover:text-[#a855f7]" />
-                <import("lucide-react").then(m => <m.ChevronDown className="h-3 w-3 text-white/20" />) />
+                <ChevronDown className="h-3 w-3 text-white/20" />
               </div>
             </button>
           </div>
@@ -246,17 +246,23 @@ export const Canvas = memo(function Canvas() {
     </div>
   );
 });
+import { Edit2, Clock, Palette, Move, ChevronDown } from "lucide-react";
+
 /** Floating Toolbar Button */
-function FloatingBtn({ icon: IconPromise, label, onClick }: { icon: Promise<any>, label: string, onClick?: () => void }) {
-  const [Icon, setIcon] = useState<any>(null);
-  useEffect(() => { IconPromise.then(m => setIcon(() => m.default || m[Object.keys(m)[0]])); }, [IconPromise]);
+function FloatingBtn({ icon, label, onClick }: { icon: string, label: string, onClick?: () => void }) {
+  const Icon = {
+    edit: Edit2,
+    clock: Clock,
+    palette: Palette,
+    move: Move
+  }[icon as 'edit' | 'clock' | 'palette' | 'move'] || Edit2;
 
   return (
     <button 
       onClick={onClick}
       className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-all group"
     >
-      {Icon && <Icon className="h-4 w-4 transition-transform group-hover:scale-110" />}
+      <Icon className="h-4 w-4 transition-transform group-hover:scale-110" />
       <span className="text-[10px] font-medium uppercase tracking-wider opacity-60 group-hover:opacity-100">{label}</span>
     </button>
   );
