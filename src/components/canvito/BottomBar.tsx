@@ -31,12 +31,26 @@ export function BottomBar() {
     }
 
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((err) => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
+      // Tenta entrar em tela cheia no elemento raiz para cobrir tudo
+      const element = document.documentElement;
+      const requestMethod = element.requestFullscreen || 
+                          (element as any).webkitRequestFullscreen || 
+                          (element as any).mozRequestFullScreen || 
+                          (element as any).msRequestFullscreen;
+
+      if (requestMethod) {
+        requestMethod.call(element).catch((err: any) => {
+          console.error(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+      }
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
+      const exitMethod = document.exitFullscreen || 
+                       (document as any).webkitExitFullscreen || 
+                       (document as any).mozCancelFullScreen || 
+                       (document as any).msExitFullscreen;
+      
+      if (exitMethod) {
+        exitMethod.call(document);
       }
     }
   };
