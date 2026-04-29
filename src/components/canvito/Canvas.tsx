@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ImagePlus, Plus, Trash2 } from "lucide-react";
+import { ImagePlus, Plus, Trash2, X } from "lucide-react";
 import type * as fabric from "fabric";
 import { useEditor } from "./editor-context";
 
@@ -33,6 +33,10 @@ export const Canvas = memo(function Canvas() {
     fitToScreen,
     undo,
     redo,
+    isGridView,
+    setIsGridView,
+    setActivePageId,
+    getPageCanvas,
   } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
 
@@ -131,44 +135,129 @@ export const Canvas = memo(function Canvas() {
         }}
       />
 
-      {/* Workspace = vertically scrollable stack */}
-      <div
-        ref={scrollRef}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-        className="relative min-h-0 flex-1 overflow-auto overscroll-contain"
-      >
-        <div className="flex min-h-full flex-col items-center px-3 pb-16 pt-4 sm:px-4 sm:pb-20 sm:pt-6">
-          {pages.map((page, idx) => (
-            <PageBoard
-              key={page.id}
-              pageId={page.id}
-              index={idx}
-            />
-          ))}
-
-          {/* "+ Adicionar página" — directly below the last sheet */}
-          <div className="mt-2 mb-6 flex justify-center">
+      {isGridView ? (
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-auto p-8">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white">Visualização de Páginas</h2>
             <button
-              type="button"
-              onClick={addPage}
-              className="inline-flex items-center gap-2 rounded-full border border-[oklch(0.85_0.01_270)] bg-white px-4 py-2 text-sm font-medium text-[var(--background)] shadow-sm transition-all hover:border-[var(--neon-violet)] hover:text-[var(--neon-violet)] hover:shadow-[0_0_16px_oklch(0.55_0.28_295/0.25)]"
+              onClick={() => setIsGridView(false)}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20 hover:text-[var(--neon-violet)]"
             >
-              <Plus className="h-4 w-4" />
-              Adicionar página
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-8">
+            {pages.map((page, idx) => (
+              <GridViewItem
+                key={page.id}
+                pageId={page.id}
+                index={idx}
+                onSelect={(id) => {
+                  setActivePageId(id);
+                  setIsGridView(false);
+                }}
+              />
+            ))}
+            
+            <button
+              onClick={addPage}
+              className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-white/20 bg-white/5 transition-all hover:border-[var(--neon-violet)] hover:bg-white/10 group"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 group-hover:bg-[var(--neon-violet)]/20 transition-all">
+                <Plus className="h-6 w-6 text-white group-hover:text-[var(--neon-violet)]" />
+              </div>
+              <span className="text-sm font-medium text-white/60 group-hover:text-white">Adicionar Página</span>
             </button>
           </div>
         </div>
-        {/* Drag overlay */}
-        {isDragging && (
-          <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-[oklch(0.55_0.28_295/0.08)] ring-2 ring-inset ring-[var(--neon-violet)]">
-            <div className="rounded-xl bg-white/90 px-5 py-3 text-sm font-semibold text-[var(--neon-violet)] shadow-[0_0_24px_oklch(0.55_0.28_295/0.4)]">
-              Solte a imagem para inserir no papel ativo
+      ) : (
+        /* Workspace = vertically scrollable stack */
+        <div
+          ref={scrollRef}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+          className="relative min-h-0 flex-1 overflow-auto overscroll-contain"
+        >
+          <div className="flex min-h-full flex-col items-center px-3 pb-16 pt-4 sm:px-4 sm:pb-20 sm:pt-6">
+            {pages.map((page, idx) => (
+              <PageBoard
+                key={page.id}
+                pageId={page.id}
+                index={idx}
+              />
+            ))}
+
+            {/* "+ Adicionar página" — directly below the last sheet */}
+            <div className="mt-2 mb-6 flex justify-center">
+              <button
+                type="button"
+                onClick={addPage}
+                className="inline-flex items-center gap-2 rounded-full border border-[oklch(0.85_0.01_270)] bg-white px-4 py-2 text-sm font-medium text-[var(--background)] shadow-sm transition-all hover:border-[var(--neon-violet)] hover:text-[var(--neon-violet)] hover:shadow-[0_0_16px_oklch(0.55_0.28_295/0.25)]"
+              >
+                <Plus className="h-4 w-4" />
+                Adicionar página
+              </button>
             </div>
           </div>
+          {/* Drag overlay */}
+          {isDragging && (
+            <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-[oklch(0.55_0.28_295/0.08)] ring-2 ring-inset ring-[var(--neon-violet)]">
+              <div className="rounded-xl bg-white/90 px-5 py-3 text-sm font-semibold text-[var(--neon-violet)] shadow-[0_0_24px_oklch(0.55_0.28_295/0.4)]">
+                Solte a imagem para inserir no papel ativo
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+});
+
+/** A single item in the Grid View */
+const GridViewItem = memo(function GridViewItem({
+  pageId,
+  index,
+  onSelect,
+}: {
+  pageId: string;
+  index: number;
+  onSelect: (id: string) => void;
+}) {
+  const { getPageCanvas, artboard } = useEditor();
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const canvas = getPageCanvas(pageId);
+    if (!canvas) return;
+
+    // Generate a thumbnail from the Fabric canvas
+    // We use a small multiplier since it's just a preview
+    const dataUrl = canvas.toDataURL({
+      format: 'png',
+      multiplier: 200 / artboard.width,
+    });
+    setThumbnail(dataUrl);
+  }, [pageId, getPageCanvas, artboard.width]);
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <button
+        onClick={() => onSelect(pageId)}
+        className="group relative aspect-square w-full overflow-hidden rounded-lg border border-[var(--neon-violet)]/30 bg-white transition-all hover:border-[var(--neon-violet)] hover:shadow-[0_0_20px_oklch(0.55_0.28_295/0.5)] hover:ring-2 hover:ring-[var(--neon-violet)]"
+        style={{
+          aspectRatio: `${artboard.width} / ${artboard.height}`,
+        }}
+      >
+        {thumbnail ? (
+          <img src={thumbnail} alt={`Página ${index + 1}`} className="h-full w-full object-contain" />
+        ) : (
+          <div className="h-full w-full bg-white" />
         )}
-      </div>
+        <div className="absolute inset-0 bg-[var(--neon-violet)]/0 transition-colors group-hover:bg-[var(--neon-violet)]/5" />
+      </button>
+      <span className="text-xs font-semibold text-white/60">Página {index + 1}</span>
     </div>
   );
 });
