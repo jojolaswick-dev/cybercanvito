@@ -1,4 +1,4 @@
-import { X, Search, Sparkles, Scissors, Scan } from "lucide-react";
+import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2 } from "lucide-react";
 import { memo, useCallback } from "react";
 import { TOOLS, type ToolId } from "./Sidebar";
 import { useEditor } from "./editor-context";
