@@ -162,12 +162,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           hoverCursor: active ? "none" : (isSupportObject ? "default" : "move")
         });
 
-        // Crucial: for images and other elements, disable evented so clicks pass through to the canvas
-        // and force pointer-events: none logic at the Fabric object level
         if (!isSupportObject) {
           obj.set({
             evented: !active,
-            selectable: !active
+            selectable: !active,
+            // Force pointer-events: none equivalent in Fabric
+            perPixelTargetFind: active, 
           });
         }
 

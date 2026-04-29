@@ -202,6 +202,7 @@ const PageBoard = memo(function PageBoard({
     getPageCanvas,
     pages,
     reorderPage,
+    isMagicBrushActive,
   } = useEditor();
   const canDelete = pages.length > 1;
   const [contextMenu, setContextMenu] = useState<CtxMenuState | null>(null);
@@ -373,6 +374,10 @@ const PageBoard = memo(function PageBoard({
         style={pageStyle}
       >
         <canvas ref={canvasElRef} />
+        {/* Superior Overlay Canvas for Magic Brush */}
+        {isActive && isMagicBrushActive && (
+          <OverlayPaintCanvas pageId={pageId} width={w} height={h} />
+        )}
         <PageEmptyCTA pageId={pageId} onAddImage={onAddImage} />
 
         {contextMenu && (
@@ -510,6 +515,112 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
           Clique ou arraste uma imagem para este papel
         </span>
       </button>
+    </div>
+  );
+});
+
+/**
+ * OverlayPaintCanvas: A physical canvas that sits on top of everything
+ * (z-index 50) and handles the "Magic Brush" drawing logic.
+ */
+const OverlayPaintCanvas = memo(function OverlayPaintCanvas({ 
+  pageId, 
+  width, 
+  height 
+}: { 
+  pageId: string; 
+  width: number; 
+  height: number; 
+}) {
+  const { isMagicBrushActive, brushSize, getPageCanvas } = useEditor();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current || !isMagicBrushActive) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
+    contextRef.current = ctx;
+  }, [isMagicBrushActive]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!isMagicBrushActive || !contextRef.current) return;
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const z = (getPageCanvas(pageId)?.getZoom() ?? 100) / 100;
+    const x = (e.clientX - rect.left) / z;
+    const y = (e.clientY - rect.top) / z;
+    
+    setIsDrawing(true);
+    
+    const ctx = contextRef.current;
+    ctx.strokeStyle = "#0000FF";
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.globalAlpha = 0.4;
+    
+    ctx.beginPath();
+    ctx.moveTo(x * z, y * z);
+  }, [isMagicBrushActive, brushSize, pageId, getPageCanvas]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const z = (getPageCanvas(pageId)?.getZoom() ?? 100) / 100;
+    const x = (e.clientX - rect.left) / z;
+    const y = (e.clientY - rect.top) / z;
+    setMousePos({ x: x * z, y: y * z });
+
+    if (!isDrawing || !contextRef.current) return;
+    
+    const ctx = contextRef.current;
+    ctx.lineTo(x * z, y * z);
+    ctx.stroke();
+  }, [isDrawing, pageId, getPageCanvas]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDrawing(false);
+    if (contextRef.current) {
+      contextRef.current.closePath();
+    }
+  }, []);
+
+  if (!isMagicBrushActive) return null;
+
+  return (
+    <div className="absolute inset-0 z-[50] pointer-events-auto overflow-hidden">
+      <canvas
+        ref={canvasRef}
+        width={width}
+        height={height}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        className="cursor-none"
+        style={{ width, height }}
+      />
+      {mousePos && (
+        <div 
+          className="pointer-events-none absolute border-2 border-[#0000FF] rounded-full"
+          style={{
+            left: mousePos.x,
+            top: mousePos.y,
+            width: brushSize,
+            height: brushSize,
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
+      )}
     </div>
   );
 });
