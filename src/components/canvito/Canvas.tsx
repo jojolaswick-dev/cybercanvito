@@ -136,22 +136,7 @@ export const Canvas = memo(function Canvas() {
         }}
       />
 
-      {/* Floating Toolbar */}
-      {!isGridView && activePageId && (
-        <div className="absolute top-6 left-1/2 z-40 -translate-x-1/2 flex items-center gap-1 rounded-full border border-white/10 bg-[oklch(0.22_0.06_285)]/90 p-1.5 shadow-[0_0_20px_rgba(168,85,247,0.3)] backdrop-blur-md">
-          <FloatingBtn icon="edit" label="Editar" />
-          <FloatingBtn icon="clock" label="Tempo" />
-          <FloatingBtn icon="palette" label="Círculo" />
-          <FloatingBtn icon="move" label="Posição" />
-          <div className="mx-1 h-6 w-px bg-white/10" />
-          <button 
-            onClick={() => activePageId && pages.length > 1 && deletePage(activePageId)}
-            className="flex items-center justify-center p-2 rounded-full text-red-400 hover:bg-red-400/10 transition-colors"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      )}
+      {/* Global Floating Toolbar removed from here as it's now per-page centered */}
 
       {isGridView ? (
         <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-auto p-8">
@@ -197,7 +182,7 @@ export const Canvas = memo(function Canvas() {
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
-            className="relative flex-1 overflow-auto overscroll-contain bg-[var(--canvas-bg)] flex items-center justify-center p-8"
+            className="relative flex-1 overflow-auto overscroll-contain bg-[oklch(0.92_0.01_240)] flex items-center justify-center p-12"
           >
             {/* Subtle dot grid */}
             <div
@@ -212,10 +197,27 @@ export const Canvas = memo(function Canvas() {
               {pages.map((page, idx) => (
                 activePageId === page.id && (
                   <div key={page.id} className="relative flex flex-col items-center">
-                    <PageBoard
-                      pageId={page.id}
-                      index={idx}
-                    />
+                    {/* Floating Toolbar - Positioned above the paper */}
+                    <div className="absolute -top-16 left-1/2 z-40 -translate-x-1/2 flex items-center gap-1 rounded-full border border-white/10 bg-[oklch(0.22_0.06_285)]/90 p-1.5 shadow-[0_0_20px_rgba(168,85,247,0.3)] backdrop-blur-md whitespace-nowrap">
+                      <FloatingBtn icon="edit" label="Editar" />
+                      <FloatingBtn icon="clock" label="Tempo" />
+                      <FloatingBtn icon="palette" label="Círculo" />
+                      <FloatingBtn icon="move" label="Posição" />
+                      <div className="mx-1 h-6 w-px bg-white/10" />
+                      <button 
+                        onClick={() => activePageId && pages.length > 1 && deletePage(activePageId)}
+                        className="flex items-center justify-center p-2 rounded-full text-red-400 hover:bg-red-400/10 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] ring-1 ring-black/5">
+                      <PageBoard
+                        pageId={page.id}
+                        index={idx}
+                      />
+                    </div>
                   </div>
                 )
               ))}
@@ -246,10 +248,8 @@ export const Canvas = memo(function Canvas() {
               onClick={addPage}
               className="flex-shrink-0 w-32 h-20 rounded-lg border-2 border-dashed border-white/10 bg-white/5 hover:border-[#a855f7]/50 hover:bg-white/10 transition-all flex flex-col items-center justify-center gap-1 group"
             >
-              <div className="flex items-center gap-1">
-                <Plus className="h-4 w-4 text-white/40 group-hover:text-[#a855f7]" />
-                <ChevronDown className="h-3 w-3 text-white/20" />
-              </div>
+              <Plus className="h-4 w-4 text-white/40 group-hover:text-[#a855f7]" />
+              <span className="text-[10px] text-white/40 group-hover:text-white/60">Nova Página</span>
             </button>
           </div>
         </div>
