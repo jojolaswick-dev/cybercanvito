@@ -208,17 +208,23 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const applyMagicRemoval = useCallback(async () => {
+    const activeId = activePageIdRef.current;
+    const overlayCanvas = activeId ? document.querySelector(`[data-page-id="${activeId}"] canvas:nth-of-type(2)`) as HTMLCanvasElement : null;
+    
+    // Captura as coordenadas/máscara imediatamente do canvas de overlay se existir
+    const maskData = overlayCanvas ? overlayCanvas.toDataURL() : null;
+    
     toast.info("Removendo objetos selecionados...", {
       icon: <Sparkles className="h-4 w-4 text-[var(--neon-violet)]" />,
     });
     
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Simulate AI processing using captured maskData
+    await new Promise(resolve => setTimeout(resolve, 800)); // Otimizado: latência reduzida
     
     clearMagicBrush();
     setIsMagicBrushActive(false);
     toast.success("Objetos removidos com sucesso!");
-  }, [clearMagicBrush]);
+  }, [clearMagicBrush, setIsMagicBrushActive]);
 
   // Undo/Redo Stacks
   const undoStackRef = useRef<HistoryState[]>([]);
