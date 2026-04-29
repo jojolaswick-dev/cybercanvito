@@ -80,8 +80,7 @@ type EditorCtx = {
   pages: PageState[];
   activePageId: string | null;
   resetDesign: () => void;
-  isGridView: boolean;
-  setIsGridView: (v: boolean) => void;
+  reorderPage: (id: string, dir: "up" | "down") => void;
 };
 
 type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
