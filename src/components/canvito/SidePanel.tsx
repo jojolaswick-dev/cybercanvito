@@ -114,18 +114,32 @@ const PanelItem = memo(function PanelItem({
   item: string;
   activeToolId: ToolId | null;
 }) {
+  const { isMagicBrushActive, setIsMagicBrushActive } = useEditor();
   const isMagicBrush = activeToolId === "removedor-objetos" && item === "Pincel mágico";
 
   return (
-    <div className="flex flex-col gap-3">
-      <button className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-white/5 p-3 text-left transition-all hover:border-[var(--electric-blue)]/60 hover:bg-white/10 hover:shadow-[0_0_16px_oklch(0.62_0.24_255/0.25)]">
-        <div className="flex h-full flex-col justify-end">
-          <span className="text-xs font-medium text-white/90">{item}</span>
+    <div className={isMagicBrush ? "col-span-2 flex flex-col gap-3" : "flex flex-col gap-3"}>
+      <button 
+        onClick={() => {
+          if (isMagicBrush) {
+            setIsMagicBrushActive(!isMagicBrushActive);
+          }
+        }}
+        className={`group relative aspect-square overflow-hidden rounded-lg border transition-all ${
+          isMagicBrush && isMagicBrushActive 
+            ? "border-[var(--neon-pink)] bg-[var(--neon-pink)]/10 shadow-[0_0_16px_oklch(0.55_0.28_295/0.2)]" 
+            : "border-white/10 bg-white/5 hover:border-[var(--electric-blue)]/60 hover:bg-white/10 hover:shadow-[0_0_16px_oklch(0.62_0.24_255/0.25)]"
+        }`}
+      >
+        <div className="flex h-full flex-col justify-end p-3">
+          <span className={`text-xs font-medium ${isMagicBrush && isMagicBrushActive ? "text-white" : "text-white/90"}`}>
+            {item}
+          </span>
         </div>
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--neon-violet)]/0 to-[var(--electric-blue)]/0 opacity-0 transition-opacity group-hover:opacity-30" />
       </button>
 
-      {isMagicBrush && (
+      {isMagicBrush && isMagicBrushActive && (
         <MagicBrushSettings />
       )}
     </div>

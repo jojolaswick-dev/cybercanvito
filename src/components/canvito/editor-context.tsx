@@ -494,12 +494,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       setZoomState(safe);
       const scale = safe / 100;
       canvasesRef.current.forEach((c) => {
+        (c as any)._editorCtx = { ...((c as any)._editorCtx || {}), isMagicBrushActive, brushSize };
         c.setDimensions({ width: artboard.width * scale, height: artboard.height * scale });
         c.setZoom(scale);
         c.requestRenderAll();
       });
     },
-    [artboard.width, artboard.height],
+    [artboard.width, artboard.height, isMagicBrushActive, brushSize],
   );
 
   /** Fit a single page comfortably in the workspace. */
