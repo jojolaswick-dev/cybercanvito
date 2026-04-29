@@ -462,8 +462,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         }, "");
 
         maskOverlay.set({ path: new fabric.Path(pathData).path });
-        c.bringObjectToFront(maskOverlay); // Ensure it's always on top during drawing
-        if (brushCursor) c.bringObjectToFront(brushCursor); // Cursor on top of mask
+        
+        // Use bringObjectToFront to ensure the mask and cursor are always on top
+        c.bringObjectToFront(maskOverlay);
+        if (brushCursor) c.bringObjectToFront(brushCursor);
+        
         c.requestRenderAll();
       });
 
