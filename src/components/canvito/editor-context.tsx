@@ -518,6 +518,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         backgroundColor: "transparent",
         preserveObjectStacking: true,
         selection: true,
+        renderOnAddRemove: true
       });
       (fab as any)._editorCtx = { isMagicBrushActive, brushSize };
       
