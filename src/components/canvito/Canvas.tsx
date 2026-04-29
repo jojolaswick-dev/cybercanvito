@@ -622,12 +622,12 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
       />
       {mousePos && (
         <div 
-          className="pointer-events-none absolute border-2 border-[#0000FF] rounded-full"
+          className="pointer-events-none absolute border-2 border-white rounded-full shadow-[0_0_0_1px_rgba(0,0,255,0.5)]"
           style={{
             left: mousePos.x,
             top: mousePos.y,
-            width: brushSize,
-            height: brushSize,
+            width: brushSize * ((getPageCanvas(pageId)?.getZoom() ?? 100) / 100),
+            height: brushSize * ((getPageCanvas(pageId)?.getZoom() ?? 100) / 100),
             transform: 'translate(-50%, -50%)',
           }}
         />
