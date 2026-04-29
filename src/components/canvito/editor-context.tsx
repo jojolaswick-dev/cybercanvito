@@ -446,7 +446,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         });
         (maskOverlay as any).isMagicBrushMask = true;
         c.add(maskOverlay);
-        maskOverlay.bringToFront(); // Ensure it's on top of images
+        c.bringObjectToFront(maskOverlay); // Ensure it's on top of images
         updateCursor(pointer);
       });
 
