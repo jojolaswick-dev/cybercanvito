@@ -325,7 +325,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       });
       (artRect as fabric.Rect & { isArtboard?: boolean }).isArtboard = true;
       c.add(artRect);
-      c.sendToBack(artRect); // Use sendToBack to ensure it's the absolute bottom layer
+      artRect.sendToBack(); // Use the object's method instead
 
       // Clip everything to the artboard so dropped images don't bleed out.
       c.clipPath = new fabric.Rect({
