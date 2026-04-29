@@ -1,4 +1,4 @@
-import { X, Search } from "lucide-react";
+import { X, Search, Sparkles, Scissors, Scan } from "lucide-react";
 import { memo, useCallback } from "react";
 import { TOOLS, type ToolId } from "./Sidebar";
 import { useEditor } from "./editor-context";
@@ -118,25 +118,28 @@ const PanelItem = memo(function PanelItem({
   const isMagicBrush = activeToolId === "removedor-objetos" && item === "Pincel mágico";
 
   return (
-    <div className={isMagicBrush ? "col-span-2 flex flex-col gap-3" : "flex flex-col gap-3"}>
+    <div className={isMagicBrush ? "col-span-2 flex flex-col gap-3" : "flex flex-col gap-2"}>
       <button 
         onClick={() => {
           if (isMagicBrush) {
             setIsMagicBrushActive(!isMagicBrushActive);
           }
         }}
-        className={`group relative aspect-square overflow-hidden rounded-lg border transition-all ${
+        className={`group relative flex flex-col items-center justify-center gap-2 rounded-lg border p-3 transition-all ${
           isMagicBrush && isMagicBrushActive 
-            ? "border-[var(--neon-pink)] bg-[var(--neon-pink)]/10 shadow-[0_0_16px_oklch(0.55_0.28_295/0.2)]" 
-            : "border-white/10 bg-white/5 hover:border-[var(--electric-blue)]/60 hover:bg-white/10 hover:shadow-[0_0_16px_oklch(0.62_0.24_255/0.25)]"
+            ? "border-[var(--neon-pink)] bg-[var(--neon-pink)]/10 shadow-[0_0_12px_oklch(0.55_0.28_295/0.2)]" 
+            : "border-white/10 bg-white/5 hover:border-[var(--electric-blue)]/60 hover:bg-white/10"
         }`}
       >
-        <div className="flex h-full flex-col justify-end p-3">
-          <span className={`text-xs font-medium ${isMagicBrush && isMagicBrushActive ? "text-white" : "text-white/90"}`}>
-            {item}
-          </span>
+        <div className={`flex h-8 w-8 items-center justify-center rounded-md ${isMagicBrush && isMagicBrushActive ? "text-[var(--neon-pink)]" : "text-white/70 group-hover:text-white"}`}>
+          {item === "Pincel mágico" && <Sparkles className="h-5 w-5" />}
+          {item === "Laço inteligente" && <Scissors className="h-5 w-5" />}
+          {item === "Auto-detecção" && <Scan className="h-5 w-5" />}
+          {!["Pincel mágico", "Laço inteligente", "Auto-detecção"].includes(item) && <div className="h-5 w-5 rounded-full border border-current opacity-20" />}
         </div>
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--neon-violet)]/0 to-[var(--electric-blue)]/0 opacity-0 transition-opacity group-hover:opacity-30" />
+        <span className={`text-[10px] font-medium uppercase tracking-wider ${isMagicBrush && isMagicBrushActive ? "text-white" : "text-white/60 group-hover:text-white/90"}`}>
+          {item}
+        </span>
       </button>
 
       {isMagicBrush && isMagicBrushActive && (
@@ -150,10 +153,10 @@ const MagicBrushSettings = () => {
   const { brushSize, setBrushSize } = useEditor();
   
   return (
-    <div className="col-span-2 mt-2 rounded-lg bg-white/5 p-4 border border-white/10">
-      <div className="flex items-center justify-between mb-3">
-        <label className="text-xs font-medium text-white/70">Tamanho do Pincel</label>
-        <span className="text-[10px] font-mono text-[var(--neon-pink)] bg-[var(--neon-pink)]/10 px-1.5 py-0.5 rounded border border-[var(--neon-pink)]/20">
+    <div className="mt-1 rounded-lg bg-white/5 p-3 border border-white/5">
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Tamanho</label>
+        <span className="text-[10px] font-mono text-[var(--neon-pink)]">
           {brushSize}px
         </span>
       </div>
@@ -163,13 +166,8 @@ const MagicBrushSettings = () => {
         max="100"
         value={brushSize}
         onChange={(e) => setBrushSize(parseInt(e.target.value))}
-        className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--neon-pink)] hover:bg-white/20 transition-all"
+        className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--neon-pink)]"
       />
-      <div className="mt-4 flex flex-col gap-2">
-        <p className="text-[10px] text-white/40 leading-relaxed italic">
-          Pinte sobre a imagem para marcar os objetos que deseja remover. A seleção aparecerá em Roxo Neon transparente.
-        </p>
-      </div>
     </div>
   );
 };
