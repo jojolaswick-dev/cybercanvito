@@ -81,6 +81,10 @@ type EditorCtx = {
   activePageId: string | null;
   resetDesign: () => void;
   reorderPage: (id: string, dir: "up" | "down") => void;
+  brushSize: number;
+  setBrushSize: (size: number) => void;
+  isMagicBrushActive: boolean;
+  setIsMagicBrushActive: (active: boolean) => void;
 };
 
 type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
@@ -122,6 +126,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [pages, setPages] = useState<PageState[]>([{ id: makePageId() }]);
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
+  const [brushSize, setBrushSize] = useState(30);
+  const [isMagicBrushActive, setIsMagicBrushActive] = useState(false);
 
   // Undo/Redo Stacks
   const undoStackRef = useRef<HistoryState[]>([]);

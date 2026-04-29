@@ -1,6 +1,7 @@
 import { X, Search } from "lucide-react";
 import { memo, useCallback } from "react";
 import { TOOLS, type ToolId } from "./Sidebar";
+import { useEditor } from "./editor-context";
 
 const PANEL_CONTENT: Record<ToolId, { title: string; description: string; items: string[] }> = {
   "removedor-objetos": {
@@ -97,20 +98,64 @@ export const SidePanel = memo(function SidePanel({
 
       <div className="flex-1 overflow-y-auto p-3">
         <div className="grid grid-cols-2 gap-2">
-          {content.items.map((item) => <PanelItem key={item} item={item} />)}
+          {content.items.map((item) => (
+            <PanelItem key={item} item={item} activeToolId={active} />
+          ))}
         </div>
       </div>
     </div>
   );
 });
 
-const PanelItem = memo(function PanelItem({ item }: { item: string }) {
+const PanelItem = memo(function PanelItem({ 
+  item, 
+  activeToolId 
+}: { 
+  item: string;
+  activeToolId: ToolId | null;
+}) {
+  const isMagicBrush = activeToolId === "removedor-objetos" && item === "Pincel mágico";
+
   return (
-    <button className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-white/5 p-3 text-left transition-all hover:border-[var(--electric-blue)]/60 hover:bg-white/10 hover:shadow-[0_0_16px_oklch(0.62_0.24_255/0.25)]">
-      <div className="flex h-full flex-col justify-end">
-        <span className="text-xs font-medium text-white/90">{item}</span>
-      </div>
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--neon-violet)]/0 to-[var(--electric-blue)]/0 opacity-0 transition-opacity group-hover:opacity-30" />
-    </button>
+    <div className="flex flex-col gap-3">
+      <button className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-white/5 p-3 text-left transition-all hover:border-[var(--electric-blue)]/60 hover:bg-white/10 hover:shadow-[0_0_16px_oklch(0.62_0.24_255/0.25)]">
+        <div className="flex h-full flex-col justify-end">
+          <span className="text-xs font-medium text-white/90">{item}</span>
+        </div>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--neon-violet)]/0 to-[var(--electric-blue)]/0 opacity-0 transition-opacity group-hover:opacity-30" />
+      </button>
+
+      {isMagicBrush && (
+        <MagicBrushSettings />
+      )}
+    </div>
   );
 });
+
+const MagicBrushSettings = () => {
+  const { brushSize, setBrushSize } = useEditor();
+  
+  return (
+    <div className="col-span-2 mt-2 rounded-lg bg-white/5 p-4 border border-white/10">
+      <div className="flex items-center justify-between mb-3">
+        <label className="text-xs font-medium text-white/70">Tamanho do Pincel</label>
+        <span className="text-[10px] font-mono text-[var(--neon-pink)] bg-[var(--neon-pink)]/10 px-1.5 py-0.5 rounded border border-[var(--neon-pink)]/20">
+          {brushSize}px
+        </span>
+      </div>
+      <input
+        type="range"
+        min="1"
+        max="100"
+        value={brushSize}
+        onChange={(e) => setBrushSize(parseInt(e.target.value))}
+        className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--neon-pink)] hover:bg-white/20 transition-all"
+      />
+      <div className="mt-4 flex flex-col gap-2">
+        <p className="text-[10px] text-white/40 leading-relaxed italic">
+          Pinte sobre a imagem para marcar os objetos que deseja remover. A seleção aparecerá em Roxo Neon transparente.
+        </p>
+      </div>
+    </div>
+  );
+};
