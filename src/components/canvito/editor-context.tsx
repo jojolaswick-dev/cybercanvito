@@ -142,12 +142,31 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setIsMagicBrushActiveState(active);
     canvasesRef.current.forEach(c => {
       (c as any)._editorCtx = { ...((c as any)._editorCtx || {}), isMagicBrushActive: active };
-      if (!active) {
+      
+      // Lock or unlock all image/text objects
+      c.getObjects().forEach(obj => {
+        if ((obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask) return;
+        obj.set({
+          selectable: !active,
+          evented: !active,
+          hasControls: !active,
+          lockMovementX: active,
+          lockMovementY: active,
+          lockRotation: active,
+          lockScalingX: active,
+          lockScalingY: active
+        });
+      });
+
+      if (active) {
+        c.discardActiveObject();
+        c.defaultCursor = "none";
+      } else {
         c.defaultCursor = "default";
         const cursorObj = c.getObjects().find(obj => (obj as any).isBrushCursor);
         if (cursorObj) c.remove(cursorObj);
-        c.requestRenderAll();
       }
+      c.requestRenderAll();
     });
   }, []);
 
@@ -301,6 +320,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
       // Activation: focusing this canvas marks it active for the toolbar/sidebar.
       const markActive = () => {
+        const ctx = (c as any)._editorCtx;
+        if (ctx?.isMagicBrushActive) return; // Don't change selection while brushing
         activePageIdRef.current = pageId;
         setActivePageIdState(pageId);
         setActiveCanvas(c);
@@ -468,6 +489,29 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         selection: true,
       });
       (fab as any)._editorCtx = { isMagicBrushActive, brushSize };
+      
+      // Lock/Unlock objects based on Magic Brush state
+      const updateObjectsLock = (canvas: fabric.Canvas, isLocked: boolean) => {
+        canvas.getObjects().forEach(obj => {
+          if ((obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask) return;
+          obj.set({
+            selectable: !isLocked,
+            evented: !isLocked,
+            hasControls: !isLocked,
+            lockMovementX: isLocked,
+            lockMovementY: isLocked,
+            lockRotation: isLocked,
+            lockScalingX: isLocked,
+            lockScalingY: isLocked
+          });
+        });
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+      };
+
+      if (isMagicBrushActive) {
+        updateObjectsLock(fab, true);
+      }
       map.set(pageId, fab);
       initFabricCanvas(pageId, fab, w, h);
 
