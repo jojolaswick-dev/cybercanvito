@@ -2,6 +2,7 @@ import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2 } from "l
 import { memo, useCallback } from "react";
 import { TOOLS, type ToolId } from "./Sidebar";
 import { useEditor } from "./editor-context";
+import { PainelTexto } from "./PainelTexto";
 
 const PANEL_CONTENT: Record<ToolId, { title: string; description: string; items: string[] }> = {
   "removedor-objetos": {
@@ -97,11 +98,15 @@ export const SidePanel = memo(function SidePanel({
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
-        <div className="grid grid-cols-2 gap-2">
-          {content.items.map((item) => (
-            <PanelItem key={item} item={item} activeToolId={active} />
-          ))}
-        </div>
+        {active === "texto" ? (
+          <PainelTexto />
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {content.items.map((item) => (
+              <PanelItem key={item} item={item} activeToolId={active} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
