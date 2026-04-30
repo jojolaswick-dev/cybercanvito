@@ -577,7 +577,8 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
     ctx.lineWidth = brushSize * z; // Scale brush to zoom level
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.globalAlpha = 0.4; // FORCED 40% REAL TRANSPARENCY
+    ctx.globalAlpha = 1.0; // Drawing at full alpha on internal state, but the visual overlay handles overall transparency
+    ctx.globalCompositeOperation = 'source-over'; // Standard drawing
     ctx.shadowBlur = 0;    // NO BLUR - HARD EDGES
     
     ctx.beginPath();
@@ -618,7 +619,7 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         className="cursor-none"
-        style={{ width, height }}
+        style={{ width, height, opacity: 0.4 }}
       />
       {mousePos && (
         <div 
