@@ -1252,6 +1252,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setBrushSize,
     isMagicBrushActive,
     setIsMagicBrushActive,
+    isProcessingMagic,
     clearMagicBrush,
     applyMagicRemoval,
   }), [
@@ -1259,7 +1260,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
     pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage, brushSize, isMagicBrushActive,
-    clearMagicBrush, applyMagicRemoval
+    isProcessingMagic, clearMagicBrush, applyMagicRemoval
   ]);
 
   return (
