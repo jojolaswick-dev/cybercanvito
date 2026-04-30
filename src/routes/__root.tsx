@@ -73,5 +73,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  useEffect(() => {
+    loadGoogleFonts();
+  }, []);
+
   return <Outlet />;
 }
