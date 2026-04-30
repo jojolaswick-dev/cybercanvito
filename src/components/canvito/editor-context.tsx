@@ -131,11 +131,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [pages, setPages] = useState<PageState[]>([{ id: makePageId() }]);
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
-  const [brushSize, setBrushSizeState] = useState(60);
+  const [brushSize, setBrushSizeState] = useState(66);
   const [isMagicBrushActive, setIsMagicBrushActiveState] = useState(false);
 
   const setBrushSize = useCallback((size: number) => {
     setBrushSizeState(size);
+    // Directly update any contextual storage if needed, but the state update
+    // will propagate through the provider to OverlayPaintCanvas.
     canvasesRef.current.forEach(c => {
       (c as any)._editorCtx = { ...((c as any)._editorCtx || {}), brushSize: size };
     });
