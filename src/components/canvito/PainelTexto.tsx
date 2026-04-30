@@ -3,6 +3,7 @@ import { memo, useCallback } from "react";
 import * as fabric from "fabric";
 import { toast } from "sonner";
 import { useEditor } from "./editor-context";
+import { GOOGLE_FONTS } from "@/lib/fonts";
 
 type TextPreset = "caixa" | "titulo" | "subtitulo" | "corpo";
 
