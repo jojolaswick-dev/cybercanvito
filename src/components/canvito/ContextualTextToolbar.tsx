@@ -137,8 +137,10 @@ export const ContextualTextToolbar = memo(function ContextualTextToolbar() {
           className="h-full w-full appearance-none bg-transparent pr-6 text-xs font-semibold text-white outline-none [&_option]:bg-[var(--panel)]"
           aria-label="Fonte"
         >
-          {FONT_FAMILIES.map((font) => (
-            <option key={font} value={font}>{font}</option>
+          {GOOGLE_FONTS.map((font) => (
+            <option key={font} value={font} style={{ fontFamily: font }}>
+              {font}
+            </option>
           ))}
         </select>
         <ChevronDown className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-white/50" />
