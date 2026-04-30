@@ -153,12 +153,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
       // Lock or unlock all image/text objects
       c.getObjects().forEach(obj => {
-        const isSupportObject = (obj as any).isArtboard || (obj as any).isBrushCursor || (obj as any).isMagicBrushMask;
+        const o = obj as any;
+        const isSupportObject = o.isArtboard || o.isBrushCursor || o.isMagicBrushMask;
         
         obj.set({
-          selectable: false,
-          evented: false, // BLOQUEIO TOTAL DE INTERAÇÃO COM OBJETOS
-          hasControls: !active,
+          selectable: !active && !isSupportObject,
+          evented: !active && !isSupportObject,
+          hasControls: !active && !isSupportObject,
           lockMovementX: active,
           lockMovementY: active,
           lockRotation: active,
@@ -167,16 +168,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           hoverCursor: active ? "none" : (isSupportObject ? "default" : "move")
         });
 
-        if (!isSupportObject) {
-          obj.set({
-            evented: false,
-            selectable: false,
-            perPixelTargetFind: active, 
-          });
-        }
-
-        // When activating brush, bring all existing masks and the brush cursor to the absolute front
-        if (active && (obj as any).isMagicBrushMask) {
+        if (active && (o.isMagicBrushMask || o.isBrushCursor)) {
           c.bringObjectToFront(obj);
         }
       });
@@ -187,15 +179,18 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         c.moveCursor = "none";
         c.selection = false;
         (c as any).skipTargetFind = true;
-        c.discardActiveObject(); // Garantir que nada esteja selecionado
+        c.discardActiveObject();
       } else {
         c.defaultCursor = "default";
         c.hoverCursor = "move";
         c.moveCursor = "move";
         c.selection = true;
         (c as any).skipTargetFind = false;
-        const cursorObj = c.getObjects().find(obj => (obj as any).isBrushCursor);
-        if (cursorObj) c.remove(cursorObj);
+        
+        // Remove fabric-based mask objects if we are moving to CSS-based layer
+        // though the prompt asks to use two layers, the current fabric brush is redundant
+        const supportObjects = c.getObjects().filter(obj => (obj as any).isBrushCursor || (obj as any).isMagicBrushMask);
+        supportObjects.forEach(obj => c.remove(obj));
       }
       c.requestRenderAll();
     });
@@ -210,7 +205,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const activeId = activePageIdRef.current;
     if (!activeId) return;
 
-    // CAPTURA REAL DA MÁSCARA BINÁRIA
+    // CAPTURA REAL DA MÁSCARA
     const overlayCanvas = document.querySelector(`[data-page-id="${activeId}"] canvas:nth-of-type(2)`) as HTMLCanvasElement;
     
     if (!overlayCanvas) {
@@ -218,46 +213,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Criar um canvas temporário para gerar a máscara binária (preto e branco)
-    const maskCanvas = document.createElement('canvas');
-    maskCanvas.width = overlayCanvas.width;
-    maskCanvas.height = overlayCanvas.height;
-    const maskCtx = maskCanvas.getContext('2d');
-    
-    if (maskCtx) {
-      // O rastro azul tem globalAlpha 0.4. Capturamos os pixels preenchidos.
-      maskCtx.fillStyle = 'black';
-      maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
-      maskCtx.drawImage(overlayCanvas, 0, 0);
-      
-      const imageData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
-      const data = imageData.data;
-      
-      for (let i = 0; i < data.length; i += 4) {
-        // Se houver qualquer componente azul (ou opacidade > 0), torna branco na máscara
-        if (data[i+2] > 0 || data[i+3] > 0) {
-          data[i] = 255;   // R
-          data[i+1] = 255; // G
-          data[i+2] = 255; // B
-          data[i+3] = 255; // A
-        } else {
-          data[i] = 0;
-          data[i+1] = 0;
-          data[i+2] = 0;
-          data[i+3] = 255;
-        }
-      }
-      maskCtx.putImageData(imageData, 0, 0);
-    }
-
-    const binaryMaskBase64 = maskCanvas.toDataURL('image/png');
+    const maskData = overlayCanvas.toDataURL('image/png');
     
     toast.info("Processando máscara de remoção...", {
       icon: <Sparkles className="h-4 w-4 text-[var(--neon-violet)]" />,
     });
     
-    // ENVIAR PARA IA (Simulado com log da máscara capturada)
-    console.log("Máscara binária capturada:", binaryMaskBase64.substring(0, 100) + "...");
+    console.log("Remoção iniciada", { maskData: maskData.substring(0, 100) + "..." });
     
     await new Promise(resolve => setTimeout(resolve, 1200)); 
     
@@ -462,111 +424,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         saveHistory();
       });
 
-      // Magic Brush logic
-      let isDrawingMask = false;
-      let maskPoints: { x: number; y: number }[] = [];
-      let maskOverlay: fabric.Path | null = null;
-      let brushCursor: fabric.Circle | null = null;
-
-      const updateCursor = (pointer: { x: number; y: number }) => {
-        const ctx = (c as any)._editorCtx;
-        if (!ctx?.isMagicBrushActive) {
-          if (brushCursor) {
-            c.remove(brushCursor);
-            brushCursor = null;
-            c.defaultCursor = "default";
-          }
-          return;
-        }
-
-        c.defaultCursor = "none";
-        c.hoverCursor = "none";
-        c.moveCursor = "none";
-        if (!brushCursor) {
-          brushCursor = new fabric.Circle({
-            radius: ctx.brushSize / 2,
-            fill: "transparent",
-            stroke: "#0000FF", // Vibrant Blue
-            strokeWidth: 2,
-            selectable: false,
-            evented: false,
-            originX: "center",
-            originY: "center",
-            // @ts-ignore
-            isBrushCursor: true,
-          });
-          c.add(brushCursor);
-        }
-        brushCursor.set({
-          left: pointer.x,
-          top: pointer.y,
-          radius: ctx.brushSize / 2,
-        });
-        c.bringObjectToFront(brushCursor);
-        c.requestRenderAll();
-      };
-
-      c.on("mouse:down", (opt) => {
-        const ctx = (c as any)._editorCtx;
-        if (!ctx?.isMagicBrushActive || !ctx?.brushSize) return;
-
-        isDrawingMask = true;
-        maskPoints = [];
-        const pointer = c.getScenePoint(opt.e);
-        maskPoints.push(pointer);
-
-        maskOverlay = new fabric.Path(`M ${pointer.x} ${pointer.y}`, {
-          stroke: "#0000FF", // Vibrant Blue
-          strokeWidth: ctx.brushSize,
-          fill: "transparent",
-          opacity: 0.4, // 40% fixed transparency
-          selectable: false,
-          evented: false,
-          strokeLineCap: "round",
-          strokeLineJoin: "round",
-          globalCompositeOperation: "source-over", // Standard layering
-        });
-        (maskOverlay as any).isMagicBrushMask = true;
-        c.add(maskOverlay);
-        c.bringObjectToFront(maskOverlay); // Force to the top of the stack
-        updateCursor(pointer);
-      });
-
-      c.on("mouse:move", (opt) => {
-        const pointer = c.getScenePoint(opt.e);
-        updateCursor(pointer);
-
-        if (!isDrawingMask || !maskOverlay) return;
-        maskPoints.push(pointer);
-
-        // Create path data manually to avoid overhead
-        const pathData = maskPoints.reduce((acc, point, i) => {
-          return acc + (i === 0 ? `M ${point.x} ${point.y}` : ` L ${point.x} ${point.y}`);
-        }, "");
-
-        maskOverlay.set({ path: new fabric.Path(pathData).path });
-        
-        // Ensure the mask is always the top-most object (except for the cursor)
-        c.bringObjectToFront(maskOverlay);
-        if (brushCursor) c.bringObjectToFront(brushCursor);
-        
-        c.requestRenderAll();
-      });
-
-      c.on("mouse:up", () => {
-        isDrawingMask = false;
-        maskOverlay = null;
-        maskPoints = [];
-      });
-
-      c.on("mouse:out", () => {
-        if (brushCursor) {
-          c.remove(brushCursor);
-          brushCursor = null;
-        }
-        c.requestRenderAll();
-      });
-
+      // Fabric-based brush is deprecated in favor of CSS Overlay Layer
+      // but we keep the registration logic clean by not adding more listeners here
+      // for the magic brush since it's handled in Canvas.tsx OverlayPaintCanvas
+      
       c.requestRenderAll();
     },
     [saveHistory, isMagicBrushActive, brushSize],
