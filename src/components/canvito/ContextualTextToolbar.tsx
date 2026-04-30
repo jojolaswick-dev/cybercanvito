@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AlignCenter, AlignLeft, AlignRight, ChevronDown, ListPlus, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type * as fabric from "fabric";
@@ -211,7 +211,7 @@ function ToolbarDivider() {
   return <div className="h-6 w-px shrink-0 bg-white/10" />;
 }
 
-function ToolbarIconButton({ active, label, onClick, children }: { active?: boolean; label: string; onClick: () => void; children: React.ReactNode }) {
+function ToolbarIconButton({ active, label, onClick, children }: { active?: boolean; label: string; onClick: () => void; children: ReactNode }) {
   return (
     <button
       onClick={onClick}
@@ -226,11 +226,11 @@ function ToolbarIconButton({ active, label, onClick, children }: { active?: bool
   );
 }
 
-function ToggleButton({ active, label, onClick, children }: { active: boolean; label: string; onClick: () => void; children: React.ReactNode }) {
+function ToggleButton({ active, label, onClick, children }: { active: boolean; label: string; onClick: () => void; children: ReactNode }) {
   return <ToolbarIconButton active={active} label={label} onClick={onClick}>{children}</ToolbarIconButton>;
 }
 
-function ToolbarTextButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+function ToolbarTextButton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
   return (
     <button
       onClick={onClick}
