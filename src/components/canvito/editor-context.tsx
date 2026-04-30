@@ -131,7 +131,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [pages, setPages] = useState<PageState[]>([{ id: makePageId() }]);
   const [activePageId, setActivePageIdState] = useState<string | null>(null);
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
-  const [brushSize, setBrushSizeState] = useState(30);
+  const [brushSize, setBrushSizeState] = useState(60);
   const [isMagicBrushActive, setIsMagicBrushActiveState] = useState(false);
 
   const setBrushSize = useCallback((size: number) => {
