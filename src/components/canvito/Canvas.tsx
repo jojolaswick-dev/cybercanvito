@@ -566,7 +566,6 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
     const rect = canvas.getBoundingClientRect();
     const z = (getPageCanvas(pageId)?.getZoom() ?? 100) / 100;
     
-    // Exact relative coordinates within the overlay canvas
     const x = (e.clientX - rect.left);
     const y = (e.clientY - rect.top);
     
@@ -574,15 +573,20 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
     
     const ctx = contextRef.current;
     ctx.strokeStyle = "#0000FF";
-    ctx.lineWidth = brushSize * z; // Scale brush to zoom level
+    ctx.lineWidth = brushSize * z;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.globalAlpha = 1.0; // Drawing at full alpha on internal state, but the visual overlay handles overall transparency
-    ctx.globalCompositeOperation = 'source-over'; // Standard drawing
-    ctx.shadowBlur = 0;    // NO BLUR - HARD EDGES
+    // Using source-over with solid color because the canvas element itself has 0.4 opacity.
+    // This ensures that overlapping strokes don't darken.
+    ctx.globalAlpha = 1.0; 
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.shadowBlur = 0;
     
     ctx.beginPath();
     ctx.moveTo(x, y);
+    // Draw a single dot on click
+    ctx.lineTo(x, y);
+    ctx.stroke();
   }, [isMagicBrushActive, brushSize, pageId, getPageCanvas]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
