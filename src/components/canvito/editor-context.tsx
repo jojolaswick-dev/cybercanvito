@@ -227,6 +227,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       const originalImage = canvas.toDataURL({
         format: 'png',
         quality: 1,
+        multiplier: 1,
         enableRetinaScaling: true
       });
 
