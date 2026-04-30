@@ -3,6 +3,7 @@ import { memo, useCallback } from "react";
 import * as fabric from "fabric";
 import { toast } from "sonner";
 import { useEditor } from "./editor-context";
+import { GOOGLE_FONTS } from "@/lib/fonts";
 
 type TextPreset = "caixa" | "titulo" | "subtitulo" | "corpo";
 
@@ -34,7 +35,7 @@ export const PainelTexto = memo(function PainelTexto() {
         originY: "center",
         textAlign: "center",
         fill: "#1f1f2f",
-        fontFamily: "Inter, Arial, sans-serif",
+        fontFamily: "Inter",
         fontSize: preset.fontSize,
         fontWeight: preset.fontWeight,
       });

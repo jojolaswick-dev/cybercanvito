@@ -1,22 +1,13 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AlignCenter, AlignLeft, AlignRight, ChevronDown, ListPlus, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
-import type * as fabric from "fabric";
+import * as fabric from "fabric";
 import { useEditor } from "./editor-context";
+import { GOOGLE_FONTS } from "@/lib/fonts";
 
-const FONT_FAMILIES = ["Arial", "Verdana", "Helvetica", "Times New Roman", "Georgia", "Courier New", "Trebuchet MS", "Impact"];
 const TEXT_TYPES = new Set(["text", "i-text", "textbox"]);
 
-type TextObject = fabric.Object & {
-  text?: string;
-  fontFamily?: string;
-  fontSize?: number;
-  fill?: string;
-  fontWeight?: string | number;
-  fontStyle?: string;
-  underline?: boolean;
-  textAlign?: "left" | "center" | "right" | "justify";
-  lineHeight?: number;
+type TextObject = fabric.IText & {
   initDimensions?: () => void;
 };
 
@@ -47,13 +38,18 @@ export const ContextualTextToolbar = memo(function ContextualTextToolbar() {
     }
 
     setSelectedText(target);
+    
+    // Read from selection if editing, otherwise read from object
+    const isEditing = target.isEditing;
+    const style = isEditing ? (target.getSelectionStyles()[0] || {}) : target;
+
     setSnapshot({
-      fontFamily: target.fontFamily || "Arial",
-      fontSize: Math.round(target.fontSize || 32),
-      fill: typeof target.fill === "string" ? target.fill : "#111111",
-      isBold: target.fontWeight === "bold" || Number(target.fontWeight) >= 700,
-      isItalic: target.fontStyle === "italic",
-      isUnderline: Boolean(target.underline),
+      fontFamily: style.fontFamily || target.fontFamily || "Inter",
+      fontSize: Math.round(style.fontSize || target.fontSize || 32),
+      fill: typeof (style.fill || target.fill) === "string" ? (style.fill || target.fill) as string : "#111111",
+      isBold: (style.fontWeight || target.fontWeight) === "bold" || Number(style.fontWeight || target.fontWeight) >= 700,
+      isItalic: (style.fontStyle || target.fontStyle) === "italic",
+      isUnderline: Boolean(style.underline !== undefined ? style.underline : target.underline),
       isUppercase: Boolean(target.text && target.text === target.text.toUpperCase()),
       textAlign: target.textAlign === "center" || target.textAlign === "right" ? target.textAlign : "left",
       lineHeight: Number(target.lineHeight || 1.16),
@@ -72,18 +68,30 @@ export const ContextualTextToolbar = memo(function ContextualTextToolbar() {
     activeCanvas.on("selection:updated", readSelectedText);
     activeCanvas.on("selection:cleared", readSelectedText);
     activeCanvas.on("object:modified", readSelectedText);
+    activeCanvas.on("text:selection:changed", readSelectedText);
+    activeCanvas.on("text:editing:entered", readSelectedText);
+    activeCanvas.on("text:editing:exited", readSelectedText);
 
     return () => {
       activeCanvas.off("selection:created", readSelectedText);
       activeCanvas.off("selection:updated", readSelectedText);
       activeCanvas.off("selection:cleared", readSelectedText);
       activeCanvas.off("object:modified", readSelectedText);
+      activeCanvas.off("text:selection:changed", readSelectedText);
+      activeCanvas.off("text:editing:entered", readSelectedText);
+      activeCanvas.off("text:editing:exited", readSelectedText);
     };
   }, [activeCanvas, readSelectedText]);
 
   const commitTextChange = useCallback((changes: Partial<TextObject>) => {
     if (!activeCanvas || !selectedText) return;
-    selectedText.set(changes);
+
+    if (selectedText.isEditing) {
+      selectedText.setSelectionStyles(changes);
+    } else {
+      selectedText.set(changes);
+    }
+    
     selectedText.initDimensions?.();
     selectedText.setCoords();
     activeCanvas.requestRenderAll();
@@ -129,8 +137,10 @@ export const ContextualTextToolbar = memo(function ContextualTextToolbar() {
           className="h-full w-full appearance-none bg-transparent pr-6 text-xs font-semibold text-white outline-none [&_option]:bg-[var(--panel)]"
           aria-label="Fonte"
         >
-          {FONT_FAMILIES.map((font) => (
-            <option key={font} value={font}>{font}</option>
+          {GOOGLE_FONTS.map((font) => (
+            <option key={font} value={font} style={{ fontFamily: font }}>
+              {font}
+            </option>
           ))}
         </select>
         <ChevronDown className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-white/50" />
