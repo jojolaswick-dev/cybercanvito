@@ -572,19 +572,15 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
     setIsDrawing(true);
     
     const ctx = contextRef.current;
-    ctx.strokeStyle = "#0000FF";
+    ctx.strokeStyle = "#3B82F6"; // Medium Blue (100% solid in canvas, opacity in CSS)
     ctx.lineWidth = brushSize * z;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    // Using source-over with solid color because the canvas element itself has 0.4 opacity.
-    // This ensures that overlapping strokes don't darken.
     ctx.globalAlpha = 1.0; 
     ctx.globalCompositeOperation = 'source-over';
-    ctx.shadowBlur = 0;
     
     ctx.beginPath();
     ctx.moveTo(x, y);
-    // Draw a single dot on click
     ctx.lineTo(x, y);
     ctx.stroke();
   }, [isMagicBrushActive, brushSize, pageId, getPageCanvas]);
@@ -593,8 +589,6 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const z = (getPageCanvas(pageId)?.getZoom() ?? 100) / 100;
-    
     const x = (e.clientX - rect.left);
     const y = (e.clientY - rect.top);
     setMousePos({ x, y });
@@ -604,10 +598,13 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
     const ctx = contextRef.current;
     ctx.lineTo(x, y);
     ctx.stroke();
-  }, [isDrawing, pageId, getPageCanvas]);
+  }, [isDrawing]);
 
   const handleMouseUp = useCallback(() => {
     setIsDrawing(false);
+    if (contextRef.current) {
+      contextRef.current.beginPath();
+    }
   }, []);
 
   if (!isMagicBrushActive) return null;
@@ -627,7 +624,7 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
       />
       {mousePos && (
         <div 
-          className="pointer-events-none absolute border-2 border-white rounded-full shadow-[0_0_0_1px_rgba(0,0,255,0.5)]"
+          className="pointer-events-none absolute border border-white rounded-full mix-blend-difference"
           style={{
             left: mousePos.x,
             top: mousePos.y,
