@@ -564,16 +564,18 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const z = (getPageCanvas(pageId)?.getZoom() ?? 100) / 100;
+    const fab = getPageCanvas(pageId);
+    const z = (fab?.getZoom() ?? 1);
     
+    // Calculate coordinates relative to the canvas internal resolution
     const x = (e.clientX - rect.left);
     const y = (e.clientY - rect.top);
     
     setIsDrawing(true);
     
     const ctx = contextRef.current;
-    ctx.strokeStyle = "#3B82F6"; // Medium Blue (100% solid in canvas, opacity in CSS)
-    ctx.lineWidth = brushSize * z;
+    ctx.strokeStyle = "#3B82F6"; 
+    ctx.lineWidth = brushSize * z; // Scale brush to zoom level
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.globalAlpha = 1.0; 
@@ -624,12 +626,13 @@ const OverlayPaintCanvas = memo(function OverlayPaintCanvas({
       />
       {mousePos && (
         <div 
-          className="pointer-events-none absolute border border-white rounded-full mix-blend-difference"
+          className="pointer-events-none absolute border-2 border-white rounded-full mix-blend-difference shadow-[0_0_0_1px_black]"
           style={{
             left: mousePos.x,
             top: mousePos.y,
-            width: brushSize * ((getPageCanvas(pageId)?.getZoom() ?? 100) / 100),
-            height: brushSize * ((getPageCanvas(pageId)?.getZoom() ?? 100) / 100),
+            // The visual size must match exactly the brushSize * current zoom
+            width: brushSize * (getPageCanvas(pageId)?.getZoom() ?? 1),
+            height: brushSize * (getPageCanvas(pageId)?.getZoom() ?? 1),
             transform: 'translate(-50%, -50%)',
           }}
         />
