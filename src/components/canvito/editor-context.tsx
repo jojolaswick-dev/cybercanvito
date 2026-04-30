@@ -90,6 +90,7 @@ type EditorCtx = {
   setIsMagicBrushActive: (active: boolean) => void;
   clearMagicBrush: () => void;
   applyMagicRemoval: () => Promise<void>;
+  isProcessingMagic: boolean;
 };
 
 type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
@@ -133,6 +134,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [activeCanvas, setActiveCanvas] = useState<fabric.Canvas | null>(null);
   const [brushSize, setBrushSizeState] = useState(66);
   const [isMagicBrushActive, setIsMagicBrushActiveState] = useState(false);
+  const [isProcessingMagic, setIsProcessingMagic] = useState(false);
 
   const setBrushSize = useCallback((size: number) => {
     setBrushSizeState(size);
@@ -205,6 +207,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const activeId = activePageIdRef.current;
     if (!activeId) return;
 
+    const canvas = canvasesRef.current.get(activeId);
+    if (!canvas) return;
+
     // CAPTURA REAL DA MÁSCARA
     const overlayCanvas = document.querySelector(`[data-page-id="${activeId}"] canvas:nth-of-type(2)`) as HTMLCanvasElement;
     
@@ -213,19 +218,42 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const maskData = overlayCanvas.toDataURL('image/png');
+    // EXTRAÇÃO DOS DADOS (ENGENHARIA DE PREPARAÇÃO)
+    setIsProcessingMagic(true);
     
-    toast.info("Processando máscara de remoção...", {
-      icon: <Sparkles className="h-4 w-4 text-[var(--neon-violet)]" />,
-    });
-    
-    console.log("Remoção iniciada", { maskData: maskData.substring(0, 100) + "..." });
-    
-    await new Promise(resolve => setTimeout(resolve, 1200)); 
-    
-    clearMagicBrush();
-    setIsMagicBrushActive(false);
-    toast.success("Objetos removidos com sucesso!");
+    try {
+      // 1. Captura da Imagem Original (Fundo)
+      // Ocultamos objetos de suporte se houver
+      const originalImage = canvas.toDataURL({
+        format: 'png',
+        quality: 1,
+        enableRetinaScaling: true
+      });
+
+      // 2. Captura da Máscara (Traços Azuis)
+      const maskImage = overlayCanvas.toDataURL('image/png');
+      
+      console.log("PAYLOAD PRONTO PARA API DE INPAINTING:", { 
+        originalImage: originalImage.substring(0, 100) + "...", 
+        maskImage: maskImage.substring(0, 100) + "..." 
+      });
+
+      toast.info("Processando remoção via IA...", {
+        icon: <Sparkles className="h-4 w-4 text-[var(--neon-violet)]" />,
+      });
+      
+      // SIMULAÇÃO DE API (MOCK)
+      await new Promise(resolve => setTimeout(resolve, 2000)); 
+      
+      clearMagicBrush();
+      setIsMagicBrushActive(false);
+      toast.success("Objeto enviado para remoção com sucesso!");
+    } catch (error) {
+      console.error("Erro ao preparar remoção:", error);
+      toast.error("Erro ao processar imagem.");
+    } finally {
+      setIsProcessingMagic(false);
+    }
   }, [clearMagicBrush, setIsMagicBrushActive]);
 
   // Undo/Redo Stacks
