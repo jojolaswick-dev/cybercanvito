@@ -172,6 +172,7 @@ const MagicBrushSettings = () => {
       </div>
 
       <div className="flex flex-col gap-2">
+        <button
           onClick={() => applyMagicRemoval()}
           disabled={isProcessingMagic}
           className={`group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-md bg-gradient-to-r from-[var(--neon-violet)] to-[var(--neon-pink)] py-2.5 text-xs font-bold text-white shadow-[0_0_15px_oklch(0.55_0.28_295/0.4)] transition-all hover:scale-[1.02] active:scale-[0.98] ${isProcessingMagic ? 'opacity-70 cursor-not-allowed' : ''}`}
