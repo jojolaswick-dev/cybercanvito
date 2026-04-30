@@ -38,13 +38,18 @@ export const ContextualTextToolbar = memo(function ContextualTextToolbar() {
     }
 
     setSelectedText(target);
+    
+    // Read from selection if editing, otherwise read from object
+    const isEditing = target.isEditing;
+    const style = isEditing ? (target.getSelectionStyles()[0] || {}) : target;
+
     setSnapshot({
-      fontFamily: target.fontFamily || "Arial",
-      fontSize: Math.round(target.fontSize || 32),
-      fill: typeof target.fill === "string" ? target.fill : "#111111",
-      isBold: target.fontWeight === "bold" || Number(target.fontWeight) >= 700,
-      isItalic: target.fontStyle === "italic",
-      isUnderline: Boolean(target.underline),
+      fontFamily: style.fontFamily || target.fontFamily || "Inter",
+      fontSize: Math.round(style.fontSize || target.fontSize || 32),
+      fill: typeof (style.fill || target.fill) === "string" ? (style.fill || target.fill) as string : "#111111",
+      isBold: (style.fontWeight || target.fontWeight) === "bold" || Number(style.fontWeight || target.fontWeight) >= 700,
+      isItalic: (style.fontStyle || target.fontStyle) === "italic",
+      isUnderline: Boolean(style.underline !== undefined ? style.underline : target.underline),
       isUppercase: Boolean(target.text && target.text === target.text.toUpperCase()),
       textAlign: target.textAlign === "center" || target.textAlign === "right" ? target.textAlign : "left",
       lineHeight: Number(target.lineHeight || 1.16),
@@ -63,18 +68,30 @@ export const ContextualTextToolbar = memo(function ContextualTextToolbar() {
     activeCanvas.on("selection:updated", readSelectedText);
     activeCanvas.on("selection:cleared", readSelectedText);
     activeCanvas.on("object:modified", readSelectedText);
+    activeCanvas.on("text:selection:changed", readSelectedText);
+    activeCanvas.on("text:editing:entered", readSelectedText);
+    activeCanvas.on("text:editing:exited", readSelectedText);
 
     return () => {
       activeCanvas.off("selection:created", readSelectedText);
       activeCanvas.off("selection:updated", readSelectedText);
       activeCanvas.off("selection:cleared", readSelectedText);
       activeCanvas.off("object:modified", readSelectedText);
+      activeCanvas.off("text:selection:changed", readSelectedText);
+      activeCanvas.off("text:editing:entered", readSelectedText);
+      activeCanvas.off("text:editing:exited", readSelectedText);
     };
   }, [activeCanvas, readSelectedText]);
 
   const commitTextChange = useCallback((changes: Partial<TextObject>) => {
     if (!activeCanvas || !selectedText) return;
-    selectedText.set(changes);
+
+    if (selectedText.isEditing) {
+      selectedText.setSelectionStyles(changes);
+    } else {
+      selectedText.set(changes);
+    }
+    
     selectedText.initDimensions?.();
     selectedText.setCoords();
     activeCanvas.requestRenderAll();
