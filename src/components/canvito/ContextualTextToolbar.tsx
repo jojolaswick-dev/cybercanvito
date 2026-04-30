@@ -1,22 +1,13 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AlignCenter, AlignLeft, AlignRight, ChevronDown, ListPlus, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
-import type * as fabric from "fabric";
+import * as fabric from "fabric";
 import { useEditor } from "./editor-context";
+import { GOOGLE_FONTS } from "@/lib/fonts";
 
-const FONT_FAMILIES = ["Arial", "Verdana", "Helvetica", "Times New Roman", "Georgia", "Courier New", "Trebuchet MS", "Impact"];
 const TEXT_TYPES = new Set(["text", "i-text", "textbox"]);
 
-type TextObject = fabric.Object & {
-  text?: string;
-  fontFamily?: string;
-  fontSize?: number;
-  fill?: string;
-  fontWeight?: string | number;
-  fontStyle?: string;
-  underline?: boolean;
-  textAlign?: "left" | "center" | "right" | "justify";
-  lineHeight?: number;
+type TextObject = fabric.IText & {
   initDimensions?: () => void;
 };
 
