@@ -7,7 +7,6 @@ import { Canvas } from "@/components/canvito/Canvas";
 import { BottomBar } from "@/components/canvito/BottomBar";
 import { EditorProvider } from "@/components/canvito/editor-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { ContextualTextToolbar } from "@/components/canvito/ContextualTextToolbar";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -46,9 +45,6 @@ function CanvitoApp() {
             <SidePanel active={activeTool} onClose={handlePanelClose} />
           </ErrorBoundary>
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <ErrorBoundary>
-              <ContextualTextToolbar />
-            </ErrorBoundary>
             <ErrorBoundary>
               <Canvas />
             </ErrorBoundary>
