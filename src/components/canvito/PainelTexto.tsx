@@ -1,9 +1,6 @@
 import { Crown, Search, Sparkles, Type } from "lucide-react";
 import { memo, useCallback } from "react";
-import * as fabric from "fabric";
 import { toast } from "sonner";
-import { useEditor } from "./editor-context";
-import { GOOGLE_FONTS } from "@/lib/fonts";
 
 type TextPreset = "caixa" | "titulo" | "subtitulo" | "corpo";
 
@@ -15,37 +12,11 @@ const TEXT_PRESETS: Record<TextPreset, { label: string; log: string; fontSize: n
 };
 
 export const PainelTexto = memo(function PainelTexto() {
-  const { activeCanvas, artboard } = useEditor();
-
-  const handleAddTextToCanvas = useCallback(
-    (type: TextPreset) => {
-      const preset = TEXT_PRESETS[type];
-      console.log(`Adicionando ${preset.log} ao Canvas`);
-
-      if (!activeCanvas) {
-        toast.info("Selecione uma página para adicionar texto");
-        return;
-      }
-
-      const textNode = new fabric.Textbox(preset.label, {
-        left: artboard.width / 2,
-        top: artboard.height / 2,
-        width: Math.min(720, artboard.width * 0.72),
-        originX: "center",
-        originY: "center",
-        textAlign: "center",
-        fill: "#1f1f2f",
-        fontFamily: "Inter",
-        fontSize: preset.fontSize,
-        fontWeight: preset.fontWeight,
-      });
-
-      activeCanvas.add(textNode);
-      activeCanvas.setActiveObject(textNode);
-      activeCanvas.requestRenderAll();
-    },
-    [activeCanvas, artboard.height, artboard.width],
-  );
+  const handleAddTextToCanvas = useCallback((type: TextPreset) => {
+    const preset = TEXT_PRESETS[type];
+    console.log(`Adicionando ${preset.log} ao Canvas`);
+    toast.info("Ferramenta de texto temporariamente desativada");
+  }, []);
 
   return (
     <div className="flex flex-col gap-4 p-3">
