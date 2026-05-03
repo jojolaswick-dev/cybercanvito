@@ -114,10 +114,55 @@ export const SidePanel = memo(function SidePanel({
         {active === "texto" ? (
           <PainelTexto />
         ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {content.items.map((item) => (
-              <PanelItem key={item} item={item} activeToolId={active} />
-            ))}
+          <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-2 gap-2">
+              {content.items.map((item) => (
+                <PanelItem key={item} item={item} activeToolId={active} />
+              ))}
+            </div>
+
+            {active === "uploads" && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40">Arquivos Recentes</h3>
+                  <span className="text-[10px] text-white/30">{filteredFiles.length} arquivos</span>
+                </div>
+                
+                {filteredFiles.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {filteredFiles.map((file) => (
+                      <button
+                        key={file.id}
+                        onClick={() => addImageFromSource(file.url, undefined, file.name)}
+                        className="group relative aspect-square overflow-hidden rounded-md border border-white/10 bg-white/5 transition-all hover:border-[var(--electric-blue)] hover:bg-white/10"
+                      >
+                        {file.type === "image" ? (
+                          <img 
+                            src={file.url} 
+                            alt={file.name} 
+                            className="h-full w-full object-cover transition-transform group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            {file.type === "video" ? <Video className="h-5 w-5 text-white/40" /> : <Music className="h-5 w-5 text-white/40" />}
+                          </div>
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                          <span className="text-[10px] font-bold text-white">ADICIONAR</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-white/10 py-8 text-center">
+                    <ImageIcon className="mb-2 h-8 w-8 text-white/10" />
+                    <p className="px-4 text-[10px] text-white/40 uppercase tracking-wider">
+                      {searchQuery ? "Nenhum arquivo encontrado" : "Nenhum arquivo carregado ainda"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
