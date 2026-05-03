@@ -133,7 +133,7 @@ export const SidePanel = memo(function SidePanel({
                     {filteredFiles.map((file) => (
                       <button
                         key={file.id}
-                        onClick={() => addImageFromSource(file.url, undefined, file.name)}
+                        onClick={() => addImageFromSource(file.url, undefined, file.name, true)}
                         className="group relative aspect-square overflow-hidden rounded-md border border-white/10 bg-white/5 transition-all hover:border-[var(--electric-blue)] hover:bg-white/10"
                       >
                         {file.type === "image" ? (
