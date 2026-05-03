@@ -527,23 +527,28 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
   if (hasObjects) return null;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        onChange={handleFileChange}
-        className="hidden"
-      />
+    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-4">
       <button
         type="button"
-        onClick={handleClick}
+        onClick={handleImageClick}
         className="pointer-events-auto group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[oklch(0.7_0.05_280)] bg-white/70 px-8 py-6 text-[var(--background)] backdrop-blur-sm transition-all hover:border-[var(--neon-violet)] hover:bg-white/90 hover:shadow-[0_0_24px_oklch(0.55_0.28_295/0.35)]"
       >
         <ImagePlus className="h-7 w-7 text-[var(--neon-violet)]" />
-        <span className="text-sm font-semibold">+ Adicionar Imagem</span>
-        <span className="text-xs text-[oklch(0.45_0.02_270)]">
-          Clique ou arraste uma imagem para este papel
+        <span className="text-sm font-semibold">+ Imagem</span>
+        <span className="text-[10px] text-[oklch(0.45_0.02_270)]">
+          PNG, JPG, WebP
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={handleVideoClick}
+        className="pointer-events-auto group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[oklch(0.7_0.05_280)] bg-white/70 px-8 py-6 text-[var(--background)] backdrop-blur-sm transition-all hover:border-[var(--electric-blue)] hover:bg-white/90 hover:shadow-[0_0_24px_oklch(0.4_0.25_240/0.35)]"
+      >
+        <Video className="h-7 w-7 text-[var(--electric-blue)]" />
+        <span className="text-sm font-semibold">+ Vídeo</span>
+        <span className="text-[10px] text-[oklch(0.45_0.02_270)]">
+          MP4, GIF, WebM
         </span>
       </button>
     </div>
