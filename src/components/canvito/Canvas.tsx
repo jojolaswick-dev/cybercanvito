@@ -495,7 +495,8 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
     if (file) {
       setActivePageId(pageId);
       if (file.type.startsWith("video/")) {
-        // Handled via openImagePicker or directly if we had setUploadedFiles
+        setActivePageId(pageId);
+        await addVideoFromSource(URL.createObjectURL(file), { pageId }, file.name);
       } else {
         await addImageFromFile(file, { pageId });
       }
