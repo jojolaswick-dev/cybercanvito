@@ -480,10 +480,15 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
   const { addImageFromFile, setActivePageId } = useEditor();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleImageClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    fileInputRef.current?.click();
-  }, []);
+    openImagePicker({ pageId });
+  }, [pageId, openImagePicker]);
+
+  const handleVideoClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    openImagePicker({ pageId }, "video");
+  }, [pageId, openImagePicker]);
 
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
