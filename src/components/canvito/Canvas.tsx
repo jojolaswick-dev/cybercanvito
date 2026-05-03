@@ -1,7 +1,8 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ImagePlus, Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { ImagePlus, Plus, Trash2, ChevronUp, ChevronDown, Video } from "lucide-react";
+import { toast } from "sonner";
 import type * as fabric from "fabric";
-import { useEditor } from "./editor-context";
+import { useEditor, type UploadedFile } from "./editor-context";
 
 /** What was hit on right-click — used to choose menu options. */
 type CtxMenuState = {
