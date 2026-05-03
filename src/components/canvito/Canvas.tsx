@@ -440,7 +440,7 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
   pageId: string;
   onAddImage: () => void;
 }) {
-  const { getPageCanvas } = useEditor();
+  const { getPageCanvas, openImagePicker } = useEditor();
   const [hasObjects, setHasObjects] = useState(false);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
 
