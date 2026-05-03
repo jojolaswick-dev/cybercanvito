@@ -99,6 +99,8 @@ type EditorCtx = {
   clearMagicBrush: () => void;
   applyMagicRemoval: () => Promise<void>;
   isProcessingMagic: boolean;
+  uploadedFiles: UploadedFile[];
+  removeUploadedFile: (id: string) => void;
 };
 
 type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
