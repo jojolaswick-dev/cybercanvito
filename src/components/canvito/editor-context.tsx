@@ -1367,6 +1367,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     addImageFromSource,
     addImageFromFile,
     openImagePicker,
+    addVideoFromSource,
     addPage,
     deletePage,
     deleteActiveObject,
