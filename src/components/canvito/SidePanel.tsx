@@ -1,5 +1,6 @@
 import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2, Image as ImageIcon, Video, Music } from "lucide-react";
 import { memo, useCallback, useState, useMemo } from "react";
+import { toast } from "sonner";
 import { TOOLS, type ToolId } from "./Sidebar";
 import { useEditor } from "./editor-context";
 import { PainelTexto } from "./PainelTexto";
