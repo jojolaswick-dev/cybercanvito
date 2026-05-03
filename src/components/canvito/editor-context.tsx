@@ -1395,7 +1395,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     removeUploadedFile,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
-    setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
+    setZoom, fitToScreen, addImageFromSource, addImageFromFile, addVideoFromSource, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
     pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage, brushSize, isMagicBrushActive,
     isProcessingMagic, clearMagicBrush, applyMagicRemoval, uploadedFiles, removeUploadedFile
