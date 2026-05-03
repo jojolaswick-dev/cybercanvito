@@ -495,28 +495,7 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
     if (file) {
       setActivePageId(pageId);
       if (file.type.startsWith("video/")) {
-        const MAX_SIZE = 200 * 1024 * 1024;
-        if (file.size > MAX_SIZE) {
-          toast.error("O vídeo deve ter no máximo 200MB");
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-          const videoUrl = reader.result as string;
-          const newFile: UploadedFile = {
-            id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-            name: file.name,
-            url: videoUrl,
-            type: "video",
-            timestamp: Date.now()
-          };
-          // We need access to setUploadedFiles here or use a helper from context
-          // Since we can't easily add setUploadedFiles to the context return without another edit,
-          // let's use the openImagePicker logic or similar.
-          // Actually, let's use addImageFromFile for images and a new helper for videos if needed.
-          // For now, let's just trigger the openImagePicker logic for videos.
-        };
-        reader.readAsDataURL(file);
+        // Handled via openImagePicker or directly if we had setUploadedFiles
       } else {
         await addImageFromFile(file, { pageId });
       }
