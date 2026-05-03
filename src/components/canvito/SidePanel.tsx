@@ -1,4 +1,4 @@
-import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2 } from "lucide-react";
+import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2, Image as ImageIcon, Video, Music } from "lucide-react";
 import { memo, useCallback } from "react";
 import { TOOLS, type ToolId } from "./Sidebar";
 import { useEditor } from "./editor-context";
@@ -23,7 +23,7 @@ const PANEL_CONTENT: Record<ToolId, { title: string; description: string; items:
   uploads: {
     title: "Uploads",
     description: "Suas imagens e arquivos.",
-    items: ["Carregar arquivos", "Imagens", "Vídeos", "Áudio"],
+    items: ["Imagens", "Vídeos", "Áudio"],
   },
   marcacao: {
     title: "Marcação",
@@ -119,17 +119,22 @@ const PanelItem = memo(function PanelItem({
   item: string;
   activeToolId: ToolId | null;
 }) {
-  const { isMagicBrushActive, setIsMagicBrushActive } = useEditor();
+  const { isMagicBrushActive, setIsMagicBrushActive, openImagePicker } = useEditor();
   const isMagicBrush = activeToolId === "removedor-objetos" && item === "Pincel mágico";
+  const isUploadImagens = activeToolId === "uploads" && item === "Imagens";
+
+  const handleClick = () => {
+    if (isMagicBrush) {
+      setIsMagicBrushActive(!isMagicBrushActive);
+    } else if (isUploadImagens) {
+      openImagePicker();
+    }
+  };
 
   return (
     <div className={isMagicBrush ? "col-span-2 flex flex-col gap-3" : "flex flex-col gap-2"}>
       <button 
-        onClick={() => {
-          if (isMagicBrush) {
-            setIsMagicBrushActive(!isMagicBrushActive);
-          }
-        }}
+        onClick={handleClick}
         className={`group relative flex flex-col items-center justify-center gap-2 rounded-lg border p-3 transition-all ${
           isMagicBrush && isMagicBrushActive 
             ? "border-[var(--neon-pink)] bg-[var(--neon-pink)]/10 shadow-[0_0_12px_oklch(0.55_0.28_295/0.2)]" 
@@ -140,7 +145,10 @@ const PanelItem = memo(function PanelItem({
           {item === "Pincel mágico" && <Sparkles className="h-5 w-5" />}
           {item === "Laço inteligente" && <Scissors className="h-5 w-5" />}
           {item === "Auto-detecção" && <Scan className="h-5 w-5" />}
-          {!["Pincel mágico", "Laço inteligente", "Auto-detecção"].includes(item) && <div className="h-5 w-5 rounded-full border border-current opacity-20" />}
+          {item === "Imagens" && <ImageIcon className="h-5 w-5" />}
+          {item === "Vídeos" && <Video className="h-5 w-5" />}
+          {item === "Áudio" && <Music className="h-5 w-5" />}
+          {!["Pincel mágico", "Laço inteligente", "Auto-detecção", "Imagens", "Vídeos", "Áudio"].includes(item) && <div className="h-5 w-5 rounded-full border border-current opacity-20" />}
         </div>
         <span className={`text-[10px] font-medium uppercase tracking-wider ${isMagicBrush && isMagicBrushActive ? "text-white" : "text-white/60 group-hover:text-white/90"}`}>
           {item}
