@@ -70,7 +70,7 @@ type EditorCtx = {
 
   addImageFromSource: (src: string, at?: ImageInsertPoint, fileName?: string, skipList?: boolean) => Promise<void>;
   addImageFromFile: (file: File, at?: ImageInsertPoint) => Promise<void>;
-  openImagePicker: (at?: ImageInsertPoint) => void;
+  // ... keep existing code
 
   addPage: () => void;
   deletePage: (pageId: string) => void;
