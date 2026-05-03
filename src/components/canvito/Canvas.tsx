@@ -1,7 +1,8 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ImagePlus, Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { ImagePlus, Plus, Trash2, ChevronUp, ChevronDown, Video } from "lucide-react";
+import { toast } from "sonner";
 import type * as fabric from "fabric";
-import { useEditor } from "./editor-context";
+import { useEditor, type UploadedFile } from "./editor-context";
 
 /** What was hit on right-click — used to choose menu options. */
 type CtxMenuState = {
@@ -439,7 +440,7 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
   pageId: string;
   onAddImage: () => void;
 }) {
-  const { getPageCanvas } = useEditor();
+  const { getPageCanvas, openImagePicker } = useEditor();
   const [hasObjects, setHasObjects] = useState(false);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
 
@@ -479,16 +480,25 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
   const { addImageFromFile, setActivePageId } = useEditor();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleImageClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    fileInputRef.current?.click();
-  }, []);
+    openImagePicker({ pageId });
+  }, [pageId, openImagePicker]);
+
+  const handleVideoClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    openImagePicker({ pageId }, "video");
+  }, [pageId, openImagePicker]);
 
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setActivePageId(pageId);
-      await addImageFromFile(file, { pageId });
+      if (file.type.startsWith("video/")) {
+        // Handled via openImagePicker or directly if we had setUploadedFiles
+      } else {
+        await addImageFromFile(file, { pageId });
+      }
     }
     e.target.value = "";
   }, [pageId, setActivePageId, addImageFromFile]);
@@ -496,23 +506,28 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
   if (hasObjects) return null;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        onChange={handleFileChange}
-        className="hidden"
-      />
+    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-4">
       <button
         type="button"
-        onClick={handleClick}
+        onClick={handleImageClick}
         className="pointer-events-auto group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[oklch(0.7_0.05_280)] bg-white/70 px-8 py-6 text-[var(--background)] backdrop-blur-sm transition-all hover:border-[var(--neon-violet)] hover:bg-white/90 hover:shadow-[0_0_24px_oklch(0.55_0.28_295/0.35)]"
       >
         <ImagePlus className="h-7 w-7 text-[var(--neon-violet)]" />
-        <span className="text-sm font-semibold">+ Adicionar Imagem</span>
-        <span className="text-xs text-[oklch(0.45_0.02_270)]">
-          Clique ou arraste uma imagem para este papel
+        <span className="text-sm font-semibold">+ Imagem</span>
+        <span className="text-[10px] text-[oklch(0.45_0.02_270)]">
+          PNG, JPG, WebP
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={handleVideoClick}
+        className="pointer-events-auto group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[oklch(0.7_0.05_280)] bg-white/70 px-8 py-6 text-[var(--background)] backdrop-blur-sm transition-all hover:border-[var(--electric-blue)] hover:bg-white/90 hover:shadow-[0_0_24px_oklch(0.4_0.25_240/0.35)]"
+      >
+        <Video className="h-7 w-7 text-[var(--electric-blue)]" />
+        <span className="text-sm font-semibold">+ Vídeo</span>
+        <span className="text-[10px] text-[oklch(0.45_0.02_270)]">
+          MP4, GIF, WebM
         </span>
       </button>
     </div>
