@@ -180,12 +180,15 @@ const PanelItem = memo(function PanelItem({
   const { isMagicBrushActive, setIsMagicBrushActive, openImagePicker } = useEditor();
   const isMagicBrush = activeToolId === "removedor-objetos" && item === "Pincel mágico";
   const isUploadImagens = activeToolId === "uploads" && item === "Imagens";
+  const isUploadVideos = activeToolId === "uploads" && item === "Vídeos";
 
   const handleClick = () => {
     if (isMagicBrush) {
       setIsMagicBrushActive(!isMagicBrushActive);
     } else if (isUploadImagens) {
       openImagePicker();
+    } else if (isUploadVideos) {
+      openImagePicker(undefined, "video");
     }
   };
 
