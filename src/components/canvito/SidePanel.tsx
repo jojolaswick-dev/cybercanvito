@@ -1,5 +1,6 @@
 import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2, Image as ImageIcon, Video, Music } from "lucide-react";
 import { memo, useCallback, useState, useMemo } from "react";
+import { toast } from "sonner";
 import { TOOLS, type ToolId } from "./Sidebar";
 import { useEditor } from "./editor-context";
 import { PainelTexto } from "./PainelTexto";
@@ -133,7 +134,13 @@ export const SidePanel = memo(function SidePanel({
                     {filteredFiles.map((file) => (
                       <button
                         key={file.id}
-                        onClick={() => addImageFromSource(file.url, undefined, file.name, true)}
+                        onClick={() => {
+                          if (file.type === "image") {
+                            addImageFromSource(file.url, undefined, file.name, true);
+                          } else {
+                            toast.info("Em breve: Edição de vídeo no canvas");
+                          }
+                        }}
                         className="group relative aspect-square overflow-hidden rounded-md border border-white/10 bg-white/5 transition-all hover:border-[var(--electric-blue)] hover:bg-white/10"
                       >
                         {file.type === "image" ? (
@@ -143,12 +150,33 @@ export const SidePanel = memo(function SidePanel({
                             className="h-full w-full object-cover transition-transform group-hover:scale-110"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            {file.type === "video" ? <Video className="h-5 w-5 text-white/40" /> : <Music className="h-5 w-5 text-white/40" />}
+                          <div className="flex h-full w-full flex-col items-center justify-center bg-black/20">
+                            {file.type === "video" ? (
+                              <>
+                                <video 
+                                  src={file.url} 
+                                  className="h-full w-full object-cover opacity-60 transition-opacity group-hover:opacity-100"
+                                  onMouseOver={(e) => e.currentTarget.play()}
+                                  onMouseOut={(e) => {
+                                    e.currentTarget.pause();
+                                    e.currentTarget.currentTime = 0;
+                                  }}
+                                  muted
+                                  loop
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <Video className="h-5 w-5 text-white shadow-lg" />
+                                </div>
+                              </>
+                            ) : (
+                              <Music className="h-5 w-5 text-white/40" />
+                            )}
                           </div>
                         )}
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                          <span className="text-[10px] font-bold text-white">ADICIONAR</span>
+                          <span className="text-[10px] font-bold text-white">
+                            {file.type === "image" ? "ADICIONAR" : "VER"}
+                          </span>
                         </div>
                       </button>
                     ))}
