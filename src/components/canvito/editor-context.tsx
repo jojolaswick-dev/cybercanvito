@@ -3,7 +3,7 @@ import * as fabric from "fabric";
 // @ts-ignore
 import { Path } from "fabric";
 import { toast } from "sonner";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Video } from "lucide-react";
 
 export type ArtboardPresetId = "square" | "story" | "portrait" | "widescreen" | "landscape";
 
@@ -1151,8 +1151,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           const objectUrl = URL.createObjectURL(f);
           
           if (mode === "video") {
-            await addVideoFromSource(objectUrl, target ?? undefined, f.name);
-            toast.success("Vídeo carregado com sucesso!");
+            await addVideoFromSource(objectUrl);
           } else {
             // Para imagens, mantemos a lógica de inserção no canvas, 
             // mas usamos o objectUrl em vez de ler como base64 se possível

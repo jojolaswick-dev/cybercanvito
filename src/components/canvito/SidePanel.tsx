@@ -138,7 +138,7 @@ export const SidePanel = memo(function SidePanel({
                           if (file.type === "image") {
                             addImageFromSource(file.url, undefined, file.name, true);
                           } else {
-                            addVideoFromSource(file.url, undefined, file.name, true);
+                            addVideoFromSource(file.url);
                           }
                         }}
                         className="group relative aspect-square overflow-hidden rounded-md border border-white/10 bg-white/5 transition-all hover:border-[var(--electric-blue)] hover:bg-white/10"
