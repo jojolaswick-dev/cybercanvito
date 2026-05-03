@@ -61,7 +61,7 @@ export const SidePanel = memo(function SidePanel({
   onClose: () => void;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const { uploadedFiles, addImageFromSource } = useEditor();
+  const { uploadedFiles, addImageFromSource, addVideoFromSource } = useEditor();
 
   const handleClose = useCallback(() => onClose(), [onClose]);
   
