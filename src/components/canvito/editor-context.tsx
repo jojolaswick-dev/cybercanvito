@@ -1223,14 +1223,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           const objectUrl = URL.createObjectURL(f);
           
           if (mode === "video") {
-            const newFile: UploadedFile = {
-              id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-              name: f.name,
-              url: objectUrl,
-              type: "video",
-              timestamp: Date.now()
-            };
-            setUploadedFiles(prev => [newFile, ...prev]);
+            await addVideoFromSource(objectUrl, target ?? undefined, f.name);
             toast.success("Vídeo carregado com sucesso!");
           } else {
             // Para imagens, mantemos a lógica de inserção no canvas, 
