@@ -84,6 +84,7 @@ type EditorCtx = {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  openImagePicker: (at?: ImageInsertPoint, mode?: "image" | "video") => void;
 
   /** Read the live Fabric.Canvas for a given page (null if not registered yet). */
   getPageCanvas: (pageId: string) => fabric.Canvas | null;
