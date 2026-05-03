@@ -1095,7 +1095,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(file);
       });
-      await addImageFromSource(dataUrl, at);
+      await addImageFromSource(dataUrl, at, file.name);
     },
     [addImageFromSource],
   );
