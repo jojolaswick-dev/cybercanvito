@@ -103,6 +103,8 @@ export const SidePanel = memo(function SidePanel({
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/50" />
           <input
             placeholder="Pesquisar..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full rounded-md bg-white/5 py-2 pl-9 pr-3 text-sm text-white outline-none ring-1 ring-white/10 transition-all placeholder:text-white/40 focus:ring-[var(--electric-blue)]"
           />
         </div>
