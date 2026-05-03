@@ -1131,29 +1131,31 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         pendingInsertAtRef.current = null;
         
         if (f) {
+          const MAX_SIZE = 200 * 1024 * 1024; // 200MB
+          if (f.size > MAX_SIZE) {
+            toast.error("O arquivo deve ter no máximo 200MB");
+            input.remove();
+            return;
+          }
+
+          // Criar uma URL de objeto (Blob) para evitar problemas com base64 e memória
+          const objectUrl = URL.createObjectURL(f);
+          
           if (mode === "video") {
-            const MAX_SIZE = 200 * 1024 * 1024; // 200MB
-            if (f.size > MAX_SIZE) {
-              toast.error("O vídeo deve ter no máximo 200MB");
-              return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = () => {
-              const videoUrl = reader.result as string;
-              const newFile: UploadedFile = {
-                id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-                name: f.name,
-                url: videoUrl,
-                type: "video",
-                timestamp: Date.now()
-              };
-              setUploadedFiles(prev => [newFile, ...prev]);
-              toast.success("Vídeo carregado com sucesso!");
+            const newFile: UploadedFile = {
+              id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+              name: f.name,
+              url: objectUrl,
+              type: "video",
+              timestamp: Date.now()
             };
-            reader.readAsDataURL(f);
+            setUploadedFiles(prev => [newFile, ...prev]);
+            toast.success("Vídeo carregado com sucesso!");
           } else {
-            await addImageFromFile(f, target ?? undefined);
+            // Para imagens, mantemos a lógica de inserção no canvas, 
+            // mas usamos o objectUrl em vez de ler como base64 se possível
+            await addImageFromSource(objectUrl, target ?? undefined, f.name);
+            toast.success("Imagem carregada com sucesso!");
           }
         }
         input.remove();
@@ -1161,7 +1163,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       document.body.appendChild(input);
       input.click();
     },
-    [addImageFromFile],
+    [addImageFromSource],
   );
 
   useEffect(() => {
