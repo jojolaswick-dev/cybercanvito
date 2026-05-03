@@ -1088,7 +1088,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       if (!fileInputRef.current) {
         const input = document.createElement("input");
         input.type = "file";
-        input.accept = "image/*";
+        input.accept = "image/png, image/jpeg, image/jpg, image/webp";
         input.style.display = "none";
         input.addEventListener("change", () => {
           const f = input.files?.[0];
