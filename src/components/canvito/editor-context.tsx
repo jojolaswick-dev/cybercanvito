@@ -1020,9 +1020,20 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   // ---------- Image insertion (always targets the active page's canvas) ----------
 
   const addImageFromSource = useCallback(
-    async (src: string, at?: ImageInsertPoint) => {
+    async (src: string, at?: ImageInsertPoint, fileName?: string) => {
       const targetPageId = at?.pageId ?? activePageIdRef.current ?? "";
       const c = canvasesRef.current.get(targetPageId);
+      
+      // Add to uploaded files list
+      const newFile: UploadedFile = {
+        id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name: fileName || "Nova Imagem",
+        url: src,
+        type: "image",
+        timestamp: Date.now()
+      };
+      setUploadedFiles(prev => [newFile, ...prev]);
+
       if (!c) return;
       try {
         // DataURLs must NOT pass crossOrigin (causes a silent CORS failure on some browsers).
