@@ -70,7 +70,7 @@ type EditorCtx = {
 
   addImageFromSource: (src: string, at?: ImageInsertPoint, fileName?: string, skipList?: boolean) => Promise<void>;
   addImageFromFile: (file: File, at?: ImageInsertPoint) => Promise<void>;
-  addVideoFromSource: (src: string, at?: ImageInsertPoint, fileName?: string, skipList?: boolean) => Promise<void>;
+  addVideoFromSource: (src: string) => Promise<void>;
 
   addPage: () => void;
   deletePage: (pageId: string) => void;
@@ -1090,84 +1090,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   );
 
   const addVideoFromSource = useCallback(
-    async (src: string, at?: ImageInsertPoint, fileName?: string, skipList = false) => {
-      const targetPageId = at?.pageId ?? activePageIdRef.current ?? "";
-      const c = canvasesRef.current.get(targetPageId);
-
-      if (!skipList) {
-        const newFile: UploadedFile = {
-          id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          name: fileName || "Novo Vídeo",
-          url: src,
-          type: "video",
-          timestamp: Date.now(),
-        };
-        setUploadedFiles((prev) => [newFile, ...prev]);
-      }
-
-      if (!c) return;
-
-      try {
-        const videoElement = document.createElement("video");
-        videoElement.src = src;
-        videoElement.muted = true;
-        videoElement.loop = true;
-        
-        await new Promise((resolve, reject) => {
-          videoElement.onloadeddata = resolve;
-          videoElement.onerror = reject;
-        });
-
-        const video = new fabric.FabricImage(videoElement, {
-          left: at?.x ?? artboard.width / 2,
-          top: at?.y ?? artboard.height / 2,
-          originX: "center",
-          originY: "center",
-          objectCaching: false,
-        });
-
-        const aw = artboard.width;
-        const ah = artboard.height;
-        const vw = video.width ?? 1;
-        const vh = video.height ?? 1;
-        const maxScale = Math.min((aw * 0.8) / vw, (ah * 0.8) / vh);
-        const scale = Math.min(maxScale, 1);
-        video.scale(scale);
-
-        video.set({
-          cornerColor: "#ffffff",
-          cornerStrokeColor: "oklch(0.55 0.28 295)",
-          borderColor: "oklch(0.55 0.28 295)",
-          cornerSize: 12,
-          transparentCorners: false,
-          cornerStyle: "circle",
-          rotatingPointOffset: 28,
-          lockUniScaling: true,
-        });
-
-        video.setControlsVisibility({
-          mt: false, mb: false, ml: false, mr: false,
-          mtr: true, tl: true, tr: true, bl: true, br: true,
-        });
-
-        c.add(video);
-        if (trashControlRef.current) {
-          video.controls = { ...video.controls, deleteControl: trashControlRef.current };
-        }
-        c.setActiveObject(video);
-
-        fabric.util.requestAnimFrame(function render() {
-          c.requestRenderAll();
-          fabric.util.requestAnimFrame(render);
-        });
-
-        videoElement.play();
-      } catch (err) {
-        console.error("Falha ao adicionar vídeo:", err);
-        toast.error("Erro ao carregar vídeo no canvas");
-      }
+    async (src: string) => {
+      toast.info("Em breve: edição de vídeo no canvas", {
+        icon: <Video className="h-4 w-4" />,
+      });
     },
-    [artboard.width, artboard.height],
+    [],
   );
 
   const addImageFromFile = useCallback(
