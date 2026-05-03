@@ -59,7 +59,18 @@ export const SidePanel = memo(function SidePanel({
   active: ToolId | null;
   onClose: () => void;
 }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const { uploadedFiles, addImageFromSource } = useEditor();
+
   const handleClose = useCallback(() => onClose(), [onClose]);
+  
+  const filteredFiles = useMemo(() => {
+    if (!searchQuery) return uploadedFiles;
+    return uploadedFiles.filter(file => 
+      file.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [uploadedFiles, searchQuery]);
+
   if (!active) return null;
   const content = PANEL_CONTENT[active];
   const tool = TOOLS.find((t) => t.id === active);
