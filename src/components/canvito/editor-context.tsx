@@ -20,6 +20,14 @@ export type PageState = {
   id: string;
 };
 
+export type UploadedFile = {
+  id: string;
+  name: string;
+  url: string;
+  type: "image" | "video" | "audio";
+  timestamp: number;
+};
+
 /** A point inside a specific page's artboard (in artboard coordinates). */
 export type ImageInsertPoint = {
   pageId: string;
