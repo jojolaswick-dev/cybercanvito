@@ -61,7 +61,7 @@ export const SidePanel = memo(function SidePanel({
   onClose: () => void;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const { uploadedFiles, addImageFromSource } = useEditor();
+  const { uploadedFiles, addImageFromSource, addVideoFromSource } = useEditor();
 
   const handleClose = useCallback(() => onClose(), [onClose]);
   
@@ -138,7 +138,7 @@ export const SidePanel = memo(function SidePanel({
                           if (file.type === "image") {
                             addImageFromSource(file.url, undefined, file.name, true);
                           } else {
-                            toast.info("Em breve: Edição de vídeo no canvas");
+                            addVideoFromSource(file.url, undefined, file.name, true);
                           }
                         }}
                         className="group relative aspect-square overflow-hidden rounded-md border border-white/10 bg-white/5 transition-all hover:border-[var(--electric-blue)] hover:bg-white/10"

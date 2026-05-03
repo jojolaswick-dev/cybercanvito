@@ -440,7 +440,7 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
   pageId: string;
   onAddImage: () => void;
 }) {
-  const { getPageCanvas, openImagePicker } = useEditor();
+  const { getPageCanvas, openImagePicker, addVideoFromSource } = useEditor();
   const [hasObjects, setHasObjects] = useState(false);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
 
@@ -495,7 +495,8 @@ const PageEmptyCTA = memo(function PageEmptyCTA({
     if (file) {
       setActivePageId(pageId);
       if (file.type.startsWith("video/")) {
-        // Handled via openImagePicker or directly if we had setUploadedFiles
+        setActivePageId(pageId);
+        await addVideoFromSource(URL.createObjectURL(file), { pageId }, file.name);
       } else {
         await addImageFromFile(file, { pageId });
       }
