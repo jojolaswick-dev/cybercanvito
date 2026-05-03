@@ -1107,29 +1107,59 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   // file selected via the shared <input type=file>.
 
   const openImagePicker = useCallback(
-    (at?: ImageInsertPoint) => {
+    (at?: ImageInsertPoint, mode: "image" | "video" = "image") => {
       if (at?.pageId) {
         activePageIdRef.current = at.pageId;
         setActivePageIdState(at.pageId);
         setActiveCanvas(canvasesRef.current.get(at.pageId) ?? null);
       }
       pendingInsertAtRef.current = at ?? null;
-      if (!fileInputRef.current) {
-        const input = document.createElement("input");
-        input.type = "file";
+      
+      const input = document.createElement("input");
+      input.type = "file";
+      
+      if (mode === "video") {
+        input.accept = "video/mp4, video/webm, video/quicktime, image/gif";
+      } else {
         input.accept = "image/png, image/jpeg, image/jpg, image/webp";
-        input.style.display = "none";
-        input.addEventListener("change", () => {
-          const f = input.files?.[0];
-          const target = pendingInsertAtRef.current;
-          pendingInsertAtRef.current = null;
-          if (f) addImageFromFile(f, target ?? undefined);
-          input.value = "";
-        });
-        document.body.appendChild(input);
-        fileInputRef.current = input;
       }
-      fileInputRef.current.click();
+      
+      input.style.display = "none";
+      input.addEventListener("change", async () => {
+        const f = input.files?.[0];
+        const target = pendingInsertAtRef.current;
+        pendingInsertAtRef.current = null;
+        
+        if (f) {
+          if (mode === "video") {
+            const MAX_SIZE = 200 * 1024 * 1024; // 200MB
+            if (f.size > MAX_SIZE) {
+              toast.error("O vídeo deve ter no máximo 200MB");
+              return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = () => {
+              const videoUrl = reader.result as string;
+              const newFile: UploadedFile = {
+                id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                name: f.name,
+                url: videoUrl,
+                type: "video",
+                timestamp: Date.now()
+              };
+              setUploadedFiles(prev => [newFile, ...prev]);
+              toast.success("Vídeo carregado com sucesso!");
+            };
+            reader.readAsDataURL(f);
+          } else {
+            await addImageFromFile(f, target ?? undefined);
+          }
+        }
+        input.remove();
+      });
+      document.body.appendChild(input);
+      input.click();
     },
     [addImageFromFile],
   );
