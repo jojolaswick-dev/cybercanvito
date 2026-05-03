@@ -20,6 +20,14 @@ export type PageState = {
   id: string;
 };
 
+export type UploadedFile = {
+  id: string;
+  name: string;
+  url: string;
+  type: "image" | "video" | "audio";
+  timestamp: number;
+};
+
 /** A point inside a specific page's artboard (in artboard coordinates). */
 export type ImageInsertPoint = {
   pageId: string;
@@ -60,7 +68,7 @@ type EditorCtx = {
   setZoom: (z: number) => void;
   fitToScreen: () => void;
 
-  addImageFromSource: (src: string, at?: ImageInsertPoint) => Promise<void>;
+  addImageFromSource: (src: string, at?: ImageInsertPoint, fileName?: string, skipList?: boolean) => Promise<void>;
   addImageFromFile: (file: File, at?: ImageInsertPoint) => Promise<void>;
   openImagePicker: (at?: ImageInsertPoint) => void;
 
@@ -91,6 +99,8 @@ type EditorCtx = {
   clearMagicBrush: () => void;
   applyMagicRemoval: () => Promise<void>;
   isProcessingMagic: boolean;
+  uploadedFiles: UploadedFile[];
+  removeUploadedFile: (id: string) => void;
 };
 
 type CropOverlayObject = fabric.Rect & { isCropOverlay?: boolean };
@@ -135,6 +145,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [brushSize, setBrushSizeState] = useState(66);
   const [isMagicBrushActive, setIsMagicBrushActiveState] = useState(false);
   const [isProcessingMagic, setIsProcessingMagic] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+
+  const removeUploadedFile = useCallback((id: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== id));
+  }, []);
 
   const setBrushSize = useCallback((size: number) => {
     setBrushSizeState(size);
@@ -1005,9 +1020,22 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   // ---------- Image insertion (always targets the active page's canvas) ----------
 
   const addImageFromSource = useCallback(
-    async (src: string, at?: ImageInsertPoint) => {
+    async (src: string, at?: ImageInsertPoint, fileName?: string, skipList = false) => {
       const targetPageId = at?.pageId ?? activePageIdRef.current ?? "";
       const c = canvasesRef.current.get(targetPageId);
+      
+      // Add to uploaded files list if not skipping
+      if (!skipList) {
+        const newFile: UploadedFile = {
+          id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          name: fileName || "Nova Imagem",
+          url: src,
+          type: "image",
+          timestamp: Date.now()
+        };
+        setUploadedFiles(prev => [newFile, ...prev]);
+      }
+
       if (!c) return;
       try {
         // DataURLs must NOT pass crossOrigin (causes a silent CORS failure on some browsers).
@@ -1069,7 +1097,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(file);
       });
-      await addImageFromSource(dataUrl, at);
+      await addImageFromSource(dataUrl, at, file.name);
     },
     [addImageFromSource],
   );
@@ -1255,12 +1283,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     isProcessingMagic,
     clearMagicBrush,
     applyMagicRemoval,
+    uploadedFiles,
+    removeUploadedFile,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
     setZoom, fitToScreen, addImageFromSource, addImageFromFile, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
     pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage, brushSize, isMagicBrushActive,
-    isProcessingMagic, clearMagicBrush, applyMagicRemoval
+    isProcessingMagic, clearMagicBrush, applyMagicRemoval, uploadedFiles, removeUploadedFile
   ]);
 
   return (
