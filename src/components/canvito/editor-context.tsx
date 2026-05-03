@@ -145,6 +145,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [brushSize, setBrushSizeState] = useState(66);
   const [isMagicBrushActive, setIsMagicBrushActiveState] = useState(false);
   const [isProcessingMagic, setIsProcessingMagic] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+
+  const removeUploadedFile = useCallback((id: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== id));
+  }, []);
 
   const setBrushSize = useCallback((size: number) => {
     setBrushSizeState(size);
