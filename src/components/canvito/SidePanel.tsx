@@ -62,13 +62,19 @@ export const SidePanel = memo(function SidePanel({
   onClose: () => void;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const { uploadedFiles, addImageFromSource, addVideoFromSource } = useEditor();
+  const [shapesOpen, setShapesOpen] = useState(false);
+  const { uploadedFiles, addImageFromSource, addVideoFromSource, addShapeFromUrl } = useEditor();
 
   const handleClose = useCallback(() => onClose(), [onClose]);
-  
+
+  // Reset shapes view when switching tools
+  useEffect(() => {
+    setShapesOpen(false);
+  }, [active]);
+
   const filteredFiles = useMemo(() => {
     if (!searchQuery) return uploadedFiles;
-    return uploadedFiles.filter(file => 
+    return uploadedFiles.filter(file =>
       file.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [uploadedFiles, searchQuery]);
