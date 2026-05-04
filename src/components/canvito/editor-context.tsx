@@ -71,6 +71,7 @@ type EditorCtx = {
   addImageFromSource: (src: string, at?: ImageInsertPoint, fileName?: string, skipList?: boolean) => Promise<void>;
   addImageFromFile: (file: File, at?: ImageInsertPoint) => Promise<void>;
   addVideoFromSource: (src: string) => Promise<void>;
+  addShapeFromUrl: (url: string) => Promise<void>;
 
   addPage: () => void;
   deletePage: (pageId: string) => void;
