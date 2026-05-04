@@ -71,6 +71,7 @@ type EditorCtx = {
   addImageFromSource: (src: string, at?: ImageInsertPoint, fileName?: string, skipList?: boolean) => Promise<void>;
   addImageFromFile: (file: File, at?: ImageInsertPoint) => Promise<void>;
   addVideoFromSource: (src: string) => Promise<void>;
+  addShapeFromUrl: (url: string) => Promise<void>;
 
   addPage: () => void;
   deletePage: (pageId: string) => void;
@@ -1098,6 +1099,62 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const addShapeFromUrl = useCallback(
+    async (url: string) => {
+      const c = canvasesRef.current.get(activePageIdRef.current ?? "");
+      if (!c) return;
+      try {
+        const result = await fabric.loadSVGFromURL(url);
+        const objects = (result.objects ?? []).filter(
+          (o): o is fabric.Object => !!o,
+        );
+        if (objects.length === 0) {
+          toast.error("Não foi possível carregar o SVG.");
+          return;
+        }
+        const group = fabric.util.groupSVGElements(objects, result.options);
+
+        const aw = artboard.width;
+        const ah = artboard.height;
+        const gw = group.width ?? 1;
+        const gh = group.height ?? 1;
+        const maxScale = Math.min((aw * 0.5) / gw, (ah * 0.5) / gh);
+        const scale = Math.min(maxScale, 1);
+        group.scale(scale);
+
+        group.set({
+          left: aw / 2,
+          top: ah / 2,
+          originX: "center",
+          originY: "center",
+          cornerColor: "#ffffff",
+          cornerStrokeColor: "oklch(0.55 0.28 295)",
+          borderColor: "oklch(0.55 0.28 295)",
+          cornerSize: 12,
+          transparentCorners: false,
+          cornerStyle: "circle",
+          lockUniScaling: true,
+        });
+        group.setControlsVisibility({
+          mt: false, mb: false, ml: false, mr: false,
+          mtr: true, tl: true, tr: true, bl: true, br: true,
+        });
+
+        c.add(group);
+        if (trashControlRef.current) {
+          group.controls = { ...group.controls, deleteControl: trashControlRef.current };
+        }
+        c.setActiveObject(group);
+        c.requestRenderAll();
+      } catch (err) {
+        console.error("Falha ao carregar forma SVG:", err);
+        toast.error("Falha ao carregar forma.");
+      }
+    },
+    [artboard.width, artboard.height],
+  );
+
+
   const addImageFromFile = useCallback(
     async (file: File, at?: ImageInsertPoint) => {
       if (!file.type.startsWith("image/")) return;
@@ -1295,6 +1352,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     addImageFromFile,
     openImagePicker,
     addVideoFromSource,
+    addShapeFromUrl,
     addPage,
     deletePage,
     deleteActiveObject,
@@ -1322,7 +1380,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     removeUploadedFile,
   }), [
     activeCanvas, registerPageCanvas, setActivePageId, artboard, setArtboardPreset, preset, zoom,
-    setZoom, fitToScreen, addImageFromSource, addImageFromFile, addVideoFromSource, openImagePicker, addPage,
+    setZoom, fitToScreen, addImageFromSource, addImageFromFile, addVideoFromSource, addShapeFromUrl, openImagePicker, addPage,
     deletePage, deleteActiveObject, startCropMode, applyCrop, cancelCrop, isCropMode, getPageCanvas,
     pages, activePageId, undo, redo, historyTick, resetDesign, reorderPage, brushSize, isMagicBrushActive,
     isProcessingMagic, clearMagicBrush, applyMagicRemoval, uploadedFiles, removeUploadedFile
