@@ -242,17 +242,20 @@ export const SidePanel = memo(function SidePanel({
   );
 });
 
-const PanelItem = memo(function PanelItem({ 
-  item, 
-  activeToolId 
-}: { 
+const PanelItem = memo(function PanelItem({
+  item,
+  activeToolId,
+  onOpenShapes,
+}: {
   item: string;
   activeToolId: ToolId | null;
+  onOpenShapes?: () => void;
 }) {
   const { isMagicBrushActive, setIsMagicBrushActive, openImagePicker } = useEditor();
   const isMagicBrush = activeToolId === "removedor-objetos" && item === "Pincel mágico";
   const isUploadImagens = activeToolId === "uploads" && item === "Imagens";
   const isUploadVideos = activeToolId === "uploads" && item === "Vídeos";
+  const isShapes = activeToolId === "elementos" && item === "Formas";
 
   const handleClick = () => {
     if (isMagicBrush) {
@@ -261,8 +264,11 @@ const PanelItem = memo(function PanelItem({
       openImagePicker();
     } else if (isUploadVideos) {
       openImagePicker(undefined, "video");
+    } else if (isShapes) {
+      onOpenShapes?.();
     }
   };
+
 
   return (
     <div className={isMagicBrush ? "col-span-2 flex flex-col gap-3" : "flex flex-col gap-2"}>
