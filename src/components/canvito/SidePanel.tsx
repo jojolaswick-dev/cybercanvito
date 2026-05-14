@@ -75,6 +75,7 @@ export const SidePanel = memo(function SidePanel({
   useEffect(() => {
     setShapesOpen(false);
     setLinesOpen(false);
+    setIconsOpen(false);
   }, [active]);
 
   const filteredFiles = useMemo(() => {
