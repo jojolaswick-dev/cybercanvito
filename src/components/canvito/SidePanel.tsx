@@ -72,6 +72,7 @@ export const SidePanel = memo(function SidePanel({
   // Reset shapes view when switching tools
   useEffect(() => {
     setShapesOpen(false);
+    setLinesOpen(false);
   }, [active]);
 
   const filteredFiles = useMemo(() => {
