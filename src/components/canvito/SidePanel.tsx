@@ -176,6 +176,7 @@ export const SidePanel = memo(function SidePanel({
                   activeToolId={active}
                   onOpenShapes={() => setShapesOpen(true)}
                   onOpenLines={() => setLinesOpen(true)}
+                  onOpenIcons={() => setIconsOpen(true)}
                 />
               ))}
             </div>
