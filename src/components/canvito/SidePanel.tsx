@@ -1,6 +1,7 @@
-import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2, Image as ImageIcon, Video, Music, Shapes as ShapesIcon } from "lucide-react";
+import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2, Image as ImageIcon, Video, Music, Shapes as ShapesIcon, Minus } from "lucide-react";
 import { memo, useCallback, useState, useMemo, useEffect } from "react";
 import { SHAPES } from "./shapes-library";
+import { LINES } from "./lines-library";
 import { toast } from "sonner";
 import { TOOLS, type ToolId } from "./Sidebar";
 import { useEditor } from "./editor-context";
