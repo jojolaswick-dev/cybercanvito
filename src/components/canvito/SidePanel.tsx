@@ -1,4 +1,4 @@
-import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2, Image as ImageIcon, Video, Music, Shapes as ShapesIcon, Minus, Box, StickyNote, BarChart3, Frame, Grid } from "lucide-react";
+import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2, Image as ImageIcon, Video, Music, Shapes as ShapesIcon, Minus, Box, StickyNote, BarChart3, Frame, Grid, Table } from "lucide-react";
 import { memo, useCallback, useState, useMemo, useEffect } from "react";
 import { SHAPES } from "./shapes-library";
 import { LINES } from "./lines-library";
@@ -7,6 +7,7 @@ import { STICKERS } from "./stickers-library";
 import { GRAPHICS } from "./graphics-library";
 import { FRAMES } from "./frames-library";
 import { GRIDS } from "./grids-library";
+import { TABLES } from "./tables-library";
 import { toast } from "sonner";
 import { TOOLS, type ToolId } from "./Sidebar";
 import { useEditor } from "./editor-context";
@@ -75,6 +76,7 @@ export const SidePanel = memo(function SidePanel({
   const [graphicsOpen, setGraphicsOpen] = useState(false);
   const [framesOpen, setFramesOpen] = useState(false);
   const [gridsOpen, setGridsOpen] = useState(false);
+  const [tablesOpen, setTablesOpen] = useState(false);
   const { uploadedFiles, addImageFromSource, addVideoFromSource, addShapeFromUrl } = useEditor();
 
   const handleClose = useCallback(() => onClose(), [onClose]);
@@ -88,6 +90,7 @@ export const SidePanel = memo(function SidePanel({
     setGraphicsOpen(false);
     setFramesOpen(false);
     setGridsOpen(false);
+    setTablesOpen(false);
   }, [active]);
 
   const filteredFiles = useMemo(() => {
@@ -139,7 +142,7 @@ export const SidePanel = memo(function SidePanel({
       <div className="flex-1 overflow-y-auto p-3">
         {active === "texto" ? (
           <PainelTexto />
-        ) : active === "elementos" && (shapesOpen || linesOpen || iconsOpen || stickersOpen || graphicsOpen || framesOpen || gridsOpen) ? (
+        ) : active === "elementos" && (shapesOpen || linesOpen || iconsOpen || stickersOpen || graphicsOpen || framesOpen || gridsOpen || tablesOpen) ? (
           <div className="flex flex-col gap-3">
             <button
               onClick={() => {
@@ -150,6 +153,7 @@ export const SidePanel = memo(function SidePanel({
                 setGraphicsOpen(false);
                 setFramesOpen(false);
                 setGridsOpen(false);
+                setTablesOpen(false);
               }}
               className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/50 hover:text-white"
             >
@@ -157,7 +161,7 @@ export const SidePanel = memo(function SidePanel({
             </button>
             <div className="flex items-center justify-between">
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40">
-                {shapesOpen ? "Formas" : linesOpen ? "Linhas" : iconsOpen ? "Ícones" : stickersOpen ? "Adesivos" : graphicsOpen ? "Gráficos" : framesOpen ? "Frames" : "Grelhas"}
+                {shapesOpen ? "Formas" : linesOpen ? "Linhas" : iconsOpen ? "Ícones" : stickersOpen ? "Adesivos" : graphicsOpen ? "Gráficos" : framesOpen ? "Frames" : gridsOpen ? "Grelhas" : "Tabelas"}
               </h3>
               <span className="text-[10px] text-white/30">
                 {shapesOpen 
@@ -172,11 +176,13 @@ export const SidePanel = memo(function SidePanel({
                           ? `${GRAPHICS.length} gráficos`
                           : framesOpen
                             ? `${FRAMES.length} frames`
-                            : `${GRIDS.length} grelhas`}
+                            : gridsOpen
+                              ? `${GRIDS.length} grelhas`
+                              : `${TABLES.length} tabelas`}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {(shapesOpen ? SHAPES : linesOpen ? LINES : iconsOpen ? ICONS : stickersOpen ? STICKERS : graphicsOpen ? GRAPHICS : framesOpen ? FRAMES : GRIDS).map((item) => (
+              {(shapesOpen ? SHAPES : linesOpen ? LINES : iconsOpen ? ICONS : stickersOpen ? STICKERS : graphicsOpen ? GRAPHICS : framesOpen ? FRAMES : gridsOpen ? GRIDS : TABLES).map((item) => (
                 <button
                   key={item.id}
                   onClick={() => addShapeFromUrl(item.url)}
@@ -210,6 +216,7 @@ export const SidePanel = memo(function SidePanel({
                   onOpenGraphics={() => setGraphicsOpen(true)}
                   onOpenFrames={() => setFramesOpen(true)}
                   onOpenGrids={() => setGridsOpen(true)}
+                  onOpenTables={() => setTablesOpen(true)}
                 />
               ))}
             </div>
@@ -300,6 +307,7 @@ const PanelItem = memo(function PanelItem({
   onOpenGraphics,
   onOpenFrames,
   onOpenGrids,
+  onOpenTables,
 }: {
   item: string;
   activeToolId: ToolId | null;
@@ -310,6 +318,7 @@ const PanelItem = memo(function PanelItem({
   onOpenGraphics?: () => void;
   onOpenFrames?: () => void;
   onOpenGrids?: () => void;
+  onOpenTables?: () => void;
 }) {
   const { isMagicBrushActive, setIsMagicBrushActive, openImagePicker } = useEditor();
   const isMagicBrush = activeToolId === "removedor-objetos" && item === "Pincel mágico";
@@ -322,6 +331,7 @@ const PanelItem = memo(function PanelItem({
   const isGraphics = activeToolId === "elementos" && item === "Gráficos";
   const isFrames = activeToolId === "elementos" && item === "Frames";
   const isGrids = activeToolId === "elementos" && item === "Grelhas";
+  const isTables = activeToolId === "elementos" && item === "Tabelas";
 
   const handleClick = () => {
     if (isMagicBrush) {
@@ -344,6 +354,8 @@ const PanelItem = memo(function PanelItem({
       onOpenFrames?.();
     } else if (isGrids) {
       onOpenGrids?.();
+    } else if (isTables) {
+      onOpenTables?.();
     }
   };
 
@@ -372,7 +384,8 @@ const PanelItem = memo(function PanelItem({
           {item === "Gráficos" && <BarChart3 className="h-5 w-5" />}
           {item === "Frames" && <Frame className="h-5 w-5" />}
           {item === "Grelhas" && <Grid className="h-5 w-5" />}
-          {!["Pincel mágico", "Laço inteligente", "Auto-detecção", "Imagens", "Vídeos", "Áudio", "Formas", "Linhas", "Ícones", "Adesivos", "Gráficos", "Frames", "Grelhas"].includes(item) && <div className="h-5 w-5 rounded-full border border-current opacity-20" />}
+          {item === "Tabelas" && <Table className="h-5 w-5" />}
+          {!["Pincel mágico", "Laço inteligente", "Auto-detecção", "Imagens", "Vídeos", "Áudio", "Formas", "Linhas", "Ícones", "Adesivos", "Gráficos", "Frames", "Grelhas", "Tabelas"].includes(item) && <div className="h-5 w-5 rounded-full border border-current opacity-20" />}
         </div>
         <span className={`text-[10px] font-medium uppercase tracking-wider ${isMagicBrush && isMagicBrushActive ? "text-white" : "text-white/60 group-hover:text-white/90"}`}>
           {item}
