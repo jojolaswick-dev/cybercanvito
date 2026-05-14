@@ -64,6 +64,7 @@ export const SidePanel = memo(function SidePanel({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [shapesOpen, setShapesOpen] = useState(false);
+  const [linesOpen, setLinesOpen] = useState(false);
   const { uploadedFiles, addImageFromSource, addVideoFromSource, addShapeFromUrl } = useEditor();
 
   const handleClose = useCallback(() => onClose(), [onClose]);
