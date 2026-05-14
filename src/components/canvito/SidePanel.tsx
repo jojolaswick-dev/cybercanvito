@@ -304,7 +304,8 @@ const PanelItem = memo(function PanelItem({
           {item === "Vídeos" && <Video className="h-5 w-5" />}
           {item === "Áudio" && <Music className="h-5 w-5" />}
           {item === "Formas" && <ShapesIcon className="h-5 w-5" />}
-          {!["Pincel mágico", "Laço inteligente", "Auto-detecção", "Imagens", "Vídeos", "Áudio", "Formas"].includes(item) && <div className="h-5 w-5 rounded-full border border-current opacity-20" />}
+          {item === "Linhas" && <Minus className="h-5 w-5" />}
+          {!["Pincel mágico", "Laço inteligente", "Auto-detecção", "Imagens", "Vídeos", "Áudio", "Formas", "Linhas"].includes(item) && <div className="h-5 w-5 rounded-full border border-current opacity-20" />}
         </div>
         <span className={`text-[10px] font-medium uppercase tracking-wider ${isMagicBrush && isMagicBrushActive ? "text-white" : "text-white/60 group-hover:text-white/90"}`}>
           {item}
