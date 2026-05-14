@@ -262,11 +262,13 @@ const PanelItem = memo(function PanelItem({
   activeToolId,
   onOpenShapes,
   onOpenLines,
+  onOpenIcons,
 }: {
   item: string;
   activeToolId: ToolId | null;
   onOpenShapes?: () => void;
   onOpenLines?: () => void;
+  onOpenIcons?: () => void;
 }) {
   const { isMagicBrushActive, setIsMagicBrushActive, openImagePicker } = useEditor();
   const isMagicBrush = activeToolId === "removedor-objetos" && item === "Pincel mágico";
@@ -274,6 +276,7 @@ const PanelItem = memo(function PanelItem({
   const isUploadVideos = activeToolId === "uploads" && item === "Vídeos";
   const isShapes = activeToolId === "elementos" && item === "Formas";
   const isLines = activeToolId === "elementos" && item === "Linhas";
+  const isIcons = activeToolId === "elementos" && item === "Ícones";
 
   const handleClick = () => {
     if (isMagicBrush) {
@@ -286,6 +289,8 @@ const PanelItem = memo(function PanelItem({
       onOpenShapes?.();
     } else if (isLines) {
       onOpenLines?.();
+    } else if (isIcons) {
+      onOpenIcons?.();
     }
   };
 
