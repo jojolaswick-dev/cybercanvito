@@ -1,6 +1,7 @@
-import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2, Image as ImageIcon, Video, Music, Shapes as ShapesIcon } from "lucide-react";
+import { X, Search, Sparkles, Scissors, Scan, Trash2, ArrowLeft, Wand2, Image as ImageIcon, Video, Music, Shapes as ShapesIcon, Minus } from "lucide-react";
 import { memo, useCallback, useState, useMemo, useEffect } from "react";
 import { SHAPES } from "./shapes-library";
+import { LINES } from "./lines-library";
 import { toast } from "sonner";
 import { TOOLS, type ToolId } from "./Sidebar";
 import { useEditor } from "./editor-context";
@@ -63,6 +64,7 @@ export const SidePanel = memo(function SidePanel({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [shapesOpen, setShapesOpen] = useState(false);
+  const [linesOpen, setLinesOpen] = useState(false);
   const { uploadedFiles, addImageFromSource, addVideoFromSource, addShapeFromUrl } = useEditor();
 
   const handleClose = useCallback(() => onClose(), [onClose]);
@@ -70,6 +72,7 @@ export const SidePanel = memo(function SidePanel({
   // Reset shapes view when switching tools
   useEffect(() => {
     setShapesOpen(false);
+    setLinesOpen(false);
   }, [active]);
 
   const filteredFiles = useMemo(() => {
@@ -121,29 +124,36 @@ export const SidePanel = memo(function SidePanel({
       <div className="flex-1 overflow-y-auto p-3">
         {active === "texto" ? (
           <PainelTexto />
-        ) : active === "elementos" && shapesOpen ? (
+        ) : active === "elementos" && (shapesOpen || linesOpen) ? (
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => setShapesOpen(false)}
+              onClick={() => {
+                setShapesOpen(false);
+                setLinesOpen(false);
+              }}
               className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/50 hover:text-white"
             >
               <ArrowLeft className="h-3 w-3" /> Voltar
             </button>
             <div className="flex items-center justify-between">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40">Formas</h3>
-              <span className="text-[10px] text-white/30">{SHAPES.length} formas</span>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                {shapesOpen ? "Formas" : "Linhas"}
+              </h3>
+              <span className="text-[10px] text-white/30">
+                {shapesOpen ? `${SHAPES.length} formas` : `${LINES.length} linhas`}
+              </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {SHAPES.map((shape) => (
+              {(shapesOpen ? SHAPES : LINES).map((item) => (
                 <button
-                  key={shape.id}
-                  onClick={() => addShapeFromUrl(shape.url)}
+                  key={item.id}
+                  onClick={() => addShapeFromUrl(item.url)}
                   className="group relative aspect-square overflow-hidden rounded-md border border-white/10 bg-white/5 p-2 transition-all hover:border-[var(--electric-blue)] hover:bg-white/10"
-                  title={shape.name}
+                  title={item.name}
                 >
                   <img
-                    src={shape.url}
-                    alt={shape.name}
+                    src={item.url}
+                    alt={item.name}
                     className="h-full w-full object-contain [filter:invert(1)] opacity-80 transition-opacity group-hover:opacity-100"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
@@ -162,6 +172,7 @@ export const SidePanel = memo(function SidePanel({
                   item={item}
                   activeToolId={active}
                   onOpenShapes={() => setShapesOpen(true)}
+                  onOpenLines={() => setLinesOpen(true)}
                 />
               ))}
             </div>
@@ -246,16 +257,19 @@ const PanelItem = memo(function PanelItem({
   item,
   activeToolId,
   onOpenShapes,
+  onOpenLines,
 }: {
   item: string;
   activeToolId: ToolId | null;
   onOpenShapes?: () => void;
+  onOpenLines?: () => void;
 }) {
   const { isMagicBrushActive, setIsMagicBrushActive, openImagePicker } = useEditor();
   const isMagicBrush = activeToolId === "removedor-objetos" && item === "Pincel mágico";
   const isUploadImagens = activeToolId === "uploads" && item === "Imagens";
   const isUploadVideos = activeToolId === "uploads" && item === "Vídeos";
   const isShapes = activeToolId === "elementos" && item === "Formas";
+  const isLines = activeToolId === "elementos" && item === "Linhas";
 
   const handleClick = () => {
     if (isMagicBrush) {
@@ -266,6 +280,8 @@ const PanelItem = memo(function PanelItem({
       openImagePicker(undefined, "video");
     } else if (isShapes) {
       onOpenShapes?.();
+    } else if (isLines) {
+      onOpenLines?.();
     }
   };
 
@@ -288,7 +304,8 @@ const PanelItem = memo(function PanelItem({
           {item === "Vídeos" && <Video className="h-5 w-5" />}
           {item === "Áudio" && <Music className="h-5 w-5" />}
           {item === "Formas" && <ShapesIcon className="h-5 w-5" />}
-          {!["Pincel mágico", "Laço inteligente", "Auto-detecção", "Imagens", "Vídeos", "Áudio", "Formas"].includes(item) && <div className="h-5 w-5 rounded-full border border-current opacity-20" />}
+          {item === "Linhas" && <Minus className="h-5 w-5" />}
+          {!["Pincel mágico", "Laço inteligente", "Auto-detecção", "Imagens", "Vídeos", "Áudio", "Formas", "Linhas"].includes(item) && <div className="h-5 w-5 rounded-full border border-current opacity-20" />}
         </div>
         <span className={`text-[10px] font-medium uppercase tracking-wider ${isMagicBrush && isMagicBrushActive ? "text-white" : "text-white/60 group-hover:text-white/90"}`}>
           {item}
