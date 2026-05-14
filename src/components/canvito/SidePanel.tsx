@@ -124,29 +124,36 @@ export const SidePanel = memo(function SidePanel({
       <div className="flex-1 overflow-y-auto p-3">
         {active === "texto" ? (
           <PainelTexto />
-        ) : active === "elementos" && shapesOpen ? (
+        ) : active === "elementos" && (shapesOpen || linesOpen) ? (
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => setShapesOpen(false)}
+              onClick={() => {
+                setShapesOpen(false);
+                setLinesOpen(false);
+              }}
               className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/50 hover:text-white"
             >
               <ArrowLeft className="h-3 w-3" /> Voltar
             </button>
             <div className="flex items-center justify-between">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40">Formas</h3>
-              <span className="text-[10px] text-white/30">{SHAPES.length} formas</span>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                {shapesOpen ? "Formas" : "Linhas"}
+              </h3>
+              <span className="text-[10px] text-white/30">
+                {shapesOpen ? `${SHAPES.length} formas` : `${LINES.length} linhas`}
+              </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {SHAPES.map((shape) => (
+              {(shapesOpen ? SHAPES : LINES).map((item) => (
                 <button
-                  key={shape.id}
-                  onClick={() => addShapeFromUrl(shape.url)}
+                  key={item.id}
+                  onClick={() => addShapeFromUrl(item.url)}
                   className="group relative aspect-square overflow-hidden rounded-md border border-white/10 bg-white/5 p-2 transition-all hover:border-[var(--electric-blue)] hover:bg-white/10"
-                  title={shape.name}
+                  title={item.name}
                 >
                   <img
-                    src={shape.url}
-                    alt={shape.name}
+                    src={item.url}
+                    alt={item.name}
                     className="h-full w-full object-contain [filter:invert(1)] opacity-80 transition-opacity group-hover:opacity-100"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
