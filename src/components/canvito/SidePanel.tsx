@@ -180,7 +180,7 @@ export const SidePanel = memo(function SidePanel({
                   <img
                     src={item.url}
                     alt={item.name}
-                    className="h-full w-full object-contain [filter:invert(1)] opacity-80 transition-opacity group-hover:opacity-100"
+                    className="h-full w-full object-contain opacity-90 transition-opacity group-hover:opacity-100"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                     <span className="text-[10px] font-bold text-white">ADICIONAR</span>
